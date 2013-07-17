@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+
+<form string="Website Store View">
+    <label name="name"/>
+    <field name="name"/>
+    <label name="code"/>
+    <field name="code"/>
+    <label name="website"/>
+    <field name="website"/>
+    <label name="company"/>
+    <field name="company"/>
+    <label name="instance"/>
+    <field name="instance"/>
+</form>

@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+
+<form string="Website Store">
+    <label name="name"/>
+    <field name="name"/>
+    <label name="website"/>
+    <field name="website"/>
+    <label name="company"/>
+    <field name="company"/>
+    <label name="instance"/>
+    <field name="instance"/>
+    <notebook>
+        <page string="Store Views" id="store_views">
+            <field name="store_views"/>
+        </page>
+    </notebook>
+</form>
