@@ -13,6 +13,7 @@ import trytond.tests.test_tryton
 from tests.test_views import TestViewDepend
 from tests.test_models import TestModels
 from tests.test_country import TestCountry
+from tests.test_party import TestParty
 
 
 def suite():
@@ -24,6 +25,7 @@ def suite():
         unittest.TestLoader().loadTestsFromTestCase(TestViewDepend),
         unittest.TestLoader().loadTestsFromTestCase(TestModels),
         unittest.TestLoader().loadTestsFromTestCase(TestCountry),
+        unittest.TestLoader().loadTestsFromTestCase(TestParty),
     ])
     return test_suite
 
