@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+
+<form string="Magento Instance">
+    <label name="name"/>
+    <field name="name"/>
+    <label name="company"/>
+    <field name="company"/>
+    <label name="active"/>
+    <field name="active"/>
+    <notebook>
+        <page string="API Settings" id="api_settings">
+            <label name="url"/>
+            <field name="url" colspan="3"/>
+            <newline/>
+            <label name="api_user"/>
+            <field name="api_user"/>
+            <label name="api_key"/>
+            <field name="api_key"/>
+        </page>
+        <page string="Websites" id="websites">
+            <field name="websites"/>
+        </page>
+    </notebook>
+</form>

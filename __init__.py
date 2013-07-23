@@ -7,9 +7,10 @@
     :copyright: (c) 2013 by Openlabs Technologies & Consulting (P) Limited
     :license: BSD, see LICENSE for more details.
 """
-#Flake8: noqa
 from trytond.pool import Pool
-from .magento_ import *
+from magento_ import (
+    Instance, InstanceWebsite, WebsiteStore, WebsiteStoreView
+)
 
 
 def register():
@@ -18,5 +19,8 @@ def register():
     """
     Pool.register(
         Instance,
+        InstanceWebsite,
+        WebsiteStore,
+        WebsiteStoreView,
         module='magento', type_='model'
     )

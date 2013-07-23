@@ -135,7 +135,7 @@ setup(
     ],
     package_data={
         'trytond.modules.%s' % module_name: info.get('xml', [])
-            + ['tryton.cfg']
+            + ['tryton.cfg', 'view/*.xml']
             + info.get('translation', []),
     },
     classifiers=[

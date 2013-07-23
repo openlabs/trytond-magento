@@ -1,6 +1,127 @@
 <tryton>
     <data>
 
+        <menuitem name="Magento" sequence="0" id="menu_magento"/>
+
+        <!--Magento Instance -->
+        <record model="ir.ui.view" id="instance_view_form">
+            <field name="model">magento.instance</field>
+            <field name="type">form</field>
+            <field name="name">instance_form</field>
+        </record>
+        <record model="ir.ui.view" id="instance_view_tree">
+            <field name="model">magento.instance</field>
+            <field name="type">tree</field>
+            <field name="name">instance_tree</field>
+        </record>
+
+        <record model="ir.action.act_window" id="act_instance_form">
+            <field name="name">Magento Instance</field>
+            <field name="res_model">magento.instance</field>
+        </record>
+        <record model="ir.action.act_window.view" id="act_instance_form_view1">
+            <field name="sequence" eval="10"/>
+            <field name="view" ref="instance_view_tree"/>
+            <field name="act_window" ref="act_instance_form"/>
+        </record>
+        <record model="ir.action.act_window.view" id="act_instance_form_view2">
+            <field name="sequence" eval="20"/>
+            <field name="view" ref="instance_view_form"/>
+            <field name="act_window" ref="act_instance_form"/>
+        </record>
+        <menuitem sequence="40" parent='menu_magento'
+            action="act_instance_form" id="menu_instance_form"/>
+
+
+        <!--Instance Website-->
+        <record model="ir.ui.view" id="website_view_form">
+            <field name="model">magento.instance.website</field>
+            <field name="type">form</field>
+            <field name="name">website_form</field>
+        </record>
+        <record model="ir.ui.view" id="website_view_tree">
+            <field name="model">magento.instance.website</field>
+            <field name="type">tree</field>
+            <field name="name">website_tree</field>
+        </record>
+
+        <record model="ir.action.act_window" id="act_website_form">
+            <field name="name">Instance Website</field>
+            <field name="res_model">magento.instance.website</field>
+        </record>
+        <record model="ir.action.act_window.view" id="act_website_form_view1">
+            <field name="sequence" eval="10"/>
+            <field name="view" ref="website_view_tree"/>
+            <field name="act_window" ref="act_website_form"/>
+        </record>
+        <record model="ir.action.act_window.view" id="act_website_form_view2">
+            <field name="sequence" eval="20"/>
+            <field name="view" ref="website_view_form"/>
+            <field name="act_window" ref="act_website_form"/>
+        </record>
+        <menuitem sequence="40" parent='menu_magento'
+            action="act_website_form" id="menu_website_form"/>
+
+
+        <!--Website Store-->
+        <record model="ir.ui.view" id="store_form">
+            <field name="model">magento.website.store</field>
+            <field name="type">form</field>
+            <field name="name">store_form</field>
+        </record>
+        <record model="ir.ui.view" id="store_tree">
+            <field name="model">magento.website.store</field>
+            <field name="type">tree</field>
+            <field name="name">store_tree</field>
+        </record>
+
+        <record model="ir.action.act_window" id="act_store_form">
+            <field name="name">Website Store</field>
+            <field name="res_model">magento.website.store</field>
+        </record>
+        <record model="ir.action.act_window.view" id="act_store_form_view1">
+            <field name="sequence" eval="10"/>
+            <field name="view" ref="store_tree"/>
+            <field name="act_window" ref="act_store_form"/>
+        </record>
+        <record model="ir.action.act_window.view" id="act_store_form_view2">
+            <field name="sequence" eval="20"/>
+            <field name="view" ref="store_form"/>
+            <field name="act_window" ref="act_store_form"/>
+        </record>
+        <menuitem sequence="40" parent='menu_magento'
+            action="act_store_form" id="menu_store_form"/>
+
+
+        <!--Website Store View-->
+        <record model="ir.ui.view" id="store_view_form">
+            <field name="model">magento.store.store_view</field>
+            <field name="type">form</field>
+            <field name="name">storeview_form</field>
+        </record>
+        <record model="ir.ui.view" id="store_view_tree">
+            <field name="model">magento.store.store_view</field>
+            <field name="type">tree</field>
+            <field name="name">storeview_tree</field>
+        </record>
+
+        <record model="ir.action.act_window" id="act_store_view_form">
+            <field name="name">Website Store View</field>
+            <field name="res_model">magento.store.store_view</field>
+        </record>
+        <record model="ir.action.act_window.view" id="act_store_view_form_view1">
+            <field name="sequence" eval="10"/>
+            <field name="view" ref="store_view_tree"/>
+            <field name="act_window" ref="act_store_view_form"/>
+        </record>
+        <record model="ir.action.act_window.view" id="act_store_view_form_view2">
+            <field name="sequence" eval="20"/>
+            <field name="view" ref="store_view_form"/>
+            <field name="act_window" ref="act_store_view_form"/>
+        </record>
+        <menuitem sequence="40" parent='menu_magento'
+            action="act_store_view_form" id="menu_store_view_form"/>
+
 
     </data>
 </tryton>

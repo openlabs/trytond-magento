@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+
+<tree string="Magento Instance">
+    <field name="name"/>
+    <field name="url"/>
+    <field name="api_user"/>
+    <field name="api_key"/>
+    <field name="company"/>
+</tree>
