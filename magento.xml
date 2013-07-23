@@ -122,6 +122,18 @@
         <menuitem sequence="40" parent='menu_magento'
             action="act_store_view_form" id="menu_store_view_form"/>
 
+        <!--Test Connection Wizard-->
+        <record model="ir.action.wizard" id="wizard_test_connection">
+            <field name="name">Test Connection</field>
+            <field name="wiz_name">magento.wizard_test_connection</field>
+            <field name="model">magento.instance</field>
+        </record>
+
+        <record model="ir.ui.view" id="wizard_test_connection_view_form">
+            <field name="model">magento.wizard_test_connection.start</field>
+            <field name="type">form</field>
+            <field name="name">wizard_test_connection_start_form</field>
+        </record>
 
     </data>
 </tryton>

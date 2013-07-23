@@ -21,4 +21,5 @@
             <field name="websites"/>
         </page>
     </notebook>
+    <button string="Test Connection" name="test_connection" colspan="4"/>
 </form>

@@ -7,11 +7,19 @@
     :copyright: (c) 2013 by Openlabs Technologies & Consulting (P) Limited
     :license: BSD, see LICENSE for more details.
 """
+import xmlrpclib
+import socket
+
+import magento
 from trytond.model import ModelView, ModelSQL, fields
 from trytond.transaction import Transaction
+from trytond.wizard import Wizard, StateView, Button
 
 
-__all__ = ['Instance', 'InstanceWebsite', 'WebsiteStore', 'WebsiteStoreView']
+__all__ = [
+    'Instance', 'InstanceWebsite', 'WebsiteStore', 'WebsiteStoreView',
+    'TestConnectionStart', 'TestConnection',
+]
 
 
 class Instance(ModelSQL, ModelView):
@@ -58,6 +66,33 @@ class Instance(ModelSQL, ModelView):
                 'URL of an instance must be unique'
             )
         ]
+        cls._error_messages.update({
+            "connection_error": "Incorrect API Settings! \n"
+                "Please check and correct the API settings on instance.",
+        })
+        cls._buttons.update({
+            'test_connection': {},
+        })
+
+    @classmethod
+    @ModelView.button_action('magento.wizard_test_connection')
+    def test_connection(cls, instances):
+        """
+        Test magento connection and display appropriate message to user
+
+        :param instances: Active record list of magento instance
+        """
+        instance = instances[0]
+
+        try:
+            with magento.API(
+                instance.url, instance.api_user, instance.api_key
+            ):
+                return
+        except (
+            xmlrpclib.Fault, IOError, xmlrpclib.ProtocolError, socket.timeout
+        ):
+            cls.raise_user_error("connection_error")
 
 
 class InstanceWebsite(ModelSQL, ModelView):
@@ -229,3 +264,32 @@ class WebsiteStoreView(ModelSQL, ModelView):
                 'A store view must be unique in a store'
             )
         ]
+
+
+class TestConnectionStart(ModelView):
+    "Test Connection"
+    __name__ = 'magento.wizard_test_connection.start'
+
+
+class TestConnection(Wizard):
+    """
+    Test Connection Wizard
+
+    Test the connection to magento instance(s)
+    """
+    __name__ = 'magento.wizard_test_connection'
+
+    start = StateView(
+        'magento.wizard_test_connection.start',
+        'magento.wizard_test_connection_view_form',
+        [
+            Button('Ok', 'end', 'tryton-ok'),
+        ]
+    )
+
+    def default_start(self, data):
+        """Test the connection and show the user appropriate message
+
+        :param data: Wizard data
+        """
+        return {}
