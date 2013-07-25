@@ -12,6 +12,7 @@ from .magento_ import (
     Instance, InstanceWebsite, WebsiteStore, WebsiteStoreView,
     TestConnectionStart, TestConnection,
 )
+from country import Country
 
 
 def register():
@@ -24,6 +25,7 @@ def register():
         WebsiteStore,
         WebsiteStoreView,
         TestConnectionStart,
+        Country,
         module='magento', type_='model'
     )
     Pool.register(
