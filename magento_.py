@@ -12,9 +12,9 @@ import socket
 
 import magento
 from trytond.model import ModelView, ModelSQL, fields
+from trytond.pool import PoolMeta, Pool
 from trytond.transaction import Transaction
 from trytond.wizard import Wizard, StateView, Button
-from trytond.pool import Pool
 
 from .api import Core
 
@@ -24,6 +24,7 @@ __all__ = [
     'TestConnectionStart', 'TestConnection', 'ImportWebsitesStart',
     'ImportWebsites',
 ]
+__metaclass__ = PoolMeta
 
 
 class Instance(ModelSQL, ModelView):
@@ -179,6 +180,7 @@ class InstanceWebsite(ModelSQL, ModelView):
         'magento.website.store', 'website', 'Stores',
         readonly=True,
     )
+    default_uom = fields.Many2One('product.uom', 'Default Product UOM')
 
     def get_company(self, name):
         """
@@ -187,6 +189,15 @@ class InstanceWebsite(ModelSQL, ModelView):
         :param name: Field name
         """
         return self.instance.company.id
+
+    @staticmethod
+    def default_default_uom():
+        """
+        Sets default product uom for website
+        """
+        ProductUom = Pool().get('product.uom')
+
+        return ProductUom.search([('name', '=', 'Unit')])[0].id
 
     @classmethod
     def __setup__(cls):

@@ -92,6 +92,17 @@
         <menuitem sequence="40" parent='menu_magento'
             action="act_store_form" id="menu_store_form"/>
 
+        <!--Website Template-->
+        <record model="ir.ui.view" id="website_template_form">
+            <field name="model">magento.website.template</field>
+            <field name="type">form</field>
+            <field name="name">website_template_form</field>
+        </record>
+        <record model="ir.ui.view" id="website_template_tree">
+            <field name="model">magento.website.template</field>
+            <field name="type">tree</field>
+            <field name="name">website_template_tree</field>
+        </record>
 
         <!--Website Store View-->
         <record model="ir.ui.view" id="store_view_form">
