@@ -9,6 +9,8 @@
     <field name="company"/>
     <label name="instance"/>
     <field name="instance"/>
+    <label name="magento_root_category_id"/>
+    <field name="magento_root_category_id"/>
     <notebook>
         <page string="Stores" id="stores">
             <field name="stores"/>

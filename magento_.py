@@ -181,6 +181,9 @@ class InstanceWebsite(ModelSQL, ModelView):
         readonly=True,
     )
     default_uom = fields.Many2One('product.uom', 'Default Product UOM')
+    magento_root_category_id = fields.Integer(
+        'Magento Root Category ID', required=True
+    )
 
     def get_company(self, name):
         """
@@ -189,6 +192,14 @@ class InstanceWebsite(ModelSQL, ModelView):
         :param name: Field name
         """
         return self.instance.company.id
+
+    @staticmethod
+    def default_magento_root_category_id():
+        """
+        Sets default root category id. Is set to 1, because the default
+        root category is 1
+        """
+        return 1
 
     @staticmethod
     def default_default_uom():

@@ -22,20 +22,37 @@ this repository contains the full copyright notices and license terms. -->
             <field name="name">category_form</field>
         </record>
 
-      <record model="ir.ui.view" id="template_view_form">
-        <field name="model">product.template</field>
-        <field name="inherit" ref="product.template_view_form"/>
-        <field name="name">template_form</field>
-      </record>
-      <record model="ir.ui.view" id="template_view_tree">
-        <field name="model">product.template</field>
-        <field name="inherit" ref="product.template_view_tree"/>
-        <field name="name">template_tree</field>
-      </record>
+        <record model="ir.ui.view" id="template_view_form">
+          <field name="model">product.template</field>
+          <field name="inherit" ref="product.template_view_form"/>
+          <field name="name">template_form</field>
+        </record>
+        <record model="ir.ui.view" id="template_view_tree">
+          <field name="model">product.template</field>
+          <field name="inherit" ref="product.template_view_tree"/>
+          <field name="name">template_tree</field>
+        </record>
 
-      <record id="product_category_magento_unclassified" model="product.category">
-          <field name="name">Unclassified Magento Products</field>
-      </record>
+        <!--Wizard View-->
+        <record model="ir.action.wizard" id="wizard_instance_import_catalog">
+            <field name="name">Import Magento Product Catalog</field>
+            <field name="wiz_name">magento.instance.import_catalog</field>
+            <field name="model">magento.instance.website</field>
+        </record>
+        <record model="ir.action.keyword" id="instance_import_catalog_keyword">
+            <field name="keyword">form_action</field>
+            <field name="model">magento.instance.website,-1</field>
+            <field name="action" ref="wizard_instance_import_catalog"/>
+        </record>
+        <record model="ir.ui.view" id="instance_import_catalog_start">
+            <field name="model">magento.instance.import_catalog.start</field>
+            <field name="type">form</field>
+            <field name="name">instance_import_catalog_start_form</field>
+        </record>
+
+        <record id="product_category_magento_unclassified" model="product.category">
+            <field name="name">Unclassified Magento Products</field>
+        </record>
 
   </data>
 </tryton>
