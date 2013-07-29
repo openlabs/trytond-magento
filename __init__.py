@@ -12,12 +12,12 @@ from magento_ import (
     Instance, InstanceWebsite, WebsiteStore, WebsiteStoreView,
     TestConnectionStart, TestConnection, ImportWebsitesStart, ImportWebsites,
 )
-from country import Country
 from party import Party, MagentoWebsiteParty
 from product import (
     Category, MagentoInstanceCategory, Template, MagentoWebsiteTemplate,
     ImportCatalogStart, ImportCatalog
 )
+from country import Country, Subdivision
 
 
 def register():
@@ -32,6 +32,7 @@ def register():
         TestConnectionStart,
         ImportWebsitesStart,
         Country,
+        Subdivision,
         Party,
         MagentoWebsiteParty,
         Category,
