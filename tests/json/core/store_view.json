@@ -1,0 +1,10 @@
+{
+    "__comment__": "Website data similar to store_view",
+    "code": "default",
+    "store_id": "1",
+    "website_id": "1",
+    "is_active": "1",
+    "sort_order": "0",
+    "group_id": "1",
+    "name": "English"
+}
