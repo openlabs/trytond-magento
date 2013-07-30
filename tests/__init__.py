@@ -15,6 +15,7 @@ from tests.test_models import TestModels
 from tests.test_country import TestCountry
 from tests.test_party import TestParty
 from tests.test_website_import import TestWebsiteImport
+from tests.test_product import TestProduct
 
 
 def suite():
@@ -28,6 +29,7 @@ def suite():
         unittest.TestLoader().loadTestsFromTestCase(TestCountry),
         unittest.TestLoader().loadTestsFromTestCase(TestParty),
         unittest.TestLoader().loadTestsFromTestCase(TestWebsiteImport),
+        unittest.TestLoader().loadTestsFromTestCase(TestProduct),
     ])
     return test_suite
 
