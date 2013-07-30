@@ -103,7 +103,7 @@ minor_version = int(minor_version)
 module_name = 'magento'
 
 requires = [
-    'magento'
+    'magento',
 ]
 for dep in info.get('depends', []):
     if not re.match(r'(ir|res|webdav)(\W|$)', dep):
@@ -118,7 +118,9 @@ requires.append(
         major_version, minor_version, major_version, minor_version + 1
     )
 )
-test_requirements = []
+test_requirements = [
+    'mock',
+]
 
 setup(
     name='trytond_%s' % module_name,

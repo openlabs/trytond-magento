@@ -14,11 +14,15 @@ import magento
 from trytond.model import ModelView, ModelSQL, fields
 from trytond.transaction import Transaction
 from trytond.wizard import Wizard, StateView, Button
+from trytond.pool import Pool
+
+from .api import Core
 
 
 __all__ = [
     'Instance', 'InstanceWebsite', 'WebsiteStore', 'WebsiteStoreView',
-    'TestConnectionStart', 'TestConnection',
+    'TestConnectionStart', 'TestConnection', 'ImportWebsitesStart',
+    'ImportWebsites',
 ]
 
 
@@ -69,9 +73,12 @@ class Instance(ModelSQL, ModelView):
         cls._error_messages.update({
             "connection_error": "Incorrect API Settings! \n"
                 "Please check and correct the API settings on instance.",
+            "multiple_instances": 'Selected operation can be done only for one'
+                ' instance at a time',
         })
         cls._buttons.update({
             'test_connection': {},
+            'import_websites': {},
         })
 
     @classmethod
@@ -82,8 +89,10 @@ class Instance(ModelSQL, ModelView):
 
         :param instances: Active record list of magento instance
         """
-        instance = instances[0]
+        if len(instances) != 1:
+            cls.raise_user_error('multiple_instances')
 
+        instance = instances[0]
         try:
             with magento.API(
                 instance.url, instance.api_user, instance.api_key
@@ -93,6 +102,58 @@ class Instance(ModelSQL, ModelView):
             xmlrpclib.Fault, IOError, xmlrpclib.ProtocolError, socket.timeout
         ):
             cls.raise_user_error("connection_error")
+
+    @classmethod
+    @ModelView.button_action('magento.wizard_import_websites')
+    def import_websites(cls, instances):
+        """
+        Import the websites and their stores/view from magento
+
+        :param instances: Active record list of magento instance
+        """
+        Website = Pool().get('magento.instance.website')
+        Store = Pool().get('magento.website.store')
+        StoreView = Pool().get('magento.store.store_view')
+
+        if len(instances) != 1:
+            cls.raise_user_error('multiple_instances')
+
+        instance = instances[0]
+
+        with Transaction().set_context(magento_instance=instance.id):
+
+            # Import websites
+            with Core(
+                instance.url, instance.api_user, instance.api_key
+            ) as core_api:
+                websites = []
+                stores = []
+
+                mag_websites = core_api.websites()
+
+                # Create websites
+                for mag_website in mag_websites:
+                    websites.append(Website.find_or_create(
+                        instance, mag_website
+                    ))
+
+                for website in websites:
+                    mag_stores = core_api.stores(
+                        {'website_id': {'=': website.magento_id}}
+                    )
+
+                    # Create stores
+                    for mag_store in mag_stores:
+                        stores.append(Store.find_or_create(website, mag_store))
+
+                for store in stores:
+                    mag_store_views = core_api.store_views(
+                        {'group_id': {'=': store.magento_id}}
+                    )
+
+                    # Create store views
+                    for mag_store_view in mag_store_views:
+                        StoreView.find_or_create(store, mag_store_view)
 
 
 class InstanceWebsite(ModelSQL, ModelView):
@@ -139,6 +200,33 @@ class InstanceWebsite(ModelSQL, ModelView):
                 'A website must be unique in an instance'
             )
         ]
+
+    @classmethod
+    def find_or_create(cls, instance, values):
+        """
+        Looks for the website whose `values` are sent by magento against
+        the instance with `instance` in tryton.
+        If a record exists for this, return that else create a new one and
+        return
+
+        :param instance: Active record of instance
+        :param values: Dictionary of values for a website sent by magento
+        :return: Active record of record created/found
+        """
+        websites = cls.search([
+            ('instance', '=', instance.id),
+            ('magento_id', '=', int(values['website_id']))
+        ])
+
+        if websites:
+            return websites[0]
+
+        return cls.create([{
+            'name': values['name'],
+            'code': values['code'],
+            'instance': instance.id,
+            'magento_id': int(values['website_id']),
+        }])[0]
 
 
 class WebsiteStore(ModelSQL, ModelView):
@@ -197,6 +285,32 @@ class WebsiteStore(ModelSQL, ModelView):
                 'A store must be unique in a website'
             )
         ]
+
+    @classmethod
+    def find_or_create(cls, website, values):
+        """
+        Looks for the store whose `values` are sent by magento against the
+        website with `website` in tryton.
+        If a record exists for this, return that else create a new one and
+        return
+
+        :param website: Active record of website
+        :param values: Dictionary of values for a store sent by magento
+        :return: Active record of record created/found
+        """
+        stores = cls.search([
+            ('website', '=', website.id),
+            ('magento_id', '=', int(values['group_id']))
+        ])
+
+        if stores:
+            return stores[0]
+
+        return cls.create([{
+            'name': values['name'],
+            'magento_id': int(values['group_id']),
+            'website': website.id,
+        }])[0]
 
 
 class WebsiteStoreView(ModelSQL, ModelView):
@@ -265,6 +379,33 @@ class WebsiteStoreView(ModelSQL, ModelView):
             )
         ]
 
+    @classmethod
+    def find_or_create(cls, store, values):
+        """
+        Looks for the store view whose `values` are sent by magento against
+        the store with `store` in tryton.
+        If a record exists for this, return that else create a new one and
+        return
+
+        :param store: Active record of store
+        :param values: Dictionary of values for store view sent by magento
+        :return: Actice record of record created/found
+        """
+        store_views = cls.search([
+            ('store', '=', store.id),
+            ('magento_id', '=', int(values['store_id']))
+        ])
+
+        if store_views:
+            return store_views[0]
+
+        return cls.create([{
+            'name': values['name'],
+            'code': values['code'],
+            'store': store.id,
+            'magento_id': int(values['store_id']),
+        }])[0]
+
 
 class TestConnectionStart(ModelView):
     "Test Connection"
@@ -289,6 +430,36 @@ class TestConnection(Wizard):
 
     def default_start(self, data):
         """Test the connection and show the user appropriate message
+
+        :param data: Wizard data
+        """
+        return {}
+
+
+class ImportWebsitesStart(ModelView):
+    "Import Websites Start View"
+    __name__ = 'magento.wizard_import_websites.start'
+
+
+class ImportWebsites(Wizard):
+    """
+    Import Websites Wizard
+
+    Import the websites and their stores/view from magento
+    """
+    __name__ = 'magento.wizard_import_websites'
+
+    start = StateView(
+        'magento.wizard_import_websites.start',
+        'magento.wizard_import_websites_view_form',
+        [
+            Button('Ok', 'end', 'tryton-ok'),
+        ]
+    )
+
+    def default_start(self, data):
+        """Import the websites, store and store views and show user a
+        confirmation message
 
         :param data: Wizard data
         """

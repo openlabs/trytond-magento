@@ -8,9 +8,9 @@
     :license: BSD, see LICENSE for more details.
 """
 from trytond.pool import Pool
-from .magento_ import (
+from magento_ import (
     Instance, InstanceWebsite, WebsiteStore, WebsiteStoreView,
-    TestConnectionStart, TestConnection,
+    TestConnectionStart, TestConnection, ImportWebsitesStart, ImportWebsites,
 )
 from country import Country
 from party import Party, MagentoWebsiteParty
@@ -26,6 +26,7 @@ def register():
         WebsiteStore,
         WebsiteStoreView,
         TestConnectionStart,
+        ImportWebsitesStart,
         Country,
         Party,
         MagentoWebsiteParty,
@@ -33,5 +34,6 @@ def register():
     )
     Pool.register(
         TestConnection,
+        ImportWebsites,
         module='magento', type_='wizard'
     )
