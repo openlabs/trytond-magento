@@ -144,14 +144,13 @@ class Category:
         :param parent: Browse record of Parent if present, else None
         :returns: Active record of category created
         """
-
         category, = cls.create([{
             'name': category_data['name'],
             'parent': parent,
             'magento_ids': [('create', [{
                 'magento_id': int(category_data['category_id']),
                 'instance': Transaction().context.get('magento_instance'),
-            }])]
+            }])],
         }])
 
         return category
@@ -333,6 +332,10 @@ class Template:
             ),
             'cost_price': Decimal(product_data.get('price') or 0.00),
             'default_uom': website.default_uom.id,
+            'salable': True,
+            'sale_uom': website.default_uom.id,
+            'account_expense': website.instance.default_account_expense.id,
+            'account_revenue': website.instance.default_account_revenue.id,
         }
 
     @classmethod

@@ -22,7 +22,7 @@ import unittest
 import trytond.tests.test_tryton
 from trytond.transaction import Transaction
 from test_base import TestBase, load_json
-from trytond.tests.test_tryton import POOL, USER, DB_NAME, CONTEXT
+from trytond.tests.test_tryton import USER, DB_NAME, CONTEXT
 
 
 class TestWebsiteImport(TestBase):
@@ -31,85 +31,90 @@ class TestWebsiteImport(TestBase):
     '''
 
     def test_0010_import_websites(self):
-        """Test the import of websites
         """
-        Instance = POOL.get('magento.instance')
-        Website = POOL.get('magento.instance.website')
-
+        Test the import of websites
+        """
         with Transaction().start(DB_NAME, USER, CONTEXT) as txn:
             self.setup_defaults()
             with txn.set_context({'company': self.company.id}):
-                instance, = Instance.create([{
+                instance, = self.Instance.create([{
                     'name': 'Test Instance',
                     'url': 'some test url',
                     'api_user': 'admin',
                     'api_key': 'testkey',
+                    'default_account_expense':
+                        self.get_account_by_kind('expense'),
+                    'default_account_revenue':
+                        self.get_account_by_kind('revenue'),
                 }])
-                websites_before_import = Website.search([])
-                Website.find_or_create(instance, load_json('core', 'website'))
-                websites_after_import = Website.search([])
+                websites_before_import = self.Website.search([])
+                self.Website.find_or_create(
+                    instance, load_json('core', 'website')
+                )
+                websites_after_import = self.Website.search([])
 
                 self.assertTrue(
                     websites_after_import > websites_before_import
                 )
 
     def test_0020_import_stores(self):
-        """Test the import of stores
         """
-        Instance = POOL.get('magento.instance')
-        Website = POOL.get('magento.instance.website')
-        Store = POOL.get('magento.website.store')
-
+        Tests the import of stores
+        """
         with Transaction().start(DB_NAME, USER, CONTEXT) as txn:
             self.setup_defaults()
             with txn.set_context({'company': self.company.id}):
-                instance, = Instance.create([{
+                instance, = self.Instance.create([{
                     'name': 'Test Instance',
                     'url': 'some test url',
                     'api_user': 'admin',
                     'api_key': 'testkey',
+                    'default_account_expense':
+                        self.get_account_by_kind('expense'),
+                    'default_account_revenue':
+                        self.get_account_by_kind('revenue'),
                 }])
-                website = Website.find_or_create(
+                website = self.Website.find_or_create(
                     instance, load_json('core', 'website')
                 )
 
-                stores_before_import = Store.search([])
-                Store.find_or_create(website, load_json('core', 'store'))
-                stores_after_import = Store.search([])
+                stores_before_import = self.Store.search([])
+                self.Store.find_or_create(website, load_json('core', 'store'))
+                stores_after_import = self.Store.search([])
 
                 self.assertTrue(
                     stores_after_import > stores_before_import
                 )
 
-    def test_0030_import_stores(self):
-        """Test the import of stores
+    def test_0030_import_store_views(self):
         """
-        Instance = POOL.get('magento.instance')
-        Website = POOL.get('magento.instance.website')
-        Store = POOL.get('magento.website.store')
-        StoreView = POOL.get('magento.store.store_view')
-
+        Tests import of store view
+        """
         with Transaction().start(DB_NAME, USER, CONTEXT) as txn:
             self.setup_defaults()
             with txn.set_context({'company': self.company.id}):
-                instance, = Instance.create([{
+                instance, = self.Instance.create([{
                     'name': 'Test Instance',
                     'url': 'some test url',
                     'api_user': 'admin',
                     'api_key': 'testkey',
+                    'default_account_expense':
+                        self.get_account_by_kind('expense'),
+                    'default_account_revenue':
+                        self.get_account_by_kind('revenue'),
                 }])
-                website = Website.find_or_create(
+                website = self.Website.find_or_create(
                     instance, load_json('core', 'website')
                 )
-                store = Store.find_or_create(
+                store = self.Store.find_or_create(
                     website, load_json('core', 'store')
                 )
 
-                store_views_before_import = StoreView.search([])
-                StoreView.find_or_create(store, load_json(
-                    'core', 'store_view')
+                store_views_before_import = self.StoreView.search([])
+                self.StoreView.find_or_create(
+                    store, load_json('core', 'store_view')
                 )
-                store_views_after_import = StoreView.search([])
+                store_views_after_import = self.StoreView.search([])
 
                 self.assertTrue(
                     store_views_after_import > store_views_before_import

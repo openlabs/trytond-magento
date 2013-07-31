@@ -7,6 +7,8 @@
     <field name="company"/>
     <label name="active"/>
     <field name="active"/>
+    <label name="order_prefix"/>
+    <field name="order_prefix"/>
     <notebook>
         <page string="API Settings" id="api_settings">
             <label name="url"/>
@@ -25,6 +27,12 @@
         </page>
         <page string="Carrier / Shipping Methods" id="carriers">
             <field name="carriers"/>
+        </page>
+        <page string="Account Settings" id="account_settings">
+            <label name="default_account_expense"/>
+            <field name="default_account_expense"/>
+            <label name="default_account_revenue"/>
+            <field name="default_account_revenue"/>
         </page>
     </notebook>
     <button string="Test Connection" name="test_connection" colspan="2"/>

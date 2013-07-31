@@ -16,7 +16,6 @@ from trytond.pool import PoolMeta, Pool
 from trytond.transaction import Transaction
 from trytond.pyson import PYSONEncoder, Eval
 from trytond.wizard import Wizard, StateView, Button, StateAction
-
 from .api import OrderConfig, Core
 
 
@@ -53,6 +52,33 @@ class Instance(ModelSQL, ModelView):
     carriers = fields.One2Many(
         "magento.instance.carrier", "instance", "Carriers / Shipping Methods"
     )
+    order_prefix = fields.Char(
+        'Sale Order Prefix',
+        help="This helps to distinguish between orders from different "
+            "instances"
+    )
+
+    default_account_expense = fields.Property(fields.Many2One(
+        'account.account', 'Account Expense', domain=[
+            ('kind', '=', 'expense'),
+            ('company', '=', Eval('company')),
+        ], depends=['company'], required=True
+    ))
+
+    #: Used to set revenue account while creating products.
+    default_account_revenue = fields.Property(fields.Many2One(
+        'account.account', 'Account Revenue', domain=[
+            ('kind', '=', 'revenue'),
+            ('company', '=', Eval('company')),
+        ], depends=['company'], required=True
+    ))
+
+    @staticmethod
+    def default_order_prefix():
+        """
+        Sets default value for order prefix
+        """
+        return 'mag_'
 
     @classmethod
     @ModelView.button

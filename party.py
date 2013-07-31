@@ -7,6 +7,8 @@
     :copyright: (c) 2013 by Openlabs Technologies & Consulting (P) Limited
     :license: BSD, see LICENSE for more details.
 """
+import magento
+
 from trytond.model import ModelSQL, ModelView, fields
 from trytond.pool import PoolMeta, Pool
 from trytond.transaction import Transaction
@@ -33,6 +35,47 @@ class Party:
         cls._error_messages.update({
             'website_not_found': 'Website does not exist in context'
         })
+
+    @classmethod
+    def find_or_create_using_magento_id(cls, magento_id):
+        """
+        This method tries to find the party with the magento ID first and
+        if not found it will fetch the info from magento and create a new
+        party with the data from magento using create_using_magento_data
+
+        :param magento_id: Party ID sent by magento
+        :return: Active record of record created/found
+        """
+        Instance = Pool().get('magento.instance')
+
+        party = cls.find_using_magento_id(magento_id)
+        if not party:
+            instance = Instance(Transaction().context.get('magento_instance'))
+
+            with magento.Customer(
+                instance.url, instance.api_user, instance.api_key
+            ) as customer_api:
+                customer_data = customer_api.info(magento_id)
+
+            party = cls.create_using_magento_data(customer_data)
+        return party
+
+    @classmethod
+    def find_using_magento_id(cls, magento_id):
+        """
+        This method tries to find the party with the magento ID
+
+        :param magento_id: Party ID sent by magento
+        :return: Active record of record found
+        """
+        MagentoParty = Pool().get('magento.website.party')
+
+        magento_parties = MagentoParty.search([
+            ('magento_id', '=', magento_id),
+            ('website', '=', Transaction().context.get('magento_website'))
+        ])
+
+        return magento_parties and magento_parties[0].party or None
 
     @classmethod
     def find_or_create_using_magento_data(cls, magento_data):
@@ -94,11 +137,11 @@ class Party:
         """
         MagentoParty = Pool().get('magento.website.party')
 
-        parties = MagentoParty.search([
+        magento_parties = MagentoParty.search([
             ('magento_id', '=', magento_data['customer_id']),
             ('website', '=', Transaction().context['magento_website'])
         ])
-        return parties and parties[0] or None
+        return magento_parties and magento_parties[0].party or None
 
 
 class MagentoWebsiteParty(ModelSQL, ModelView):

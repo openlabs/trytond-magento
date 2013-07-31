@@ -36,7 +36,6 @@ class TestParty(TestBase):
         Tests if customers imported from magento is created as party
         in tryton
         """
-        Party = POOL.get('party.party')
         MagentoParty = POOL.get('magento.website.party')
 
         with Transaction().start(DB_NAME, USER, CONTEXT):
@@ -53,7 +52,7 @@ class TestParty(TestBase):
             )
 
             self.assertFalse(
-                Party.search([
+                self.Party.search([
                     ('name', '=', customer_name)
                 ])
             )
@@ -62,11 +61,11 @@ class TestParty(TestBase):
             self.assertEqual(len(parties), 0)
 
             # Create party
-            party = Party.find_or_create_using_magento_data(magento_data)
+            party = self.Party.find_or_create_using_magento_data(magento_data)
             self.assert_(party)
 
             self.assertTrue(
-                Party.search([
+                self.Party.search([
                     ('name', '=', customer_name)
                 ])
             )
@@ -80,7 +79,6 @@ class TestParty(TestBase):
         """
         Tests that party should be unique in a website
         """
-        Party = POOL.get('party.party')
         MagentoParty = POOL.get('magento.website.party')
 
         with Transaction().start(DB_NAME, USER, CONTEXT):
@@ -100,11 +98,11 @@ class TestParty(TestBase):
             parties = MagentoParty.search([])
             self.assertEqual(len(parties), 0)
 
-            party = Party.find_or_create_using_magento_data(magento_data)
+            party = self.Party.find_or_create_using_magento_data(magento_data)
             self.assert_(party)
 
             self.assertTrue(
-                Party.search([
+                self.Party.search([
                     ('name', '=', customer_name)
                 ])
             )
@@ -118,7 +116,7 @@ class TestParty(TestBase):
 
             # Create party with same magento_id and website_id it will not
             # create new one
-            Party.find_or_create_using_magento_data(magento_data)
+            self.Party.find_or_create_using_magento_data(magento_data)
             parties = MagentoParty.search([])
             self.assertEqual(len(parties), 1)
 
@@ -132,11 +130,11 @@ class TestParty(TestBase):
                 [magento_data['firstname'], magento_data['lastname']]
             )
 
-            party = Party.find_or_create_using_magento_data(magento_data)
+            party = self.Party.find_or_create_using_magento_data(magento_data)
             self.assert_(party)
 
             self.assertTrue(
-                Party.search([
+                self.Party.search([
                     ('name', '=', customer_name)
                 ], count=True),
                 2
@@ -157,16 +155,16 @@ class TestParty(TestBase):
             )
 
             self.assertFalse(
-                Party.search([
+                self.Party.search([
                     ('name', '=', customer_name)
                 ])
             )
 
-            party = Party.find_or_create_using_magento_data(magento_data)
+            party = self.Party.find_or_create_using_magento_data(magento_data)
             self.assert_(party)
 
             self.assertTrue(
-                Party.search([
+                self.Party.search([
                     ('name', '=', customer_name)
                 ])
             )
@@ -181,54 +179,36 @@ class TestParty(TestBase):
         Test address import as party addresses and make sure no duplication
         is there.
         """
-        Party = POOL.get('party.party')
         Address = POOL.get('party.address')
-        Country = POOL.get('country.country')
-        Subdivision = POOL.get('country.subdivision')
 
         with Transaction().start(DB_NAME, USER, CONTEXT):
 
             self.setup_defaults()
 
-            # Create test party
-            party1, = Party.create([{
-                'name': 'Party1',
-            }])
-            self.assert_(party1)
-
-            # Create country
-            country1, = Country.create([{
-                'name': 'United States',
-                'code': 'US',
-            }])
-            self.assert_(country1)
-
-            # Create subdivision
-            subdivision1, = Subdivision.create([{
+            self.Subdivision.create([{
                 'name': 'American Samoa',
-                'code': 'AS',
+                'code': 'US-AS',
                 'type': 'state',
-                'country': country1.id,
+                'country': self.country1.id,
             }])
-            self.assert_(subdivision1)
 
             # Load json of address data
             address_data = load_json('addresses', '1')
 
             # Check party address before import
-            self.assertEqual(len(party1.addresses), 1)
+            self.assertEqual(len(self.party.addresses), 1)
 
             # Check contact mechanism before import
-            self.assertEqual(len(party1.contact_mechanisms), 0)
+            self.assertEqual(len(self.party.contact_mechanisms), 0)
 
             # Import address for party1 from magento
             address = Address.find_or_create_for_party_using_magento_data(
-                party1, address_data
+                self.party, address_data
             )
 
             # Check address after import
-            self.assertEqual(len(party1.addresses), 2)
-            self.assertEqual(address.party, party1)
+            self.assertEqual(len(self.party.addresses), 2)
+            self.assertEqual(address.party, self.party)
             self.assertEqual(
                 address.name, ' '.join([
                     address_data['firstname'], address_data['lastname']
@@ -241,26 +221,23 @@ class TestParty(TestBase):
             self.assertEqual(address.subdivision.name, address_data['region'])
 
             # Check contact mechnanism after import
-            self.assertEqual(len(party1.contact_mechanisms), 1)
-            contact_mechanism, = party1.contact_mechanisms
+            self.assertEqual(len(self.party.contact_mechanisms), 1)
+            contact_mechanism, = self.party.contact_mechanisms
             self.assertEqual(contact_mechanism.type, 'phone')
             self.assertEqual(contact_mechanism.value, address_data['telephone'])
 
             # Try to import address data again.
             address = Address.find_or_create_for_party_using_magento_data(
-                party1, address_data
+                self.party, address_data
             )
-            self.assertEqual(len(party1.addresses), 2)
-            self.assertEqual(len(party1.contact_mechanisms), 1)
+            self.assertEqual(len(self.party.addresses), 2)
+            self.assertEqual(len(self.party.contact_mechanisms), 1)
 
     def test0040_match_address(self):
         """
         Tests if address matching works as expected
         """
-        Party = POOL.get('party.party')
         Address = POOL.get('party.address')
-        Country = POOL.get('country.country')
-        Subdivision = POOL.get('country.subdivision')
 
         with Transaction().start(DB_NAME, USER, CONTEXT):
 
@@ -274,33 +251,19 @@ class TestParty(TestBase):
             party_data = load_json('customers', '1')
 
             # Create party
-            party = Party.find_or_create_using_magento_data(party_data)
+            party = self.Party.find_or_create_using_magento_data(party_data)
 
-            # Create country
-            country1, country2 = Country.create([
-                {
-                    'name': 'United States',
-                    'code': 'US',
-                }, {
-                    'name': 'India',
-                    'code': 'IN',
-                }
-            ])
-            self.assert_(country1)
-            self.assert_(country2)
-
-            # Create subdivision
-            subdivision1, subdivision2 = Subdivision.create([
+            subdivision1, subdivision2 = self.Subdivision.create([
                 {
                     'name': 'American Samoa',
                     'code': 'US-AS',
                     'type': 'state',
-                    'country': country1.id,
+                    'country': self.country1.id,
                 }, {
                     'name': 'Alabama',
                     'code': 'US-AL',
                     'type': 'state',
-                    'country': country1.id,
+                    'country': self.country1.id,
                 }
             ])
             self.assert_(subdivision1)
