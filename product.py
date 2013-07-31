@@ -8,6 +8,8 @@
 import magento
 from trytond.model import ModelSQL, ModelView, fields
 from trytond.transaction import Transaction
+from trytond.wizard import Wizard, StateView, StateAction, Button
+from trytond.pyson import PYSONEncoder
 from trytond.pool import PoolMeta, Pool
 from decimal import Decimal
 
@@ -391,3 +393,99 @@ class MagentoWebsiteTemplate(ModelSQL, ModelView):
                 'Each product in an instance must be unique!'
             )
         ]
+
+
+class ImportCatalogStart(ModelView):
+    'Import Catalog View'
+    __name__ = 'magento.instance.import_catalog.start'
+
+
+class ImportCatalog(Wizard):
+    '''
+    Import Catalog
+
+    This is a wizard to import Products from a Magento Website. It opens up
+    the list of products after the import has been completed.
+    '''
+    __name__ = 'magento.instance.import_catalog'
+
+    start = StateView(
+        'magento.instance.import_catalog.start',
+        'magento.instance_import_catalog_start', [
+            Button('Cancel', 'end', 'tryton-cancel'),
+            Button('Continue', 'import_', 'tryton-ok', default=True),
+        ]
+    )
+    import_ = StateAction('product.act_template_form')
+
+    def do_import_(self, action):
+        """Handles the transition"""
+
+        Website = Pool().get('magento.instance.website')
+
+        website = Website(Transaction().context.get('active_id'))
+
+        self.import_category_tree(website)
+        product_ids = self.import_products(website)
+        action['pyson_domain'] = PYSONEncoder().encode(
+            [('id', 'in', product_ids)])
+        return action, {}
+
+    def transition_import_(self):
+        return 'end'
+
+    def import_category_tree(self, website):
+        """
+        Imports the category tree and creates categories in a hierarchy same as
+        that on Magento
+
+        :param website: Active record of website
+        """
+        Category = Pool().get('product.category')
+
+        instance = website.instance
+        Transaction().set_context({'magento_instance': instance.id})
+
+        with magento.Category(
+            instance.url, instance.api_user, instance.api_key
+        ) as category_api:
+            category_tree = category_api.tree(website.magento_root_category_id)
+            Category.create_tree_using_magento_data(category_tree)
+
+    def import_products(self, website):
+        """
+        Imports products for the current instance
+
+        :param website: Active record of website
+        """
+        Product = Pool().get('product.template')
+
+        instance = website.instance
+        Transaction().set_context({
+            'magento_instance': instance.id,
+            'magento_website': website.id
+        })
+        with magento.Product(
+            instance.url, instance.api_user, instance.api_key
+        ) as product_api:
+            magento_products = []
+            products = []
+
+            # Products are linked to websites. But the magento api filters
+            # the products based on store views. The products available on
+            # website are always available on all of its store views.
+            # So we get one store view for each website in current instance.
+            magento_products.extend(
+                product_api.list(
+                    store_view=website.stores[0].store_views[0].magento_id
+                )
+            )
+
+            for magento_product in magento_products:
+                products.append(
+                    Product.find_or_create_using_magento_id(
+                        magento_product['product_id']
+                    )
+                )
+
+        return map(int, products)

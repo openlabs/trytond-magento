@@ -15,7 +15,8 @@ from magento_ import (
 from country import Country
 from party import Party, MagentoWebsiteParty
 from product import (
-    Category, MagentoInstanceCategory, Template, MagentoWebsiteTemplate
+    Category, MagentoInstanceCategory, Template, MagentoWebsiteTemplate,
+    ImportCatalogStart, ImportCatalog
 )
 
 
@@ -37,10 +38,12 @@ def register():
         MagentoInstanceCategory,
         Template,
         MagentoWebsiteTemplate,
+        ImportCatalogStart,
         module='magento', type_='model'
     )
     Pool.register(
         TestConnection,
         ImportWebsites,
+        ImportCatalog,
         module='magento', type_='wizard'
     )
