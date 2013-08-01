@@ -222,6 +222,10 @@ class InstanceWebsite(ModelSQL, ModelView):
     magento_root_category_id = fields.Integer(
         'Magento Root Category ID', required=True
     )
+    magento_product_templates = fields.One2Many(
+        'magento.website.template', 'website', 'Magento Product Templates',
+        readonly=True
+    )
 
     def get_company(self, name):
         """

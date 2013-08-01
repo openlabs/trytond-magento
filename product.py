@@ -218,9 +218,9 @@ class Template:
         """
         Website = Pool().get('magento.instance.website')
 
-        product = cls.find_using_magento_id(magento_id)
+        product_template = cls.find_using_magento_id(magento_id)
 
-        if not product:
+        if not product_template:
             # if product is not found get the info from magento and
             # delegate to create_using_magento_data
             website = Website(Transaction().context.get('magento_website'))
@@ -231,9 +231,9 @@ class Template:
             ) as product_api:
                 product_data = product_api.info(magento_id)
 
-            product = cls.create_using_magento_data(product_data)
+            product_template = cls.create_using_magento_data(product_data)
 
-        return product
+        return product_template
 
     @classmethod
     def find_using_magento_id(cls, magento_id):
@@ -264,12 +264,12 @@ class Template:
         :param product_data: Product Data From Magento
         :returns: Browse record of product found/created
         """
-        template = cls.find_using_magento_data(product_data)
+        product_template = cls.find_using_magento_data(product_data)
 
-        if not template:
-            template = cls.create_using_magento_data(product_data)
+        if not product_template:
+            product_template = cls.create_using_magento_data(product_data)
 
-        return template
+        return product_template
 
     @classmethod
     def find_using_magento_data(cls, product_data):
@@ -310,10 +310,6 @@ class Template:
             ),
             'cost_price': Decimal(product_data.get('price') or 0.00),
             'default_uom': website.default_uom.id,
-            'products': [('create', [{
-                'description': product_data['description'],
-                'code': product_data['sku'],
-            }])]
         }
 
     @classmethod
@@ -342,10 +338,14 @@ class Template:
             ])
             category = categories[0]
 
-        product_values = cls.extract_product_values_from_data(
+        product_template_values = cls.extract_product_values_from_data(
             product_data
         )
-        product_values.update({
+        product_template_values.update({
+            'products': [('create', [{
+                'description': product_data['description'],
+                'code': product_data['sku'],
+            }])],
             'category': category.id,
             'magento_product_type': product_data['type'],
             'magento_ids': [('create', [{
@@ -354,9 +354,54 @@ class Template:
             }])],
         })
 
-        product, = cls.create([product_values])
+        product, = cls.create([product_template_values])
 
         return product
+
+    def update_from_magento(self):
+        """
+        Update product using magento ID for that product
+
+        :returns: Active record of product updated
+        """
+        Website = Pool().get('magento.instance.website')
+        MagentoProductTemplate = Pool().get('magento.website.template')
+
+        website = Website(Transaction().context.get('magento_website'))
+        instance = website.instance
+
+        with magento.Product(
+            instance.url, instance.api_user, instance.api_key
+        ) as product_api:
+            magento_product_template, = MagentoProductTemplate.search([
+                ('template', '=', self.id),
+                ('website', '=', website.id),
+            ])
+            product_data = product_api.info(
+                magento_product_template.magento_id
+            )
+
+        return self.update_from_magento_using_data(product_data)
+
+    def update_from_magento_using_data(self, product_data):
+        """
+        Update product using magento data
+
+        :param product_data: Product Data from magento
+        :returns: Active record of product updated
+        """
+        product_template_values = self.extract_product_values_from_data(
+            product_data
+        )
+        product_template_values.update({
+            'products': [('write', map(int, self.products), {
+                'description': product_data['description'],
+                'code': product_data['sku'],
+            })]
+        })
+        self.write([self], product_template_values)
+
+        return self
 
 
 class MagentoWebsiteTemplate(ModelSQL, ModelView):
@@ -393,6 +438,81 @@ class MagentoWebsiteTemplate(ModelSQL, ModelView):
                 'Each product in an instance must be unique!'
             )
         ]
+
+        cls._buttons.update({
+            'update_product_from_magento': {},
+        })
+
+    @classmethod
+    def update_product_from_magento(cls, magento_product_templates):
+        """
+        Update the product from magento with the details from magento
+        for the current website
+
+        :param magento_product_templates: List of active record of magento
+                                          product templates
+        """
+        for magento_product_template in magento_product_templates:
+            with Transaction().set_context({
+                    'magento_website': magento_product_template.website.id}):
+                magento_product_template.template.update_from_magento()
+
+        return {}
+
+
+class UpdateCatalogStart(ModelView):
+    'Update Catalog View'
+    __name__ = 'magento.instance.update_catalog.start'
+
+
+class UpdateCatalog(Wizard):
+    '''
+    Update Catalog
+
+    This is a wizard to update already imported products
+    '''
+    __name__ = 'magento.instance.update_catalog'
+
+    start = StateView(
+        'magento.instance.update_catalog.start',
+        'magento.update_catalog_start', [
+            Button('Cancel', 'end', 'tryton-cancel'),
+            Button('Continue', 'update_', 'tryton-ok', default=True),
+        ]
+    )
+    update_ = StateAction('product.act_template_form')
+
+    def do_update_(self, action):
+        """Handles the transition"""
+
+        Website = Pool().get('magento.instance.website')
+
+        website = Website(Transaction().context.get('active_id'))
+
+        product_template_ids = self.update_products(website)
+
+        action['pyson_domain'] = PYSONEncoder().encode(
+            [('id', 'in', product_template_ids)])
+        return action, {}
+
+    def transition_import_(self):
+        return 'end'
+
+    def update_products(self, website):
+        """
+        Updates products for current website
+
+        :param website: Browse record of website
+        :return: List of product templates IDs
+        """
+        product_templates = []
+        with Transaction().set_context({'magento_website': website.id}):
+            for mag_product_template in website.magento_product_templates:
+                product_templates.append(
+                    mag_product_template.template.update_from_magento()
+                )
+
+        return map(int, product_templates)
 
 
 class ImportCatalogStart(ModelView):

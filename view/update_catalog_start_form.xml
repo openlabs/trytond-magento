@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+
+<form string="Update Catalog" col="2">
+    <image name="tryton-dialog-information" xexpand="0" xfill="0"/>
+    <label string="This wizard will update all the product for this website with any details which have been updated on magento"
+        id="choose" yalign="0.0" xalign="0.0" xexpand="1"/>
+</form>

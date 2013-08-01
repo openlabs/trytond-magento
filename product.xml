@@ -50,6 +50,22 @@ this repository contains the full copyright notices and license terms. -->
             <field name="name">instance_import_catalog_start_form</field>
         </record>
 
+        <record model="ir.action.wizard" id="wizard_instance_update_catalog">
+            <field name="name">Update Catalog</field>
+            <field name="wiz_name">magento.instance.update_catalog</field>
+            <field name="model">magento.instance.website</field>
+        </record>
+        <record model="ir.action.keyword" id="instance_update_catalog_keyword">
+            <field name="keyword">form_action</field>
+            <field name="model">magento.instance.website,-1</field>
+            <field name="action" ref="wizard_instance_update_catalog"/>
+        </record>
+        <record model="ir.ui.view" id="update_catalog_start">
+            <field name="model">magento.instance.update_catalog.start</field>
+            <field name="type">form</field>
+            <field name="name">update_catalog_start_form</field>
+        </record>
+
         <record id="product_category_magento_unclassified" model="product.category">
             <field name="name">Unclassified Magento Products</field>
         </record>

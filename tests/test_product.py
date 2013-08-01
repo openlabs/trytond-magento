@@ -16,11 +16,27 @@ DIR = os.path.abspath(os.path.normpath(
 if os.path.isdir(DIR):
     sys.path.insert(0, os.path.dirname(DIR))
 import unittest
+import magento
+from mock import patch, MagicMock
 
 import trytond.tests.test_tryton
 from trytond.tests.test_tryton import POOL, USER, DB_NAME, CONTEXT
 from test_base import TestBase, load_json
 from trytond.transaction import Transaction
+
+
+def mock_product_api(mock=None, data=None):
+    if mock is None:
+        mock = MagicMock(spec=magento.Product)
+
+    handle = MagicMock(spec=magento.Product)
+    handle.info.side_effect = lambda id: load_json('products', str(id))
+    if data is None:
+        handle.__enter__.return_value = handle
+    else:
+        handle.__enter__.return_value = data
+    mock.return_value = handle
+    return mock
 
 
 class TestProduct(TestBase):
@@ -216,6 +232,117 @@ class TestProduct(TestBase):
                 self.assertEqual(
                     product.category.name,
                     'Unclassified Magento Products'
+                )
+
+    def test_0070_update_product_using_magento_data(self):
+        """
+        Check if the product template gets updated using magento data
+        """
+        ProductTemplate = POOL.get('product.template')
+        Category = POOL.get('product.category')
+
+        with Transaction().start(DB_NAME, USER, CONTEXT):
+            self.setup_defaults()
+
+            with Transaction().set_context({
+                'magento_instance': self.instance1.id,
+                'magento_website': self.website1.id,
+                'magento_store': self.store,
+            }):
+
+                category_data = load_json('categories', '17')
+
+                Category.create_using_magento_data(category_data)
+
+                product_data = load_json('products', '135')
+
+                product_template1 = \
+                    ProductTemplate.find_or_create_using_magento_data(
+                        product_data
+                    )
+
+                product_template_id_before_updation = product_template1.id
+                product_template_name_before_updation = product_template1.name
+                product_code_before_updation = \
+                    product_template1.products[0].code
+                product_description_before_updation = \
+                    product_template1.products[0].description
+
+                # Use a JSON file with product name, code and description
+                # changed and everything else same
+                product_data = load_json('products', '135001')
+                product_template2 = \
+                    product_template1.update_from_magento_using_data(
+                        product_data
+                    )
+
+                self.assertEqual(
+                    product_template_id_before_updation, product_template2.id
+                )
+                self.assertNotEqual(
+                    product_template_name_before_updation,
+                    product_template2.name
+                )
+                self.assertNotEqual(
+                    product_code_before_updation,
+                    product_template2.products[0].code
+                )
+                self.assertNotEqual(
+                    product_description_before_updation,
+                    product_template2.products[0].description
+                )
+
+    def test_0103_update_product_using_magento_id(self):
+        """
+        Check if the product template gets updated using magento ID
+        """
+        ProductTemplate = POOL.get('product.template')
+        Category = POOL.get('product.category')
+
+        with Transaction().start(DB_NAME, USER, CONTEXT):
+            self.setup_defaults()
+            with Transaction().set_context({
+                'magento_instance': self.instance1.id,
+                'magento_website': self.website1.id,
+                'magento_store': self.store,
+            }):
+
+                category_data = load_json('categories', '17')
+
+                Category.create_using_magento_data(category_data)
+
+                product_data = load_json('products', '135001')
+                product_template1 = \
+                    ProductTemplate.find_or_create_using_magento_data(
+                        product_data
+                    )
+
+                product_template_id_before_updation = product_template1.id
+                product_template_name_before_updation = product_template1.name
+                product_code_before_updation = \
+                    product_template1.products[0].code
+                product_description_before_updation = \
+                    product_template1.products[0].description
+
+                # Use a JSON file with product name, code and description
+                # changed and everything else same
+                with patch('magento.Product', mock_product_api(), create=True):
+                    product_template2 = product_template1.update_from_magento()
+
+                self.assertEqual(
+                    product_template_id_before_updation, product_template2.id
+                )
+                self.assertNotEqual(
+                    product_template_name_before_updation,
+                    product_template2.name
+                )
+                self.assertNotEqual(
+                    product_code_before_updation,
+                    product_template2.products[0].code
+                )
+                self.assertNotEqual(
+                    product_description_before_updation,
+                    product_template2.products[0].description
                 )
 
 
