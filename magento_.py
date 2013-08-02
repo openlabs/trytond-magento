@@ -15,6 +15,7 @@ from trytond.model import ModelView, ModelSQL, fields
 from trytond.pool import PoolMeta, Pool
 from trytond.transaction import Transaction
 from trytond.wizard import Wizard, StateView, Button
+from .api import OrderConfig
 
 from .api import Core
 
@@ -44,6 +45,33 @@ class Instance(ModelSQL, ModelView):
     websites = fields.One2Many(
         "magento.instance.website", "instance", "Website", readonly=True
     )
+    order_states = fields.One2Many(
+        "magento.order_state", "instance", "Order States"
+    )
+
+    @classmethod
+    @ModelView.button
+    def import_order_states(cls, instances):
+        """
+        Import order states for instances
+
+        :param instances: List of active records of instances
+        """
+        OrderState = Pool().get('magento.order_state')
+
+        for instance in instances:
+
+            Transaction().context.update({
+                'magento_instance': instance.id
+            })
+
+            # Import order states
+            with OrderConfig(
+                instance.url, instance.api_user, instance.api_key
+            ) as order_config_api:
+                OrderState.create_all_using_magento_data(
+                    order_config_api.get_states()
+                )
 
     @staticmethod
     def default_active():
@@ -80,6 +108,7 @@ class Instance(ModelSQL, ModelView):
         cls._buttons.update({
             'test_connection': {},
             'import_websites': {},
+            'import_order_states': {}
         })
 
     @classmethod
@@ -115,6 +144,7 @@ class Instance(ModelSQL, ModelView):
         Website = Pool().get('magento.instance.website')
         Store = Pool().get('magento.website.store')
         StoreView = Pool().get('magento.store.store_view')
+        MagentoOrderState = Pool().get('magento.order_state')
 
         if len(instances) != 1:
             cls.raise_user_error('multiple_instances')
@@ -122,6 +152,14 @@ class Instance(ModelSQL, ModelView):
         instance = instances[0]
 
         with Transaction().set_context(magento_instance=instance.id):
+
+            # Import order states
+            with OrderConfig(
+                instance.url, instance.api_user, instance.api_key
+            ) as order_config_api:
+                MagentoOrderState.create_all_using_magento_data(
+                    order_config_api.get_states()
+                )
 
             # Import websites
             with Core(

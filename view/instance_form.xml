@@ -20,7 +20,11 @@
         <page string="Websites" id="websites">
             <field name="websites"/>
         </page>
+        <page string="Order States" id="order_states">
+            <field name="order_states"/>
+        </page>
     </notebook>
     <button string="Test Connection" name="test_connection" colspan="2"/>
     <button string="Import Websites" name="import_websites" colspan="2"/>
+    <button string="Import Order states" name="import_order_states" colspan="2"/>
 </form>

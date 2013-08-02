@@ -18,6 +18,7 @@ from product import (
     ImportCatalogStart, ImportCatalog
 )
 from country import Country, Subdivision
+from sale import MagentoOrderState
 
 
 def register():
@@ -40,6 +41,7 @@ def register():
         Template,
         MagentoWebsiteTemplate,
         ImportCatalogStart,
+        MagentoOrderState,
         module='magento', type_='model'
     )
     Pool.register(

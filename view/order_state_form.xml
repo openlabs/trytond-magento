@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<form string="Magento Order States" col="4">
+    <label name="name"/>
+    <field name="name"/>
+    <label name="code"/>
+    <field name="code"/>
+    <newline/>
+    <label name="use_for_import"/>
+    <field name="use_for_import"/>
+    <label name="tryton_state"/>
+    <field name="tryton_state"/>
+</form>
