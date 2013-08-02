@@ -77,6 +77,63 @@ class TestCountry(unittest.TestCase):
                 Country.search_using_magento_code, code
             )
 
+    def test_0030_search_state_with_valid_region(self):
+        """
+        Tests if state can be searched using magento region
+        """
+        Country = POOL.get('country.country')
+        Subdivision = POOL.get('country.subdivision')
+
+        with Transaction().start(DB_NAME, USER, CONTEXT):
+
+            country, = Country.create([{
+                'name': 'United States',
+                'code': 'US',
+            }])
+            self.assert_(country)
+            subdivision, = Subdivision.create([{
+                'name': 'Florida',
+                'code': 'US-FL',
+                'country': country.id,
+                'type': 'state',
+            }])
+
+            region = 'Florida'
+
+            self.assertEqual(
+                Subdivision.search_using_magento_region(region, country),
+                subdivision
+            )
+
+    def test_0040_search_state_with_invalid_region(self):
+        """
+        Tests if error is raised for searching state with invalid region
+        """
+        Country = POOL.get('country.country')
+        Subdivision = POOL.get('country.subdivision')
+
+        with Transaction().start(DB_NAME, USER, CONTEXT):
+
+            country, = Country.create([{
+                'name': 'United States',
+                'code': 'US',
+            }])
+            self.assert_(country)
+
+            region = 'abc'
+
+            self.assertFalse(
+                Subdivision.search([
+                    ('name', 'ilike', region),
+                    ('country', '=', country.id)
+                ])
+            )
+
+            self.assertRaises(
+                UserError,
+                Subdivision.search_using_magento_region, region, country
+            )
+
 
 def suite():
     """
