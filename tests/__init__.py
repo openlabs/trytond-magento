@@ -17,6 +17,7 @@ from tests.test_party import TestParty
 from tests.test_website_import import TestWebsiteImport
 from tests.test_product import TestProduct
 from tests.test_sale import TestSale
+from tests.test_currency import TestCurrency
 
 
 def suite():
@@ -32,6 +33,7 @@ def suite():
         unittest.TestLoader().loadTestsFromTestCase(TestWebsiteImport),
         unittest.TestLoader().loadTestsFromTestCase(TestProduct),
         unittest.TestLoader().loadTestsFromTestCase(TestSale),
+        unittest.TestLoader().loadTestsFromTestCase(TestCurrency),
     ])
     return test_suite
 
