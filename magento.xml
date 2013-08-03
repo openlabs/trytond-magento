@@ -171,5 +171,50 @@
             <field name="name">order_state_tree</field>
         </record>
 
+        <record model="res.user" id="user_magento">
+            <field name="login">user_cron_magento</field>
+            <field name="name">User Cron Magento</field>
+            <field name="signature"></field>
+            <field name="active" eval="False"/>
+        </record>
+
+        <record model="res.user-res.group"
+                id="user_magento_group_sale_admin">
+            <field name="user" ref="user_magento"/>
+            <field name="group" ref="sale.group_sale_admin"/>
+        </record>
+
+
+        <!--Cron To Export Inventory-->
+        <record model="ir.cron" id="ir_cron_export_inventory">
+            <field name="name">Export Inventory To Magento</field>
+            <field name="request_user" ref="res.user_admin"/>
+            <field name="user" ref="user_magento"/>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="active" eval="False"/>
+            <field name="number_calls">-1</field>
+            <field name="model" eval="'magento.instance.website'"/>
+            <field name="function" eval="'export_inventory'"/>
+            <field name="args" eval="'()'"/>
+        </record>
+
+        <!--Export Inventory Wizard-->
+        <record model="ir.action.wizard" id="wizard_export_inventory">
+            <field name="name">Export Inventory</field>
+            <field name="wiz_name">magento.wizard_export_inventory</field>
+            <field name="model">magento.instance.website</field>
+        </record>
+        <record model="ir.action.keyword" id="wizard_export_inventory_keyword">
+            <field name="keyword">form_action</field>
+            <field name="model">magento.instance.website,-1</field>
+            <field name="action" ref="wizard_export_inventory"/>
+        </record>
+        <record model="ir.ui.view" id="wizard_export_inventory_view_start_form">
+            <field name="model">magento.wizard_export_inventory.start</field>
+            <field name="type">form</field>
+            <field name="name">export_inventory_start_form</field>
+        </record>
+
     </data>
 </tryton>

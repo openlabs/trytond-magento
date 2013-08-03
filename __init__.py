@@ -11,6 +11,7 @@ from trytond.pool import Pool
 from magento_ import (
     Instance, InstanceWebsite, WebsiteStore, WebsiteStoreView,
     TestConnectionStart, TestConnection, ImportWebsitesStart, ImportWebsites,
+    ExportInventoryStart, ExportInventory
 )
 from party import Party, MagentoWebsiteParty, Address
 from product import (
@@ -33,6 +34,7 @@ def register():
         WebsiteStoreView,
         TestConnectionStart,
         ImportWebsitesStart,
+        ExportInventoryStart,
         Country,
         Subdivision,
         Party,
@@ -51,6 +53,7 @@ def register():
     Pool.register(
         TestConnection,
         ImportWebsites,
+        ExportInventory,
         ImportCatalog,
         UpdateCatalog,
         module='magento', type_='wizard'

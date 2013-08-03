@@ -14,7 +14,8 @@ import magento
 from trytond.model import ModelView, ModelSQL, fields
 from trytond.pool import PoolMeta, Pool
 from trytond.transaction import Transaction
-from trytond.wizard import Wizard, StateView, Button
+from trytond.pyson import PYSONEncoder
+from trytond.wizard import Wizard, StateView, Button, StateAction
 from .api import OrderConfig
 
 from .api import Core
@@ -23,7 +24,7 @@ from .api import Core
 __all__ = [
     'Instance', 'InstanceWebsite', 'WebsiteStore', 'WebsiteStoreView',
     'TestConnectionStart', 'TestConnection', 'ImportWebsitesStart',
-    'ImportWebsites',
+    'ImportWebsites', 'ExportInventoryStart', 'ExportInventory'
 ]
 __metaclass__ = PoolMeta
 
@@ -292,6 +293,50 @@ class InstanceWebsite(ModelSQL, ModelView):
             'magento_id': int(values['website_id']),
         }])[0]
 
+    def export_inventory(self, websites):
+        """
+        Exports inventory stock information to magento
+
+        :param websites: List of active records of website
+        """
+        for website in websites:
+            website.export_inventory_to_magento()
+
+    def export_inventory_to_magento(self):
+        """
+        Exports stock data of products from openerp to magento for this
+        website
+
+        :return: List of product templates
+        """
+        Location = Pool().get('stock.location')
+
+        product_templates = []
+        instance = self.instance
+
+        locations = Location.search([('type', '=', 'storage')])
+
+        for magento_product_template in self.magento_product_templates:
+            product_template = magento_product_template.template
+            product_templates.append(product_template)
+
+            with Transaction().set_context({'locations': map(int, locations)}):
+                product_data = {
+                    'qty': product_template.quantity,
+                    'is_in_stock': '1' if product_template.quantity > 0
+                        else '0',
+                }
+
+                # Update stock information to magento
+                with magento.Inventory(
+                    instance.url, instance.api_user, instance.api_key
+                ) as inventory_api:
+                    inventory_api.update(
+                        magento_product_template.magento_id, product_data
+                    )
+
+        return product_templates
+
 
 class WebsiteStore(ModelSQL, ModelView):
     """
@@ -528,3 +573,44 @@ class ImportWebsites(Wizard):
         :param data: Wizard data
         """
         return {}
+
+
+class ExportInventoryStart(ModelView):
+    "Export Inventory Start View"
+    __name__ = 'magento.wizard_export_inventory.start'
+
+
+class ExportInventory(Wizard):
+    """
+    Export Inventory Wizard
+
+    Export product stock information to magento for the current website
+    """
+    __name__ = 'magento.wizard_export_inventory'
+
+    start = StateView(
+        'magento.wizard_export_inventory.start',
+        'magento.wizard_export_inventory_view_start_form',
+        [
+            Button('Cancel', 'end', 'tryton-cancel'),
+            Button('Continue', 'export_', 'tryton-ok', default=True),
+        ]
+    )
+
+    export_ = StateAction('product.act_template_form')
+
+    def do_export_(self, action):
+        """Handles the transition"""
+
+        Website = Pool().get('magento.instance.website')
+
+        website = Website(Transaction().context.get('active_id'))
+
+        product_templates = website.export_inventory_to_magento()
+
+        action['pyson_domain'] = PYSONEncoder().encode(
+            [('id', 'in', map(int, product_templates))])
+        return action, {}
+
+    def transition_export_(self):
+        return 'end'

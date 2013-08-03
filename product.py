@@ -354,9 +354,9 @@ class Template:
             }])],
         })
 
-        product, = cls.create([product_template_values])
+        product_template, = cls.create([product_template_values])
 
-        return product
+        return product_template
 
     def update_from_magento(self):
         """
