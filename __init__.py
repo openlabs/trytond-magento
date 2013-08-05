@@ -12,7 +12,7 @@ from magento_ import (
     Instance, InstanceWebsite, WebsiteStore, WebsiteStoreView,
     TestConnectionStart, TestConnection, ImportWebsitesStart, ImportWebsites,
 )
-from party import Party, MagentoWebsiteParty
+from party import Party, MagentoWebsiteParty, Address
 from product import (
     Category, MagentoInstanceCategory, Template, MagentoWebsiteTemplate,
     ImportCatalogStart, ImportCatalog
@@ -42,6 +42,7 @@ def register():
         MagentoWebsiteTemplate,
         ImportCatalogStart,
         MagentoOrderState,
+        Address,
         module='magento', type_='model'
     )
     Pool.register(

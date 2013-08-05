@@ -12,7 +12,7 @@ from trytond.pool import PoolMeta, Pool
 from trytond.transaction import Transaction
 
 
-__all__ = ['Party', 'MagentoWebsiteParty']
+__all__ = ['Party', 'MagentoWebsiteParty', 'Address']
 __metaclass__ = PoolMeta
 
 
@@ -125,3 +125,121 @@ class MagentoWebsiteParty(ModelSQL, ModelView):
                 'A party must be unique in a website'
             )
         ]
+
+
+class Address:
+    "Address"
+    __name__ = 'party.address'
+
+    def match_with_magento_data(self, address_data):
+        """
+        Match the current address with the address_record.
+        Match all the fields of the address, i.e., streets, city, subdivision
+        and country. For any deviation in any field, returns False.
+
+        :param address_data: Dictionary of address data from magento
+        :return: True if address matches else False
+        """
+        Country = Pool().get('country.country')
+        Subdivision = Pool().get('country.subdivision')
+
+        # Check if the name matches
+        if self.name != ' '.join(
+            [address_data['firstname'], address_data['lastname']]
+        ):
+            return False
+
+        # Find country and subdivision based on magento data
+        country = None
+        subdivision = None
+        if address_data['country_id']:
+            country = Country.search_using_magento_code(
+                address_data['country_id']
+            )
+            if address_data['region']:
+                subdivision = Subdivision.search_using_magento_region(
+                    address_data['region'], country
+                )
+
+        if not all([
+            self.street == (address_data['street'] or None),
+            self.zip == (address_data['postcode'] or None),
+            self.city == (address_data['city'] or None),
+            self.country == country,
+            self.subdivision == subdivision,
+        ]):
+            return False
+
+        return True
+
+    @classmethod
+    def find_or_create_for_party_using_magento_data(cls, party, address_data):
+        """
+        Look for the address in tryton corresponding to the address_record.
+        If found, return the same else create a new one and return that.
+
+        :param party: Party active record
+        :param address_data: Dictionary of address data from magento
+        :return: Active record of address created/found
+        """
+        for address in party.addresses:
+            if address.match_with_magento_data(address_data):
+                break
+
+        else:
+            address = cls.create_for_party_using_magento_data(
+                party, address_data
+            )
+
+        return address
+
+    @classmethod
+    def create_for_party_using_magento_data(cls, party, address_data):
+        """
+        Create address from the address record given and link it to the
+        party.
+
+        :param party: Party active record
+        :param address_data: Dictionary of address data from magento
+        :return: Active record of created address
+        """
+        Country = Pool().get('country.country')
+        Subdivision = Pool().get('country.subdivision')
+        ContactMechanism = Pool().get('party.contact_mechanism')
+
+        country = None
+        subdivision = None
+        if address_data['country_id']:
+            country = Country.search_using_magento_code(
+                address_data['country_id']
+            )
+            if address_data['region']:
+                subdivision = Subdivision.search_using_magento_region(
+                    address_data['region'], country
+                )
+
+        address, = cls.create([{
+            'party': party.id,
+            'name': ' '.join([
+                address_data['firstname'], address_data['lastname']
+            ]),
+            'street': address_data['street'],
+            'zip': address_data['postcode'],
+            'city': address_data['city'],
+            'country': country.id,
+            'subdivision': subdivision.id,
+        }])
+
+        # Create phone as contact mechanism
+        if not ContactMechanism.search([
+            ('party', '=', party.id),
+            ('type', 'in', ['phone', 'mobile']),
+            ('value', '=', address_data['telephone']),
+        ]):
+            ContactMechanism.create([{
+                'party': party.id,
+                'type': 'phone',
+                'value': address_data['telephone'],
+            }])
+
+        return address
