@@ -15,5 +15,8 @@
         <page string="Stores" id="stores">
             <field name="stores"/>
         </page>
+        <page string="Magento Product Templates" id="magento_product_templates">
+            <field name="magento_product_templates"/>
+        </page>
     </notebook>
 </form>

@@ -5,4 +5,5 @@ this repository contains the full copyright notices and license terms. -->
     <field name="magento_id"/>
     <field name="website"/>
     <field name="template"/>
+    <button name="update_product_from_magento" string="Update from Magento"/>
 </tree>

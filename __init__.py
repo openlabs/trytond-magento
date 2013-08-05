@@ -15,7 +15,7 @@ from magento_ import (
 from party import Party, MagentoWebsiteParty, Address
 from product import (
     Category, MagentoInstanceCategory, Template, MagentoWebsiteTemplate,
-    ImportCatalogStart, ImportCatalog
+    ImportCatalogStart, ImportCatalog, UpdateCatalogStart, UpdateCatalog
 )
 from country import Country, Subdivision
 from sale import MagentoOrderState
@@ -43,11 +43,13 @@ def register():
         ImportCatalogStart,
         MagentoOrderState,
         Address,
+        UpdateCatalogStart,
         module='magento', type_='model'
     )
     Pool.register(
         TestConnection,
         ImportWebsites,
         ImportCatalog,
+        UpdateCatalog,
         module='magento', type_='wizard'
     )
