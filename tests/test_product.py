@@ -25,6 +25,20 @@ from test_base import TestBase, load_json
 from trytond.transaction import Transaction
 
 
+def mock_inventory_api(mock=None, data=None):
+    if mock is None:
+        mock = MagicMock(spec=magento.Inventory)
+
+    handle = MagicMock(spec=magento.Inventory)
+    handle.update.side_effect = lambda id, data: True
+    if data is None:
+        handle.__enter__.return_value = handle
+    else:
+        handle.__enter__.return_value = data
+    mock.return_value = handle
+    return mock
+
+
 def mock_product_api(mock=None, data=None):
     if mock is None:
         mock = MagicMock(spec=magento.Product)
@@ -94,7 +108,7 @@ class TestProduct(TestBase):
         Test the import of simple product using Magento Data
         """
         Category = POOL.get('product.category')
-        Template = POOL.get('product.template')
+        ProductTemplate = POOL.get('product.template')
         MagentoTemplate = POOL.get('magento.website.template')
 
         with Transaction().start(DB_NAME, USER, CONTEXT) as txn:
@@ -104,26 +118,30 @@ class TestProduct(TestBase):
 
             with txn.set_context({
                 'magento_instance': self.instance1,
-                'magento_website': self.website1
+                'magento_website': self.website1,
+                'company': self.company,
             }):
                 Category.create_using_magento_data(category_data)
 
-                products_before_import = Template.search([], count=True)
+                products_before_import = ProductTemplate.search([], count=True)
 
                 product_data = load_json('products', '17')
-                template = Template.find_or_create_using_magento_data(
+                template = ProductTemplate.find_or_create_using_magento_data(
                     product_data
                 )
                 self.assertEqual(template.category.magento_ids[0].magento_id, 8)
                 self.assertEqual(template.magento_product_type, 'simple')
                 self.assertEqual(template.name, 'BlackBerry 8100 Pearl')
 
-                products_after_import = Template.search([], count=True)
+                products_after_import = ProductTemplate.search([], count=True)
                 self.assertTrue(products_after_import > products_before_import)
 
-                self.assertEqual(template, Template.find_using_magento_data(
-                    product_data
-                ))
+                self.assertEqual(
+                    template,
+                    ProductTemplate.find_using_magento_data(
+                        product_data
+                    )
+                )
 
                 # Make sure the categs are created only in website1 and not
                 # not in website2
@@ -141,7 +159,7 @@ class TestProduct(TestBase):
         Test the import of a product using magento data which doesn't
         have categories
         """
-        Template = POOL.get('product.template')
+        ProductTemplate = POOL.get('product.template')
 
         with Transaction().start(DB_NAME, USER, CONTEXT) as txn:
             self.setup_defaults()
@@ -149,8 +167,9 @@ class TestProduct(TestBase):
             with txn.set_context({
                 'magento_instance': self.instance1,
                 'magento_website': self.website1,
+                'company': self.company,
             }):
-                template = Template.find_or_create_using_magento_data(
+                template = ProductTemplate.find_or_create_using_magento_data(
                     product_data
                 )
                 self.assertEqual(template.magento_product_type, 'simple')
@@ -164,7 +183,7 @@ class TestProduct(TestBase):
         Test the import of a configurable product using Magento Data
         """
         Category = POOL.get('product.category')
-        Product = POOL.get('product.template')
+        ProductTemplate = POOL.get('product.template')
 
         with Transaction().start(DB_NAME, USER, CONTEXT) as txn:
             self.setup_defaults()
@@ -174,16 +193,17 @@ class TestProduct(TestBase):
             with txn.set_context({
                 'magento_instance': self.instance1,
                 'magento_website': self.website1,
+                'company': self.company,
             }):
                 Category.create_using_magento_data(category_data)
-                product = Product.find_or_create_using_magento_data(
+                template = ProductTemplate.find_or_create_using_magento_data(
                     product_data
                 )
                 self.assertEqual(
-                    product.category.magento_ids[0].magento_id, 17
+                    template.category.magento_ids[0].magento_id, 17
                 )
                 self.assertEqual(
-                    product.magento_product_type, 'configurable'
+                    template.magento_product_type, 'configurable'
                 )
 
     def test_0050_import_grouped_product(self):
@@ -191,7 +211,7 @@ class TestProduct(TestBase):
         Test the import of a grouped product using magento data
         """
         Category = POOL.get('product.category')
-        Product = POOL.get('product.template')
+        ProductTemplate = POOL.get('product.template')
 
         with Transaction().start(DB_NAME, USER, CONTEXT) as txn:
             self.setup_defaults()
@@ -200,23 +220,24 @@ class TestProduct(TestBase):
             with txn.set_context({
                 'magento_instance': self.instance1,
                 'magento_website': self.website1,
+                'company': self.company,
             }):
                 Category.create_using_magento_data(category_data)
-                product = Product.find_or_create_using_magento_data(
+                template = ProductTemplate.find_or_create_using_magento_data(
                     product_data
                 )
                 self.assertEqual(
-                    product.category.magento_ids[0].magento_id, 22
+                    template.category.magento_ids[0].magento_id, 22
                 )
                 self.assertEqual(
-                    product.magento_product_type, 'grouped'
+                    template.magento_product_type, 'grouped'
                 )
 
     def test_0060_import_downloadable_product(self):
         """
         Test the import of a downloadable product using magento data
         """
-        Product = POOL.get('product.template')
+        ProductTemplate = POOL.get('product.template')
 
         with Transaction().start(DB_NAME, USER, CONTEXT) as txn:
             self.setup_defaults()
@@ -224,13 +245,14 @@ class TestProduct(TestBase):
             with txn.set_context({
                 'magento_instance': self.instance1,
                 'magento_website': self.website1,
+                'company': self.company,
             }):
-                product = Product.find_or_create_using_magento_data(
+                template = ProductTemplate.find_or_create_using_magento_data(
                     product_data
                 )
-                self.assertEqual(product.magento_product_type, 'downloadable')
+                self.assertEqual(template.magento_product_type, 'downloadable')
                 self.assertEqual(
-                    product.category.name,
+                    template.category.name,
                     'Unclassified Magento Products'
                 )
 
@@ -248,6 +270,7 @@ class TestProduct(TestBase):
                 'magento_instance': self.instance1.id,
                 'magento_website': self.website1.id,
                 'magento_store': self.store,
+                'company': self.company,
             }):
 
                 category_data = load_json('categories', '17')
@@ -305,6 +328,7 @@ class TestProduct(TestBase):
                 'magento_instance': self.instance1.id,
                 'magento_website': self.website1.id,
                 'magento_store': self.store,
+                'company': self.company,
             }):
 
                 category_data = load_json('categories', '17')
@@ -344,6 +368,38 @@ class TestProduct(TestBase):
                     product_description_before_updation,
                     product_template2.products[0].description
                 )
+
+    def test_0080_export_product_stock_information(self):
+        """
+        This test checks if the method to call for updation of product
+        stock info does not break anywhere in between.
+        This method does not check the API calls
+        """
+        ProductTemplate = POOL.get('product.template')
+        Category = POOL.get('product.category')
+
+        with Transaction().start(DB_NAME, USER, CONTEXT):
+            self.setup_defaults()
+
+            with Transaction().set_context({
+                'magento_instance': self.instance1.id,
+                'magento_website': self.website1.id,
+                'company': self.company,
+            }):
+
+                category_data = load_json('categories', '17')
+
+                Category.create_using_magento_data(category_data)
+
+                product_data = load_json('products', '135')
+                ProductTemplate.find_or_create_using_magento_data(
+                    product_data
+                )
+
+                with patch(
+                    'magento.Inventory', mock_inventory_api(), create=True
+                ):
+                    self.website1.export_inventory_to_magento()
 
 
 def suite():
