@@ -49,6 +49,9 @@ class Instance(ModelSQL, ModelView):
     order_states = fields.One2Many(
         "magento.order_state", "instance", "Order States"
     )
+    carriers = fields.One2Many(
+        "magento.instance.carrier", "instance", "Carriers / Shipping Methods"
+    )
 
     @classmethod
     @ModelView.button
@@ -109,7 +112,8 @@ class Instance(ModelSQL, ModelView):
         cls._buttons.update({
             'test_connection': {},
             'import_websites': {},
-            'import_order_states': {}
+            'import_order_states': {},
+            'import_carriers': {},
         })
 
     @classmethod
@@ -194,6 +198,28 @@ class Instance(ModelSQL, ModelView):
                     # Create store views
                     for mag_store_view in mag_store_views:
                         StoreView.find_or_create(store, mag_store_view)
+
+    @classmethod
+    @ModelView.button_action('magento.wizard_import_carriers')
+    def import_carriers(cls, instances):
+        """
+        Import carriers/shipping methods from magento for instances
+
+        :param instances: Active record list of magento instances
+        """
+        InstanceCarrier = Pool().get('magento.instance.carrier')
+
+        for instance in instances:
+
+            with Transaction().set_context({
+                'magento_instance': instance.id
+            }):
+                with OrderConfig(
+                    instance.url, instance.api_user, instance.api_key
+                ) as order_config_api:
+                    mag_carriers = order_config_api.get_shipping_methods()
+
+                InstanceCarrier.create_all_using_magento_data(mag_carriers)
 
 
 class InstanceWebsite(ModelSQL, ModelView):

@@ -21,6 +21,7 @@ from product import (
 from country import Country, Subdivision
 from sale import MagentoOrderState
 from currency import Currency
+from carrier import MagentoInstanceCarrier
 
 
 def register():
@@ -32,6 +33,7 @@ def register():
         InstanceWebsite,
         WebsiteStore,
         WebsiteStoreView,
+        MagentoInstanceCarrier,
         TestConnectionStart,
         ImportWebsitesStart,
         ExportInventoryStart,

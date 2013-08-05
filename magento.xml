@@ -159,6 +159,13 @@
             <field name="name">wizard_import_websites_start_form</field>
         </record>
 
+        <!--Import Carriers Wizard-->
+        <record model="ir.action.wizard" id="wizard_import_carriers">
+            <field name="name">Import Carriers</field>
+            <field name="wiz_name">magento.wizard_import_carriers</field>
+            <field name="model">magento.instance</field>
+        </record>
+
         <!--Order states-->
         <record model="ir.ui.view" id="order_state_view_form">
             <field name="model">magento.order_state</field>
@@ -214,6 +221,18 @@
             <field name="model">magento.wizard_export_inventory.start</field>
             <field name="type">form</field>
             <field name="name">export_inventory_start_form</field>
+        </record>
+
+        <!--Carriers-->
+        <record model="ir.ui.view" id="carrier_view_form">
+            <field name="model">magento.instance.carrier</field>
+            <field name="type">form</field>
+            <field name="name">magento_carrier_form</field>
+        </record>
+        <record model="ir.ui.view" id="carrier_view_tree">
+            <field name="model">magento.instance.carrier</field>
+            <field name="type">tree</field>
+            <field name="name">magento_carrier_tree</field>
         </record>
 
     </data>
