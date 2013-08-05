@@ -19,6 +19,7 @@ from product import (
 )
 from country import Country, Subdivision
 from sale import MagentoOrderState
+from currency import Currency
 
 
 def register():
@@ -44,6 +45,7 @@ def register():
         MagentoOrderState,
         Address,
         UpdateCatalogStart,
+        Currency,
         module='magento', type_='model'
     )
     Pool.register(
