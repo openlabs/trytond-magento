@@ -9,6 +9,7 @@
 """
 import xmlrpclib
 import socket
+from datetime import datetime
 
 import magento
 from trytond.model import ModelView, ModelSQL, fields
@@ -556,6 +557,7 @@ class WebsiteStoreView(ModelSQL, ModelView):
         fields.Many2One('company.company', 'Company'),
         'get_company'
     )
+    last_order_import_time = fields.DateTime('Last Order Import Time')
 
     def get_instance(self, name):
         """
@@ -593,6 +595,10 @@ class WebsiteStoreView(ModelSQL, ModelView):
                 'A store view must be unique in a store'
             )
         ]
+        cls._error_messages.update({
+            "states_not_found": 'No order states found for importing orders! '
+                'Please configure the order states on magento instance',
+        })
 
     @classmethod
     def find_or_create(cls, store, values):
@@ -620,6 +626,61 @@ class WebsiteStoreView(ModelSQL, ModelView):
             'store': store.id,
             'magento_id': int(values['store_id']),
         }])[0]
+
+    def import_order_from_store_view(self):
+        """
+        Imports sale from store view
+
+        :return: List of active record of sale imported
+        """
+        Sale = Pool().get('sale.sale')
+        MagentoOrderState = Pool().get('magento.order_state')
+
+        new_sales = []
+        instance = self.instance
+        with Transaction().set_context({
+            'magento_instance': instance.id,
+            'magento_website': self.website.id,
+            'magento_store_view': self.id,
+        }):
+
+            order_states = MagentoOrderState.search([
+                ('instance', '=', instance.id),
+                ('use_for_import', '=', True)
+            ])
+            order_states_to_import_in = map(
+                lambda state: state.code, order_states
+            )
+
+            if not order_states_to_import_in:
+                self.raise_user_error("states_not_found")
+
+            with magento.Order(
+                instance.url, instance.api_user, instance.api_key
+            ) as order_api:
+                # Filter orders with date and store_id using list()
+                # then get info of each order using info()
+                # and call find_or_create_using_magento_data on sale
+                filter = {
+                    'store_id': {'=': self.magento_id},
+                    'state': {'in': order_states_to_import_in},
+                }
+                if self.last_order_import_time:
+                    filter.update({
+                        'updated_at': {'gteq': self.last_order_import_time},
+                    })
+                self.write([self], {
+                    'last_order_import_time': datetime.utcnow()
+                })
+                orders = order_api.list(filter)
+                for order in orders:
+                    new_sales.append(
+                        Sale.find_or_create_using_magento_data(
+                            order_api.info(order['increment_id'])
+                        )
+                    )
+
+        return new_sales
 
 
 class StorePriceTier(ModelSQL, ModelView):

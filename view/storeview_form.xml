@@ -11,4 +11,6 @@
     <field name="company"/>
     <label name="instance"/>
     <field name="instance"/>
+    <label name="last_order_import_time"/>
+    <field name="last_order_import_time"/>
 </form>

@@ -13,10 +13,11 @@ from decimal import Decimal
 from trytond.model import ModelView, ModelSQL, fields
 from trytond.transaction import Transaction
 from trytond.pool import PoolMeta, Pool
-from trytond.pyson import Eval, Not, Bool
+from trytond.pyson import Eval, Not, Bool, PYSONEncoder
+from trytond.wizard import Wizard, StateView, Button, StateAction
 
 
-__all__ = ['MagentoOrderState', 'Sale']
+__all__ = ['MagentoOrderState', 'Sale', 'ImportOrdersStart', 'ImportOrders']
 __metaclass__ = PoolMeta
 
 
@@ -441,3 +442,44 @@ class Sale:
 
         if data['tryton_state'] not in ['sale.quotation', 'sale.confirmed']:
             Sale.process([self])
+
+
+class ImportOrdersStart(ModelView):
+    "Import Sale Order Start View"
+    __name__ = 'magento.wizard_import_orders.start'
+
+
+class ImportOrders(Wizard):
+    """
+    Import Orders Wizard
+
+    Import sale orders from magento for the current store view.
+    """
+    __name__ = 'magento.wizard_import_orders'
+
+    start = StateView(
+        'magento.wizard_import_orders.start',
+        'magento.wizard_import_orders_view_start_form',
+        [
+            Button('Cancel', 'end', 'tryton-cancel'),
+            Button('Continue', 'import_', 'tryton-ok', default=True),
+        ]
+    )
+
+    import_ = StateAction('sale.act_sale_form')
+
+    def do_import_(self, action):
+        """Handles the transition"""
+
+        StoreView = Pool().get('magento.store.store_view')
+
+        store_view = StoreView(Transaction().context.get('active_id'))
+
+        sales = store_view.import_order_from_store_view()
+
+        action['pyson_domain'] = PYSONEncoder().encode(
+            [('id', 'in', map(int, sales))])
+        return action, {}
+
+    def transition_import_(self):
+        return 'end'
