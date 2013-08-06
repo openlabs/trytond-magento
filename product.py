@@ -14,7 +14,11 @@ from trytond.pool import PoolMeta, Pool
 from decimal import Decimal
 
 
-__all__ = ['Category', 'MagentoInstanceCategory']
+__all__ = [
+    'Category', 'MagentoInstanceCategory', 'Template',
+    'MagentoWebsiteTemplate', 'ProductPriceTier', 'UpdateCatalogStart',
+    'UpdateCatalog', 'ImportCatalogStart', 'ImportCatalog',
+]
 __metaclass__ = PoolMeta
 
 
@@ -194,6 +198,7 @@ class Template:
     __name__ = "product.template"
 
     magento_product_type = fields.Selection([
+        ('', ''),
         ('simple', 'Simple'),
         ('configurable', 'Configurable'),
         ('grouped', 'Grouped'),
@@ -204,6 +209,9 @@ class Template:
     magento_ids = fields.One2Many(
         'magento.website.template', 'template',
         'Magento IDs', readonly=True
+    )
+    price_tiers = fields.One2Many(
+        'product.price_tier', 'template', 'Price Tiers'
     )
 
     @classmethod
@@ -458,6 +466,55 @@ class MagentoWebsiteTemplate(ModelSQL, ModelView):
                 magento_product_template.template.update_from_magento()
 
         return {}
+
+
+class ProductPriceTier(ModelSQL, ModelView):
+    """Price Tiers for product
+
+    This model stores the price tiers to be used while sending
+    tier prices for a product from OpenERP to Magento.
+    """
+    __name__ = 'product.price_tier'
+    _rec_name = 'quantity'
+
+    def get_price(self, name):
+        """Calculate the price of the product for quantity set in record
+
+        :param name: Name of field
+        """
+        Store = Pool().get('magento.website.store')
+
+        if not Transaction().context.get('magento_store'):
+            return 0
+
+        store = Store(Transaction().context['magento_store'])
+        return store.price_list.compute(
+            None, self.template, self.template.list_price, self.quantity,
+            store.website.default_uom
+        )
+
+    template = fields.Many2One(
+        'product.template', 'Product Template', required=True, readonly=True,
+    )
+    quantity = fields.Float(
+        'Quantity', required=True
+    )
+    price = fields.Function(
+        fields.Numeric('Price'), 'get_price'
+    )
+
+    @classmethod
+    def __setup__(cls):
+        """
+        Setup the class before adding to pool
+        """
+        super(ProductPriceTier, cls).__setup__()
+        cls._sql_constraints += [
+            (
+                'template_quantity_unique', 'UNIQUE(template, quantity)',
+                'Quantity in price tiers must be unique for a product'
+            )
+        ]
 
 
 class UpdateCatalogStart(ModelView):

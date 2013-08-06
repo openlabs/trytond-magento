@@ -11,12 +11,14 @@ from trytond.pool import Pool
 from magento_ import (
     Instance, InstanceWebsite, WebsiteStore, WebsiteStoreView,
     TestConnectionStart, TestConnection, ImportWebsitesStart, ImportWebsites,
-    ExportInventoryStart, ExportInventory
+    ExportInventoryStart, ExportInventory, StorePriceTier,
+    ExportTierPricesStart, ExportTierPrices, ExportTierPricesStatus,
 )
 from party import Party, MagentoWebsiteParty, Address
 from product import (
     Category, MagentoInstanceCategory, Template, MagentoWebsiteTemplate,
-    ImportCatalogStart, ImportCatalog, UpdateCatalogStart, UpdateCatalog
+    ImportCatalogStart, ImportCatalog, UpdateCatalogStart, UpdateCatalog,
+    ProductPriceTier,
 )
 from country import Country, Subdivision
 from sale import MagentoOrderState
@@ -32,11 +34,14 @@ def register():
         Instance,
         InstanceWebsite,
         WebsiteStore,
+        StorePriceTier,
         WebsiteStoreView,
         MagentoInstanceCarrier,
         TestConnectionStart,
         ImportWebsitesStart,
         ExportInventoryStart,
+        ExportTierPricesStart,
+        ExportTierPricesStatus,
         Country,
         Subdivision,
         Party,
@@ -45,6 +50,7 @@ def register():
         MagentoInstanceCategory,
         Template,
         MagentoWebsiteTemplate,
+        ProductPriceTier,
         ImportCatalogStart,
         MagentoOrderState,
         Address,
@@ -56,6 +62,7 @@ def register():
         TestConnection,
         ImportWebsites,
         ExportInventory,
+        ExportTierPrices,
         ImportCatalog,
         UpdateCatalog,
         module='magento', type_='wizard'

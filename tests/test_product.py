@@ -15,6 +15,8 @@ DIR = os.path.abspath(os.path.normpath(
 ))
 if os.path.isdir(DIR):
     sys.path.insert(0, os.path.dirname(DIR))
+from decimal import Decimal
+
 import unittest
 import magento
 from mock import patch, MagicMock
@@ -400,6 +402,53 @@ class TestProduct(TestBase):
                     'magento.Inventory', mock_inventory_api(), create=True
                 ):
                     self.website1.export_inventory_to_magento()
+
+    def test_0090_tier_prices(self):
+        """Checks the function field on product price tiers
+        """
+        Store = POOL.get('magento.website.store')
+        PriceList = POOL.get('product.price_list')
+        ProductPriceTier = POOL.get('product.price_tier')
+        ProductTemplate = POOL.get('product.template')
+        Category = POOL.get('product.category')
+        User = POOL.get('res.user')
+
+        with Transaction().start(DB_NAME, USER, CONTEXT) as txn:
+            self.setup_defaults()
+            context = User.get_preferences(context_only=True)
+            context.update({
+                'magento_instance': self.instance1.id,
+                'magento_website': self.website1.id,
+                'magento_store': self.store.id,
+                'company': self.company.id,
+            })
+            with txn.set_context(context):
+                category_data = load_json('categories', '17')
+                Category.create_using_magento_data(category_data)
+
+                product_data = load_json('products', '135')
+                product_template = \
+                    ProductTemplate.find_or_create_using_magento_data(
+                        product_data
+                    )
+
+                price_list, = PriceList.create([{
+                    'name': 'Test Pricelist',
+                    'lines': [('create', [{
+                        'quantity': 10,
+                        'formula': 'unit_price*0.9'
+                    }])]
+                }])
+                Store.write([self.store], {'price_list': price_list.id})
+
+                tier, = ProductPriceTier.create([{
+                    'template': product_template.id,
+                    'quantity': 10,
+                }])
+
+                self.assertEqual(
+                    product_template.list_price * Decimal('0.9'), tier.price
+                )
 
 
 def suite():

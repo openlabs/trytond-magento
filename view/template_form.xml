@@ -9,6 +9,7 @@ this repository contains the full copyright notices and license terms. -->
     <xpath expr="/form/notebook/page[@id='general']" position="after">
         <page string="Magento" id="magento_product_templates">
             <field name="magento_ids"/>
+            <field name="price_tiers"/>
         </page>
     </xpath>
 </data>

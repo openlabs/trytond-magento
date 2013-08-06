@@ -9,9 +9,14 @@
     <field name="company"/>
     <label name="instance"/>
     <field name="instance"/>
+    <label name="price_list"/>
+    <field name="price_list"/>
     <notebook>
         <page string="Store Views" id="store_views">
             <field name="store_views"/>
+        </page>
+        <page string="Price Tiers" id="price_tiers">
+            <field name="price_tiers"/>
         </page>
     </notebook>
 </form>
