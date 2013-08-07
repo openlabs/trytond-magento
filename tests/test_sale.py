@@ -132,6 +132,31 @@ class TestSale(TestBase):
             }
         )
 
+    def test_0020_import_carriers(self):
+        """
+        Test If all carriers are being imported from magento
+        """
+        MagentoCarrier = POOL.get('magento.instance.carrier')
+
+        with Transaction().start(DB_NAME, USER, CONTEXT):
+            self.setup_defaults()
+
+            carriers_before_import = MagentoCarrier.search([])
+            with Transaction().set_context({
+                    'magento_instance': self.instance1.id
+            }):
+                carriers = MagentoCarrier.create_all_using_magento_data(
+                    load_json('carriers', 'shipping_methods')
+                )
+                carriers_after_import = MagentoCarrier.search([])
+
+                self.assertTrue(carriers_after_import > carriers_before_import)
+                for carrier in carriers:
+                    self.assertEqual(
+                        carrier.instance.id,
+                        Transaction().context['magento_instance']
+                    )
+
 
 def suite():
     """
