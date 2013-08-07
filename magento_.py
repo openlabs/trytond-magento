@@ -14,17 +14,18 @@ import magento
 from trytond.model import ModelView, ModelSQL, fields
 from trytond.pool import PoolMeta, Pool
 from trytond.transaction import Transaction
-from trytond.pyson import PYSONEncoder
+from trytond.pyson import PYSONEncoder, Eval
 from trytond.wizard import Wizard, StateView, Button, StateAction
-from .api import OrderConfig
 
-from .api import Core
+from .api import OrderConfig, Core
 
 
 __all__ = [
     'Instance', 'InstanceWebsite', 'WebsiteStore', 'WebsiteStoreView',
     'TestConnectionStart', 'TestConnection', 'ImportWebsitesStart',
-    'ImportWebsites', 'ExportInventoryStart', 'ExportInventory'
+    'ImportWebsites', 'ExportInventoryStart', 'ExportInventory',
+    'StorePriceTier', 'ExportTierPricesStart', 'ExportTierPrices',
+    'ExportTierPricesStatus',
 ]
 __metaclass__ = PoolMeta
 
@@ -391,6 +392,13 @@ class WebsiteStore(ModelSQL, ModelView):
     store_views = fields.One2Many(
         'magento.store.store_view', 'store', 'Store Views', readonly=True
     )
+    price_list = fields.Many2One(
+        'product.price_list', 'Price List',
+        domain=[('company', '=', Eval('company'))], depends=['company']
+    )
+    price_tiers = fields.One2Many(
+        'magento.store.price_tier', 'store', 'Default Price Tiers'
+    )
 
     def get_company(self, name):
         """
@@ -446,6 +454,52 @@ class WebsiteStore(ModelSQL, ModelView):
             'magento_id': int(values['group_id']),
             'website': website.id,
         }])[0]
+
+    def export_tier_prices_to_magento(self):
+        """
+        Exports tier prices of products from tryton to magento for this store
+
+        :return: List of products
+        """
+        instance = self.website.instance
+
+        for mag_product_template in self.website.magento_product_templates:
+            product_template = mag_product_template.template
+            product = product_template.products[0]
+
+            # Get the price tiers from the product if the product has a price
+            # tier table else get the default price tiers from current store
+            price_tiers = product_template.price_tiers or self.price_tiers
+
+            price_data = []
+            for tier in price_tiers:
+                if hasattr(tier, 'product'):
+                    # The price tier comes from a product, then it has a
+                    # function field for price, we use it directly
+                    price = tier.price
+                else:
+                    # The price tier comes from the default tiers on store,
+                    # we dont have a product on tier, so we use the current
+                    # product in loop for computing the price for this tier
+                    price = self.price_list.compute(
+                        None, product, product.list_price, tier.quantity,
+                        self.website.default_uom
+                    )
+
+                price_data.append({
+                    'qty': tier.quantity,
+                    'price': float(price),
+                })
+
+            # Update stock information to magento
+            with magento.ProductTierPrice(
+                instance.url, instance.api_user, instance.api_key
+            ) as tier_price_api:
+                tier_price_api.update(
+                    mag_product_template.magento_id, price_data
+                )
+
+        return len(self.website.magento_product_templates)
 
 
 class WebsiteStoreView(ModelSQL, ModelView):
@@ -540,6 +594,38 @@ class WebsiteStoreView(ModelSQL, ModelView):
             'store': store.id,
             'magento_id': int(values['store_id']),
         }])[0]
+
+
+class StorePriceTier(ModelSQL, ModelView):
+    """Price Tiers for store
+
+    This model stores the default price tiers to be used while sending
+    tier prices for a product from Tryton to Magento.
+    The product also has a similar table like this. If there are no entries in
+    the table on product, then these tiers are used.
+    """
+    __name__ = 'magento.store.price_tier'
+
+    store = fields.Many2One(
+        'magento.website.store', 'Magento Store', required=True,
+        readonly=True,
+    )
+    quantity = fields.Float(
+        'Quantity', required=True
+    )
+
+    @classmethod
+    def __setup__(cls):
+        """
+        Setup the class before adding to pool
+        """
+        super(StorePriceTier, cls).__setup__()
+        cls._sql_constraints += [
+            (
+                'store_quantity_unique', 'UNIQUE(store, quantity)',
+                'Quantity in price tiers must be unique for a store'
+            )
+        ]
 
 
 class TestConnectionStart(ModelView):
@@ -640,3 +726,51 @@ class ExportInventory(Wizard):
 
     def transition_export_(self):
         return 'end'
+
+
+class ExportTierPricesStart(ModelView):
+    "Export Tier Prices Start View"
+    __name__ = 'magento.wizard_export_tier_prices.start'
+
+
+class ExportTierPricesStatus(ModelView):
+    "Export Tier Prices Status View"
+    __name__ = 'magento.wizard_export_tier_prices.status'
+
+    products_count = fields.Integer('Products Count', readonly=True)
+
+
+class ExportTierPrices(Wizard):
+    """
+    Export Tier Prices Wizard
+
+    Export product tier prices to magento for the current store
+    """
+    __name__ = 'magento.wizard_export_tier_prices'
+
+    start = StateView(
+        'magento.wizard_export_tier_prices.start',
+        'magento.wizard_export_tier_prices_view_start_form',
+        [
+            Button('Cancel', 'end', 'tryton-cancel'),
+            Button('Continue', 'export_', 'tryton-ok', default=True),
+        ]
+    )
+
+    export_ = StateView(
+        'magento.wizard_export_tier_prices.status',
+        'magento.wizard_export_tier_prices_view_status_form',
+        [
+            Button('OK', 'end', 'tryton-cancel'),
+        ]
+    )
+
+    def default_export_(self, fields):
+        """Export price tiers and return count of products"""
+        Store = Pool().get('magento.website.store')
+
+        store = Store(Transaction().context.get('active_id'))
+
+        return {
+            'products_count': store.export_tier_prices_to_magento()
+        }

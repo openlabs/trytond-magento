@@ -9,7 +9,6 @@
 """
 import sys
 import os
-import json
 DIR = os.path.abspath(os.path.normpath(
     os.path.join(
         __file__,
@@ -22,75 +21,14 @@ if os.path.isdir(DIR):
 import unittest
 import trytond.tests.test_tryton
 from trytond.transaction import Transaction
+from test_base import TestBase, load_json
 from trytond.tests.test_tryton import POOL, USER, DB_NAME, CONTEXT
 
 
-ROOT_JSON_FOLDER = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), 'json'
-)
-
-
-def load_json(resource, filename):
-    """Reads the json file from the filesystem and returns the json loaded as
-    python objects
-
-    On filesystem, the files are kept in this format:
-        json----
-              |
-            resource----
-                       |
-                       filename
-
-    :param resource: The prestashop resource for which the file has to be
-                     fetched. It is same as the folder name in which the files
-                     are kept.
-    :param filename: The name of the file to be fethced without `.json`
-                     extension.
-    :returns: Loaded json from the contents of the file read.
-    """
-    file_path = os.path.join(
-        ROOT_JSON_FOLDER, resource, str(filename)
-    ) + '.json'
-
-    return json.loads(open(file_path).read())
-
-
-class TestWebsiteImport(unittest.TestCase):
+class TestWebsiteImport(TestBase):
     '''
     Tests import of Magento Websites, Stores and StoreViews
     '''
-
-    def setUp(self):
-        """
-        Set up data used in the tests.
-        this method is called before each test function execution.
-        """
-        trytond.tests.test_tryton.install_module('magento')
-
-    def setup_defaults(self):
-        """
-        Create setup defaults
-        """
-        Currency = POOL.get('currency.currency')
-        Company = POOL.get('company.company')
-        Party = POOL.get('party.party')
-
-        party, = Party.create([{
-            'name': 'ABC',
-        }])
-        usd, = Currency.create([{
-            'name': 'US Dollar',
-            'code': 'USD',
-            'symbol': '$',
-        }])
-        company, = Company.create([{
-            'party': party.id,
-            'currency': usd.id,
-        }])
-
-        return {
-            'company': company
-        }
 
     def test_0010_import_websites(self):
         """Test the import of websites
@@ -99,8 +37,8 @@ class TestWebsiteImport(unittest.TestCase):
         Website = POOL.get('magento.instance.website')
 
         with Transaction().start(DB_NAME, USER, CONTEXT) as txn:
-            data = self.setup_defaults()
-            with txn.set_context({'company': data['company']}):
+            self.setup_defaults()
+            with txn.set_context({'company': self.company.id}):
                 instance, = Instance.create([{
                     'name': 'Test Instance',
                     'url': 'some test url',
@@ -123,8 +61,8 @@ class TestWebsiteImport(unittest.TestCase):
         Store = POOL.get('magento.website.store')
 
         with Transaction().start(DB_NAME, USER, CONTEXT) as txn:
-            data = self.setup_defaults()
-            with txn.set_context({'company': data['company']}):
+            self.setup_defaults()
+            with txn.set_context({'company': self.company.id}):
                 instance, = Instance.create([{
                     'name': 'Test Instance',
                     'url': 'some test url',
@@ -152,8 +90,8 @@ class TestWebsiteImport(unittest.TestCase):
         StoreView = POOL.get('magento.store.store_view')
 
         with Transaction().start(DB_NAME, USER, CONTEXT) as txn:
-            data = self.setup_defaults()
-            with txn.set_context({'company': data['company']}):
+            self.setup_defaults()
+            with txn.set_context({'company': self.company.id}):
                 instance, = Instance.create([{
                     'name': 'Test Instance',
                     'url': 'some test url',

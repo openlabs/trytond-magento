@@ -33,6 +33,17 @@ this repository contains the full copyright notices and license terms. -->
           <field name="name">template_tree</field>
         </record>
 
+        <record model="ir.ui.view" id="product_price_tier_view_form">
+            <field name="model">product.price_tier</field>
+            <field name="type">form</field>
+            <field name="name">product_price_tier_form</field>
+        </record>
+        <record model="ir.ui.view" id="product_price_tier_view_tree">
+            <field name="model">product.price_tier</field>
+            <field name="type">tree</field>
+            <field name="name">product_price_tier_tree</field>
+        </record>
+
         <!--Wizard View-->
         <record model="ir.action.wizard" id="wizard_instance_import_catalog">
             <field name="name">Import Magento Product Catalog</field>
