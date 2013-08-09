@@ -12,7 +12,7 @@ from trytond.transaction import Transaction
 
 
 __all__ = [
-    'MagentoInstanceCarrier',
+    'MagentoInstanceCarrier'
 ]
 
 

@@ -330,5 +330,22 @@
             <field name="name">export_order_status_start_form</field>
         </record>
 
+        <!--Export Shipment Status Wizard-->
+        <record model="ir.action.wizard" id="wizard_export_shipment_status">
+            <field name="name">Export Shipment Status</field>
+            <field name="wiz_name">magento.wizard_export_shipment_status</field>
+            <field name="model">magento.store.store_view</field>
+        </record>
+        <record model="ir.action.keyword" id="wizard_export_shipment_status_keyword">
+            <field name="keyword">form_action</field>
+            <field name="model">magento.store.store_view,-1</field>
+            <field name="action" ref="wizard_export_shipment_status"/>
+        </record>
+        <record model="ir.ui.view" id="wizard_export_shipment_status_view_start_form">
+            <field name="model">magento.wizard_export_shipment_status.start</field>
+            <field name="type">form</field>
+            <field name="name">export_shipment_status_start_form</field>
+        </record>
+
     </data>
 </tryton>
