@@ -477,12 +477,8 @@ class TestProduct(TestBase):
                         'name': 'Test product',
                         'list_price': Decimal('100'),
                         'cost_price': Decimal('1'),
-                        'account_expense': self.get_account_by_kind(
-                            'expense'
-                        ).id,
-                        'account_revenue': self.get_account_by_kind(
-                            'revenue'
-                        ).id,
+                        'account_expense': self.get_account_by_kind('expense'),
+                        'account_revenue': self.get_account_by_kind('revenue'),
                         'default_uom': uom.id,
                         'sale_uom': uom.id,
                         'products': [('create', [{

@@ -9,8 +9,8 @@ import os
 import json
 import unittest
 from datetime import datetime
-
 from dateutil.relativedelta import relativedelta
+
 import trytond.tests.test_tryton
 from trytond.tests.test_tryton import POOL, USER
 from trytond.transaction import Transaction
@@ -62,109 +62,66 @@ class TestBase(unittest.TestCase):
         """
         Setup default data
         """
-        Instance = POOL.get('magento.instance')
-        Website = POOL.get('magento.instance.website')
-        Store = POOL.get('magento.website.store')
-        StoreView = POOL.get('magento.store.store_view')
-        Uom = POOL.get('product.uom')
-        Currency = POOL.get('currency.currency')
-        Company = POOL.get('company.company')
-        Party = POOL.get('party.party')
-        User = POOL.get('res.user')
-        FiscalYear = POOL.get('account.fiscalyear')
-        Sequence = POOL.get('ir.sequence')
-        SequenceStrict = POOL.get('ir.sequence.strict')
-        AccountTemplate = POOL.get('account.account.template')
-        CreateChartAccount = POOL.get(
+        self.Instance = POOL.get('magento.instance')
+        self.Website = POOL.get('magento.instance.website')
+        self.Store = POOL.get('magento.website.store')
+        self.StoreView = POOL.get('magento.store.store_view')
+        self.Uom = POOL.get('product.uom')
+        self.Currency = POOL.get('currency.currency')
+        self.Company = POOL.get('company.company')
+        self.Party = POOL.get('party.party')
+        self.Country = POOL.get('country.country')
+        self.Subdivision = POOL.get('country.subdivision')
+        self.AccountTemplate = POOL.get('account.account.template')
+        self.Account = POOL.get('account.account')
+        self.CreateChartAccount = POOL.get(
             'account.create_chart', type="wizard"
         )
-        Account = POOL.get('account.account')
-        PaymentTerm = POOL.get('account.invoice.payment_term')
-
-        self.usd, = Currency.create([{
-            'name': 'US Dollar',
-            'code': 'USD',
-            'symbol': '$',
-        }])
+        self.User = POOL.get('res.user')
+        self.PaymentTerm = POOL.get('account.invoice.payment_term')
+        self.FiscalYear = POOL.get('account.fiscalyear')
+        self.Sequence = POOL.get('ir.sequence')
+        self.SequenceStrict = POOL.get('ir.sequence.strict')
+        self.AccountConfiguration = POOL.get('account.configuration')
+        self.Property = POOL.get('ir.property')
+        self.ModelField = POOL.get('ir.model.field')
 
         with Transaction().set_context(company=None):
-            self.party, = Party.create([{
+            self.party, = self.Party.create([{
                 'name': 'ABC',
             }])
-            self.company, = Company.create([{
+            self.usd, = self.Currency.create([{
+                'name': 'US Dollar',
+                'code': 'USD',
+                'symbol': '$',
+            }])
+            self.company, = self.Company.create([{
                 'party': self.party.id,
                 'currency': self.usd.id,
             }])
 
-        User.write([User(USER)], {
+        self.User.write([self.User(USER)], {
             'main_company': self.company.id,
             'company': self.company.id,
         })
 
-        # Create two instances
-        self.instance1, = Instance.create([{
-            'name': 'Test Instance 1',
-            'url': 'some test url 1',
-            'api_user': 'admin',
-            'api_key': 'testkey',
-            'company': self.company
-        }])
-        self.instance2, = Instance.create([{
-            'name': 'Test Instance 2',
-            'url': 'some test url 2',
-            'api_user': 'admin',
-            'api_key': 'testkey',
-            'company': self.company
-        }])
-
-        # Search product uom
-        self.uom, = Uom.search([
-            ('name', '=', 'Unit'),
-        ])
-
-        # Create one website under each instance
-        self.website1, = Website.create([{
-            'name': 'A test website 1',
-            'magento_id': 1,
-            'code': 'test_code',
-            'instance': self.instance1,
-        }])
-        self.website2, = Website.create([{
-            'name': 'A test website 2',
-            'magento_id': 1,
-            'code': 'test_code',
-            'instance': self.instance2,
-        }])
-
-        self.store, = Store.create([{
-            'name': 'Store1',
-            'magento_id': 1,
-            'website': self.website1,
-        }])
-
-        self.store_view, = StoreView.create([{
-            'name': 'Store view1',
-            'magento_id': 1,
-            'store': self.store,
-            'code': '123',
-        }])
-
         date = datetime.utcnow().date()
 
         with Transaction().set_context(
-            User.get_preferences(context_only=True)
+            self.User.get_preferences(context_only=True)
         ):
-            invoice_sequence, = SequenceStrict.create([{
+
+            invoice_sequence, = self.SequenceStrict.create([{
                 'name': '%s' % date.year,
                 'code': 'account.invoice',
                 'company': self.company.id,
             }])
-            fiscal_year, = FiscalYear.create([{
+            fiscal_year, = self.FiscalYear.create([{
                 'name': '%s' % date.year,
                 'start_date': date + relativedelta(month=1, day=1),
                 'end_date': date + relativedelta(month=12, day=31),
                 'company': self.company.id,
-                'post_move_sequence': Sequence.create([{
+                'post_move_sequence': self.Sequence.create([{
                     'name': '%s' % date.year,
                     'code': 'account.move',
                     'company': self.company.id,
@@ -174,33 +131,34 @@ class TestBase(unittest.TestCase):
                 'out_credit_note_sequence': invoice_sequence.id,
                 'in_credit_note_sequence': invoice_sequence.id,
             }])
-            FiscalYear.create_period([fiscal_year])
+            self.FiscalYear.create_period([fiscal_year])
 
-            account_template, = AccountTemplate.search(
+            account_template, = self.AccountTemplate.search(
                 [('parent', '=', None)]
             )
-
-            session_id, _, _ = CreateChartAccount.create()
-            create_chart = CreateChartAccount(session_id)
+            session_id, _, _ = self.CreateChartAccount.create()
+            create_chart = self.CreateChartAccount(session_id)
             create_chart.account.account_template = account_template
-            create_chart.account.company = self.company
+            create_chart.account.company = self.company.id
             create_chart.transition_create_account()
-            revenue, = Account.search([
+
+            revenue, = self.Account.search([
                 ('kind', '=', 'revenue'),
                 ('company', '=', self.company.id),
             ])
-            receivable, = Account.search([
+            receivable, = self.Account.search([
                 ('kind', '=', 'receivable'),
                 ('company', '=', self.company.id),
             ])
-            payable, = Account.search([
+            payable, = self.Account.search([
                 ('kind', '=', 'payable'),
                 ('company', '=', self.company.id),
             ])
-            expense, = Account.search([
+            expense, = self.Account.search([
                 ('kind', '=', 'expense'),
                 ('company', '=', self.company.id),
             ])
+
             create_chart.properties.company = self.company
             create_chart.properties.account_receivable = receivable
             create_chart.properties.account_payable = payable
@@ -208,16 +166,114 @@ class TestBase(unittest.TestCase):
             create_chart.properties.account_expense = expense
             create_chart.transition_create_properties()
 
-            Party.write(
-                [Party(self.party)], {
-                    'account_payable': payable.id,
-                    'account_receivable': receivable.id,
-                }
-            )
-            PaymentTerm.create([{
-                'name': 'Direct',
-                'lines': [('create', [{'type': 'remainder'}])]
+        self.AccountConfiguration.write(
+            [self.AccountConfiguration(1)], {
+                'default_account_receivable': receivable.id,
+                'default_account_payable': payable.id
+            })
+
+        self.Party.write(
+            [self.party], {
+                'account_payable': payable.id,
+                'account_receivable': receivable.id,
+            }
+        )
+
+        # Create payment term
+        self.PaymentTerm.create([{
+            'name': 'Direct',
+            'lines': [('create', [{'type': 'remainder'}])]
+        }])
+
+        # Create two instances
+        with Transaction().set_context({'company': self.company.id}):
+            self.instance1, = self.Instance.create([{
+                'name': 'Test Instance 1',
+                'url': 'some test url 1',
+                'api_user': 'admin',
+                'api_key': 'testkey',
+                'company': self.company,
+                'default_account_expense': self.get_account_by_kind('expense'),
+                'default_account_revenue': self.get_account_by_kind('revenue'),
             }])
+            self.instance2, = self.Instance.create([{
+                'name': 'Test Instance 2',
+                'url': 'some test url 2',
+                'api_user': 'admin',
+                'api_key': 'testkey',
+                'company': self.company,
+                'default_account_expense': self.get_account_by_kind('expense'),
+                'default_account_revenue': self.get_account_by_kind('revenue'),
+            }])
+
+        # Search product uom
+        self.uom, = self.Uom.search([
+            ('name', '=', 'Unit'),
+        ])
+
+        # Create one website under each instance
+        self.website1, = self.Website.create([{
+            'name': 'A test website 1',
+            'magento_id': 1,
+            'code': 'test_code',
+            'instance': self.instance1,
+        }])
+        self.website2, = self.Website.create([{
+            'name': 'A test website 2',
+            'magento_id': 1,
+            'code': 'test_code',
+            'instance': self.instance2,
+        }])
+
+        self.store, = self.Store.create([{
+            'name': 'Store1',
+            'magento_id': 1,
+            'website': self.website1,
+        }])
+
+        self.store_view, = self.StoreView.create([{
+            'name': 'Store view1',
+            'magento_id': 1,
+            'store': self.store,
+            'code': '123',
+        }])
+
+        self.country1, = self.Country.create([{
+            'name': 'United States',
+            'code': 'US',
+        }])
+
+        self.country2, = self.Country.create([{
+            'name': 'India',
+            'code': 'IN',
+        }])
+
+        self.subdivision1, = self.Subdivision.create([{
+            'name': 'Florida',
+            'code': 'US-FL',
+            'country': self.country1.id,
+            'type': 'state',
+        }])
+
+        self.subdivision2, = self.Subdivision.create([{
+            'name': 'Uttar Pradesh',
+            'code': 'IN-UP',
+            'country': self.country2.id,
+            'type': 'state',
+        }])
+
+        model_field, = self.ModelField.search([
+            ('name', '=', 'account_revenue'),
+            ('model.model', '=', 'product.template'),
+        ], order=[], limit=1)
+
+        # TODO: This should work without creating new properties
+        self.Property.create([{
+            'value': 'account.account' + ',' +
+                str(self.website1.instance.default_account_revenue.id),
+            'res': None,
+            'field': model_field.id,
+        }])
 
     def get_account_by_kind(self, kind, company=None, silent=True):
         """Returns an account with given spec
@@ -237,4 +293,4 @@ class TestBase(unittest.TestCase):
         ], limit=1)
         if not accounts and not silent:
             raise Exception("Account not found")
-        return accounts[0] if accounts else False
+        return accounts and accounts[0].id or None

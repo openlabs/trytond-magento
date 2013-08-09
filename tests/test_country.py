@@ -20,43 +20,30 @@ if os.path.isdir(DIR):
 import unittest
 
 import trytond.tests.test_tryton
-from trytond.tests.test_tryton import POOL, DB_NAME, USER, CONTEXT
+from trytond.tests.test_tryton import DB_NAME, USER, CONTEXT
 from trytond.transaction import Transaction
 from trytond.exceptions import UserError
+from tests.test_base import TestBase
 
 
-class TestCountry(unittest.TestCase):
+class TestCountry(TestBase):
     """
     Tests country
     """
-
-    def setUp(self):
-        """
-        Set up data used in the tests.
-        this method is called before each test function execution.
-        """
-        trytond.tests.test_tryton.install_module('magento')
 
     def test_0010_search_country_with_valid_code(self):
         """
         Tests if country can be searched using magento code
         """
-        Country = POOL.get('country.country')
-
         with Transaction().start(DB_NAME, USER, CONTEXT):
-
-            country = Country.create([{
-                'name': 'United States',
-                'code': 'US',
-            }])
-            self.assert_(country)
+            self.setup_defaults()
 
             code = 'US'
 
-            country, = Country.search([('code', '=', code)])
+            country, = self.Country.search([('code', '=', code)])
 
             self.assertEqual(
-                Country.search_using_magento_code(code),
+                self.Country.search_using_magento_code(code),
                 country
             )
 
@@ -64,44 +51,35 @@ class TestCountry(unittest.TestCase):
         """
         Tests if error is raised for searching country with invalid code
         """
-        Country = POOL.get('country.country')
-
         with Transaction().start(DB_NAME, USER, CONTEXT):
+            self.setup_defaults()
 
             code = 'abc'
 
-            self.assertFalse(Country.search([('code', '=', code)]))
+            self.assertFalse(self.Country.search([('code', '=', code)]))
 
             self.assertRaises(
                 UserError,
-                Country.search_using_magento_code, code
+                self.Country.search_using_magento_code, code
             )
 
     def test_0030_search_state_with_valid_region(self):
         """
         Tests if state can be searched using magento region
         """
-        Country = POOL.get('country.country')
-        Subdivision = POOL.get('country.subdivision')
-
         with Transaction().start(DB_NAME, USER, CONTEXT):
+            self.setup_defaults()
 
-            country, = Country.create([{
-                'name': 'United States',
-                'code': 'US',
-            }])
-            self.assert_(country)
-            subdivision, = Subdivision.create([{
-                'name': 'Florida',
-                'code': 'US-FL',
-                'country': country.id,
-                'type': 'state',
-            }])
-
+            country, = self.Country.search([
+                ('code', '=', 'US')
+            ])
+            subdivision, = self.Subdivision.search([
+                ('name', '=', 'Florida')
+            ])
             region = 'Florida'
 
             self.assertEqual(
-                Subdivision.search_using_magento_region(region, country),
+                self.Subdivision.search_using_magento_region(region, country),
                 subdivision
             )
 
@@ -109,21 +87,17 @@ class TestCountry(unittest.TestCase):
         """
         Tests if error is raised for searching state with invalid region
         """
-        Country = POOL.get('country.country')
-        Subdivision = POOL.get('country.subdivision')
-
         with Transaction().start(DB_NAME, USER, CONTEXT):
+            self.setup_defaults()
 
-            country, = Country.create([{
-                'name': 'United States',
-                'code': 'US',
-            }])
-            self.assert_(country)
+            country, = self.Country.search([
+                ('code', '=', 'US')
+            ])
 
             region = 'abc'
 
             self.assertFalse(
-                Subdivision.search([
+                self.Subdivision.search([
                     ('name', 'ilike', region),
                     ('country', '=', country.id)
                 ])
@@ -131,7 +105,7 @@ class TestCountry(unittest.TestCase):
 
             self.assertRaises(
                 UserError,
-                Subdivision.search_using_magento_region, region, country
+                self.Subdivision.search_using_magento_region, region, country
             )
 
 

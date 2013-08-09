@@ -21,9 +21,9 @@ from product import (
     ProductPriceTier, ExportCatalogStart, ExportCatalog
 )
 from country import Country, Subdivision
-from sale import MagentoOrderState
 from currency import Currency
 from carrier import MagentoInstanceCarrier
+from sale import MagentoOrderState, Sale
 
 
 def register():
@@ -57,6 +57,7 @@ def register():
         Address,
         UpdateCatalogStart,
         Currency,
+        Sale,
         module='magento', type_='model'
     )
     Pool.register(
