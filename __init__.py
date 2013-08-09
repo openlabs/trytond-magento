@@ -18,7 +18,7 @@ from party import Party, MagentoWebsiteParty, Address
 from product import (
     Category, MagentoInstanceCategory, Template, MagentoWebsiteTemplate,
     ImportCatalogStart, ImportCatalog, UpdateCatalogStart, UpdateCatalog,
-    ProductPriceTier,
+    ProductPriceTier, ExportCatalogStart, ExportCatalog
 )
 from country import Country, Subdivision
 from sale import MagentoOrderState
@@ -52,6 +52,7 @@ def register():
         MagentoWebsiteTemplate,
         ProductPriceTier,
         ImportCatalogStart,
+        ExportCatalogStart,
         MagentoOrderState,
         Address,
         UpdateCatalogStart,
@@ -65,5 +66,6 @@ def register():
         ExportTierPrices,
         ImportCatalog,
         UpdateCatalog,
+        ExportCatalog,
         module='magento', type_='wizard'
     )

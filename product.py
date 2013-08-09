@@ -18,6 +18,7 @@ __all__ = [
     'Category', 'MagentoInstanceCategory', 'Template',
     'MagentoWebsiteTemplate', 'ProductPriceTier', 'UpdateCatalogStart',
     'UpdateCatalog', 'ImportCatalogStart', 'ImportCatalog',
+    'ExportCatalogStart', 'ExportCatalog'
 ]
 __metaclass__ = PoolMeta
 
@@ -215,6 +216,20 @@ class Template:
     )
 
     @classmethod
+    def __setup__(cls):
+        """
+        Setup the class before adding to pool
+        """
+        super(Template, cls).__setup__()
+        cls._error_messages.update({
+            "invalid_category": 'Category "%s" must have a magento category '
+                'associated',
+            "invalid_product": 'Product "%s" already has a magento product '
+                'associated',
+            "missing_product_code": 'Product "%s" has a missing code.',
+        })
+
+    @classmethod
     def find_or_create_using_magento_id(cls, magento_id):
         """
         Find or create a product template using magento ID. This method looks
@@ -409,6 +424,86 @@ class Template:
         })
         self.write([self], product_template_values)
 
+        return self
+
+    def get_product_values_for_export_to_magento(self, categories, websites):
+        """Creates a dictionary of values which have to exported to magento for
+        creating a product
+
+        :param categories: List of Browse record of categories
+        :param websites: List of Browse record of websites
+        """
+        return {
+            'categories': map(
+                lambda mag_categ: mag_categ.magento_id,
+                categories[0].magento_ids
+            ),
+            'websites': map(lambda website: website.magento_id, websites),
+            'name': self.name,
+            'description': self.products[0].description or self.name,
+            'short_description': self.products[0].description or self.name,
+            'status': '1',
+            'visibility': '4',
+            'price': float(str(self.list_price)),
+            'tax_class_id': '1',    # FIXME
+        }
+
+    def export_to_magento(self, category):
+        """Export the current product to the magento category corresponding to
+        the given `category` under the current website in context
+
+        :param category: Active record of category to which the product has
+                         to be exported
+        :return: Active record of product
+        """
+        Website = Pool().get('magento.instance.website')
+        WebsiteProductTemplate = Pool().get('magento.website.template')
+
+        if not category.magento_ids:
+            self.raise_user_error(
+                'invalid_category', (category.complete_name,)
+            )
+
+        if self.magento_ids:
+            self.raise_user_error(
+                'invalid_product', (self.name,)
+            )
+
+        if not self.products[0].code:
+            self.raise_user_error(
+                'missing_product_code', (self.name,)
+            )
+
+        website = Website(Transaction().context['magento_website'])
+        instance = website.instance
+
+        with magento.Product(
+            instance.url, instance.api_user, instance.api_key
+        ) as product_api:
+            # We create only simple products on magento with the default
+            # attribute set
+            # TODO: We have to call the method from core API extension
+            # because the method for catalog create from core API does not seem
+            # to work. This should ideally be from core API rather than
+            # extension
+            magento_id = product_api.call(
+                'ol_catalog_product.create', [
+                    'simple',
+                    int(Transaction().context['magento_attribute_set']),
+                    self.products[0].code,
+                    self.get_product_values_for_export_to_magento(
+                        [category], [website]
+                    )
+                ]
+            )
+            WebsiteProductTemplate.create([{
+                'magento_id': magento_id,
+                'website': website.id,
+                'template': self.id,
+            }])
+            self.write([self], {
+                'magento_product_type': 'simple'
+            })
         return self
 
 
@@ -666,3 +761,95 @@ class ImportCatalog(Wizard):
                 )
 
         return map(int, products)
+
+
+class ExportCatalogStart(ModelView):
+    'Export Catalog View'
+    __name__ = 'magento.website.export_catalog.start'
+
+    @classmethod
+    def get_attribute_sets(cls):
+        """Get the list of attribute sets from magento for the current website
+
+        :return: Tuple of attribute sets where each tuple consists of (ID,Name)
+        """
+        Website = Pool().get('magento.instance.website')
+
+        if not Transaction().context.get('active_id'):
+            return []
+
+        website = Website(Transaction().context['active_id'])
+        instance = website.instance
+
+        with magento.ProductAttributeSet(
+            instance.url, instance.api_user, instance.api_key
+        ) as attribute_set_api:
+            attribute_sets = attribute_set_api.list()
+
+        return [(
+            attribute_set['set_id'], attribute_set['name']
+        ) for attribute_set in attribute_sets]
+
+    category = fields.Many2One(
+        'product.category', 'Magento Category', required=True,
+        domain=[('magento_ids', 'not in', [])],
+    )
+    products = fields.Many2Many(
+        'product.template', None, None, 'Products', required=True,
+        domain=[('magento_ids', '=', None)],
+    )
+    attribute_set = fields.Selection(
+        [], 'Attribute Set', required=True,
+    )
+
+    @classmethod
+    def fields_view_get(cls, view_id=None, view_type='form'):
+        """This method is overridden to populate the selection field for
+        attribute_set with the attribute sets from the current website's
+        counterpart on magento.
+        This overridding has to be done because `active_id` is not available
+        if the meth:get_attribute_sets is called directly from the field.
+        """
+        rv = super(ExportCatalogStart, cls).fields_view_get(view_id, view_type)
+        rv['fields']['attribute_set']['selection'] = cls.get_attribute_sets()
+        return rv
+
+
+class ExportCatalog(Wizard):
+    '''Export catalog
+
+    Export the products selected to the selected category for this website
+    '''
+    __name__ = 'magento.website.export_catalog'
+
+    start = StateView(
+        'magento.website.export_catalog.start',
+        'magento.website_export_catalog_start', [
+            Button('Cancel', 'end', 'tryton-cancel'),
+            Button('Continue', 'export_', 'tryton-ok', default=True),
+        ]
+    )
+    export_ = StateAction('product.act_template_form')
+
+    def do_export_(self, action):
+        """
+        Export the products selected to the selected category for this website
+        """
+        Website = Pool().get('magento.instance.website')
+
+        website = Website(Transaction().context['active_id'])
+
+        with Transaction().set_context({
+            'magento_website': website.id,
+            'magento_attribute_set': self.start.attribute_set,
+        }):
+            for product in self.start.products:
+                product.export_to_magento(self.start.category)
+
+        action['pyson_domain'] = PYSONEncoder().encode(
+            [('id', 'in', map(int, self.start.products))])
+
+        return action, {}
+
+    def transition_export_(self):
+        return 'end'
