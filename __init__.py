@@ -23,7 +23,7 @@ from product import (
 from country import Country, Subdivision
 from currency import Currency
 from carrier import MagentoInstanceCarrier
-from sale import MagentoOrderState, Sale
+from sale import MagentoOrderState, Sale, ImportOrdersStart, ImportOrders
 
 
 def register():
@@ -58,6 +58,7 @@ def register():
         UpdateCatalogStart,
         Currency,
         Sale,
+        ImportOrdersStart,
         module='magento', type_='model'
     )
     Pool.register(
@@ -68,5 +69,6 @@ def register():
         ImportCatalog,
         UpdateCatalog,
         ExportCatalog,
+        ImportOrders,
         module='magento', type_='wizard'
     )
