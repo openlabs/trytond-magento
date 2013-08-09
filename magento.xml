@@ -218,6 +218,20 @@
             <field name="args" eval="'()'"/>
         </record>
 
+        <!--Cron To Export Order Status To Magento-->
+        <record model="ir.cron" id="ir_cron_export_order_status">
+            <field name="name">Export Order Status To Magento</field>
+            <field name="request_user" ref="res.user_admin"/>
+            <field name="user" ref="user_magento"/>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="active" eval="False"/>
+            <field name="number_calls">-1</field>
+            <field name="model" eval="'magento.store.store_view'"/>
+            <field name="function" eval="'export_order_status'"/>
+            <field name="args" eval="'()'"/>
+        </record>
+
         <!--Export Inventory Wizard-->
         <record model="ir.action.wizard" id="wizard_export_inventory">
             <field name="name">Export Inventory</field>
@@ -284,6 +298,23 @@
             <field name="model">magento.wizard_import_orders.start</field>
             <field name="type">form</field>
             <field name="name">import_orders_start_form</field>
+        </record>
+
+        <!--Export Order Status-->
+        <record model="ir.action.wizard" id="wizard_export_order_status">
+            <field name="name">Export Order Status</field>
+            <field name="wiz_name">magento.wizard_export_order_status</field>
+            <field name="model">magento.store.store_view</field>
+        </record>
+        <record model="ir.action.keyword" id="wizard_export_order_status_keyword">
+            <field name="keyword">form_action</field>
+            <field name="model">magento.store.store_view,-1</field>
+            <field name="action" ref="wizard_export_order_status"/>
+        </record>
+        <record model="ir.ui.view" id="wizard_export_order_status_view_start_form">
+            <field name="model">magento.wizard_export_order_status.start</field>
+            <field name="type">form</field>
+            <field name="name">export_order_status_start_form</field>
         </record>
 
     </data>

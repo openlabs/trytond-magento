@@ -17,8 +17,9 @@ DIR = os.path.abspath(os.path.normpath(
 ))
 if os.path.isdir(DIR):
     sys.path.insert(0, os.path.dirname(DIR))
-
 import unittest
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
 
 import magento
 from mock import patch, MagicMock
@@ -301,7 +302,7 @@ class TestSale(TestBase):
                     len(order.lines), len(order_data['items']) + 1
                 )
 
-    def test_0020_find_or_create_order_using_increment_id(self):
+    def test_0040_find_or_create_order_using_increment_id(self):
         """
         Tests finding and creating order using increment id
         """
@@ -352,6 +353,170 @@ class TestSale(TestBase):
                 self.assertEqual(
                     len(order.lines), len(order_data['items']) + 1
                 )
+
+    def test_0050_export_order_status_to_magento(self):
+        """
+        Tests if order status is exported to magento
+        """
+        Sale = POOL.get('sale.sale')
+        Category = POOL.get('product.category')
+
+        with Transaction().start(DB_NAME, USER, CONTEXT):
+            self.setup_defaults()
+
+            with Transaction().set_context({
+                'magento_instance': self.instance1.id,
+                'magento_store_view': self.store_view.id,
+                'magento_website': self.website1.id,
+            }):
+
+                category_tree = load_json('categories', 'category_tree')
+                Category.create_tree_using_magento_data(category_tree)
+
+                orders = Sale.search([])
+                self.assertEqual(len(orders), 0)
+
+                order_data = load_json('orders', '100000001-draft')
+
+                with patch(
+                        'magento.Customer', mock_customer_api(), create=True):
+                    self.Party.find_or_create_using_magento_id(
+                        order_data['customer_id']
+                    )
+
+                with Transaction().set_context(company=self.company):
+                # Create sale order using magento data
+                    with patch(
+                            'magento.Product', mock_product_api(), create=True):
+                        order = Sale.find_or_create_using_magento_data(
+                            order_data
+                        )
+
+                self.assertEqual(order.state, 'cancel')
+
+                self.assertEqual(len(Sale.search([])), 1)
+
+                with patch('magento.Order', mock_order_api(), create=True):
+                    order_exported = \
+                        self.store_view.export_order_status_for_store_view()
+
+                    self.assertEqual(len(order_exported), 1)
+                    self.assertEqual(order_exported[0], order)
+
+    def test_0060_export_order_status_with_last_order_export_time_case1(self):
+        """
+        Tests that sale cannot be exported if last order export time is
+        greater than sale's write date
+        """
+        Sale = POOL.get('sale.sale')
+        Category = POOL.get('product.category')
+
+        with Transaction().start(DB_NAME, USER, CONTEXT):
+            self.setup_defaults()
+
+            with Transaction().set_context({
+                'magento_instance': self.instance1.id,
+                'magento_store_view': self.store_view.id,
+                'magento_website': self.website1.id,
+            }):
+
+                category_tree = load_json('categories', 'category_tree')
+                Category.create_tree_using_magento_data(category_tree)
+
+                orders = Sale.search([])
+                self.assertEqual(len(orders), 0)
+
+                order_data = load_json('orders', '100000001-draft')
+
+                with patch(
+                        'magento.Customer', mock_customer_api(), create=True):
+                    self.Party.find_or_create_using_magento_id(
+                        order_data['customer_id']
+                    )
+
+                with Transaction().set_context(company=self.company):
+                # Create sale order using magento data
+                    with patch(
+                            'magento.Product', mock_product_api(), create=True):
+                        order = Sale.find_or_create_using_magento_data(
+                            order_data
+                        )
+
+                self.assertEqual(order.state, 'cancel')
+                self.assertEqual(len(Sale.search([])), 1)
+
+                export_date = datetime.utcnow() + relativedelta(days=1)
+                self.StoreView.write([self.store_view], {
+                    'last_order_export_time': export_date
+                })
+
+                self.assertTrue(
+                    self.store_view.last_order_export_time > order.write_date
+                )
+
+                with patch('magento.Order', mock_order_api(), create=True):
+                    order_exported = \
+                        self.store_view.export_order_status_for_store_view()
+
+                    self.assertEqual(len(order_exported), 0)
+
+    def test_0070_export_order_status_with_last_order_export_time_case2(self):
+        """
+        Tests that sale can be exported if last order export time is
+        smaller than sale's write date
+        """
+        Sale = POOL.get('sale.sale')
+        Category = POOL.get('product.category')
+
+        with Transaction().start(DB_NAME, USER, CONTEXT):
+            self.setup_defaults()
+
+            with Transaction().set_context({
+                'magento_instance': self.instance1.id,
+                'magento_store_view': self.store_view.id,
+                'magento_website': self.website1.id,
+            }):
+
+                category_tree = load_json('categories', 'category_tree')
+                Category.create_tree_using_magento_data(category_tree)
+
+                orders = Sale.search([])
+                self.assertEqual(len(orders), 0)
+
+                order_data = load_json('orders', '100000001-draft')
+
+                with patch(
+                        'magento.Customer', mock_customer_api(), create=True):
+                    self.Party.find_or_create_using_magento_id(
+                        order_data['customer_id']
+                    )
+
+                with Transaction().set_context(company=self.company):
+                # Create sale order using magento data
+                    with patch(
+                            'magento.Product', mock_product_api(), create=True):
+                        order = Sale.find_or_create_using_magento_data(
+                            order_data
+                        )
+
+                self.assertEqual(order.state, 'cancel')
+                self.assertEqual(len(Sale.search([])), 1)
+
+                export_date = datetime.utcnow() - relativedelta(days=1)
+                self.StoreView.write([self.store_view], {
+                    'last_order_export_time': export_date
+                })
+
+                self.assertTrue(
+                    self.store_view.last_order_export_time < order.write_date
+                )
+
+                with patch('magento.Order', mock_order_api(), create=True):
+                    order_exported = \
+                        self.store_view.export_order_status_for_store_view()
+
+                    self.assertEqual(len(order_exported), 1)
+                    self.assertEqual(order_exported[0], order)
 
 
 def suite():
