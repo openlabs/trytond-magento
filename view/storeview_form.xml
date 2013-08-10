@@ -13,4 +13,6 @@
     <field name="instance"/>
     <label name="last_order_import_time"/>
     <field name="last_order_import_time"/>
+    <label name="last_order_export_time"/>
+    <field name="last_order_export_time"/>
 </form>

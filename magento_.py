@@ -558,6 +558,7 @@ class WebsiteStoreView(ModelSQL, ModelView):
         'get_company'
     )
     last_order_import_time = fields.DateTime('Last Order Import Time')
+    last_order_export_time = fields.DateTime("Last Order Export Time")
 
     def get_instance(self, name):
         """
@@ -681,6 +682,44 @@ class WebsiteStoreView(ModelSQL, ModelView):
                     )
 
         return new_sales
+
+    def export_order_status(self, store_views=None):
+        """
+        Export sales orders status to magento.
+
+        :param store_views: List of active record of store view
+        """
+        if not store_views:
+            store_views = self.search([])
+
+        for store_view in store_views:
+            store_view.export_order_status_for_store_view()
+
+    def export_order_status_for_store_view(self):
+        """
+        Export sale orders to magento for the current store view.
+        If last export time is defined, export only those orders which are
+        updated after last export time.
+
+        :return: List of active records of sales exported
+        """
+        Sale = Pool().get('sale.sale')
+
+        exported_sales = []
+        domain = [('magento_store_view', '=', self.id)]
+
+        if self.last_order_export_time:
+            domain = [('write_date', '>=', self.last_order_export_time)]
+
+        sales = Sale.search(domain)
+
+        self.write([self], {
+            'last_order_export_time': datetime.utcnow()
+        })
+        for sale in sales:
+            exported_sales.append(sale.export_order_status_to_magento())
+
+        return exported_sales
 
 
 class StorePriceTier(ModelSQL, ModelView):

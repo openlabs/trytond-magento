@@ -9,6 +9,7 @@
 """
 import magento
 from decimal import Decimal
+import xmlrpclib
 
 from trytond.model import ModelView, ModelSQL, fields
 from trytond.transaction import Transaction
@@ -443,6 +444,32 @@ class Sale:
         if data['tryton_state'] not in ['sale.quotation', 'sale.confirmed']:
             Sale.process([self])
 
+    def export_order_status_to_magento(self):
+        """
+        Export order status to magento.
+
+        :return: Active record of sale
+        """
+        if not self.magento_id:
+            return self
+
+        instance = self.magento_instance
+        if self.state == 'cancel':
+            increment_id = self.reference.split(instance.order_prefix)[1]
+            # This try except is placed because magento might not accept this
+            # order status change due to its workflow constraints.
+            # TODO: Find a better way to do it
+            try:
+                with magento.Order(
+                    instance.url, instance.api_user, instance.api_key
+                ) as order_api:
+                    order_api.cancel(increment_id)
+            except xmlrpclib.Fault, exception:
+                if exception.faultCode == 103:
+                    return self
+
+        return self
+
 
 class ImportOrdersStart(ModelView):
     "Import Sale Order Start View"
@@ -482,4 +509,45 @@ class ImportOrders(Wizard):
         return action, {}
 
     def transition_import_(self):
+        return 'end'
+
+
+class ExportOrderStatusStart(ModelView):
+    "Export Order Status Start View"
+    __name__ = 'magento.wizard_export_order_status.start'
+
+
+class ExportOrderStatus(Wizard):
+    """
+    Export Order Status wizard
+
+    Export order status to magento for the current store view
+    """
+    __name__ = 'magento.wizard_export_order_status'
+
+    start = StateView(
+        'magento.wizard_export_order_status.start',
+        'magento.wizard_export_order_status_view_start_form',
+        [
+            Button('Cancel', 'end', 'tryton-cancel'),
+            Button('Continue', 'export_', 'tryton-ok', default=True),
+        ]
+    )
+
+    export_ = StateAction('sale.act_sale_form')
+
+    def do_export_(self, action):
+        """Handles the transition"""
+
+        StoreView = Pool().get('magento.store.store_view')
+
+        store_view = StoreView(Transaction().context.get('active_id'))
+
+        sales = store_view.export_order_status_for_store_view()
+
+        action['pyson_domain'] = PYSONEncoder().encode(
+            [('id', 'in', map(int, sales))])
+        return action, {}
+
+    def transition_export_(self):
         return 'end'
