@@ -721,6 +721,19 @@ class WebsiteStoreView(ModelSQL, ModelView):
 
         return exported_sales
 
+    @classmethod
+    def import_orders(cls, store_views=None):
+        """
+        Import orders from magento for store views
+
+        :param store_views: Active record list of store views
+        """
+        if not store_views:
+            store_views = cls.search([])
+
+        for store_view in store_views:
+            store_view.import_order_from_store_view()
+
 
 class StorePriceTier(ModelSQL, ModelView):
     """Price Tiers for store
