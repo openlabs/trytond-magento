@@ -28,6 +28,7 @@ from sale import (
     MagentoOrderState, Sale, ImportOrdersStart, ImportOrders,
     ExportOrderStatusStart, ExportOrderStatus, StockShipmentOut, SaleLine
 )
+from bom import BOM
 
 
 def register():
@@ -67,6 +68,7 @@ def register():
         ImportOrdersStart,
         ExportOrderStatusStart,
         SaleLine,
+        BOM,
         module='magento', type_='model'
     )
     Pool.register(

@@ -262,6 +262,20 @@ class TestBase(unittest.TestCase):
             'type': 'state',
         }])
 
+        self.subdivision3, self.subdivision4 = self.Subdivision.create([
+                {
+                    'name': 'American Samoa',
+                    'code': 'US-AS',
+                    'type': 'state',
+                    'country': self.country1.id,
+                }, {
+                    'name': 'Alabama',
+                    'code': 'US-AL',
+                    'type': 'state',
+                    'country': self.country1.id,
+                }
+        ])
+
         model_field, = self.ModelField.search([
             ('name', '=', 'account_revenue'),
             ('model.model', '=', 'product.template'),
