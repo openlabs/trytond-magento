@@ -18,7 +18,10 @@ from trytond.pyson import Eval, Not, Bool, PYSONEncoder
 from trytond.wizard import Wizard, StateView, Button, StateAction
 
 
-__all__ = ['MagentoOrderState', 'Sale', 'ImportOrdersStart', 'ImportOrders']
+__all__ = [
+    'MagentoOrderState', 'StockShipmentOut', 'Sale', 'SaleLine',
+    'ImportOrdersStart', 'ImportOrders',
+]
 __metaclass__ = PoolMeta
 
 
@@ -251,9 +254,19 @@ class Sale:
         currency = Currency.search_using_magento_code(
             order_data['order_currency_code']
         )
-        party = Party.find_or_create_using_magento_id(
-            order_data['customer_id']
-        )
+
+        if order_data['customer_id']:
+            party = Party.find_or_create_using_magento_id(
+                order_data['customer_id']
+            )
+        else:
+            party = Party.create_using_magento_data({
+                'firstname': order_data['customer_firstname'],
+                'lastname': order_data['customer_lastname'],
+                'email': order_data['customer_email'],
+                'customer_id': 0
+            })
+
         party_invoice_address = \
             Address.find_or_create_for_party_using_magento_data(
                 party, order_data['billing_address']
@@ -280,6 +293,7 @@ class Sale:
             'shipment_method': tryton_state['shipment_method'],
             'lines': [
                 ('create', [{
+                    'magento_id': int(item['item_id']),
                     'description': item['name'],
                     'unit_price': Decimal(item['price']),
                     'unit': unit.id,
@@ -551,3 +565,79 @@ class ExportOrderStatus(Wizard):
 
     def transition_export_(self):
         return 'end'
+
+
+class SaleLine:
+    "Sale Line"
+    __name__ = 'sale.line'
+
+    #: This field stores the magento ID corresponding to this sale line
+    magento_id = fields.Integer('Magento ID', readonly=True)
+
+
+class StockShipmentOut:
+    """Stock Shipment Out
+
+    Add a field for tracking number
+    """
+    __name__ = 'stock.shipment.out'
+
+    tracking_number = fields.Char('Tracking Number')
+    carrier = fields.Many2One('carrier', 'Carrier')
+
+    #: Indicates if the tracking information has been exported
+    #: to magento. Tracking info means carrier and tracking number info
+    #: which is different from exporting shipment status to magento
+    is_tracking_exported_to_magento = fields.Boolean(
+        'Is Tracking Info Exported To Magento'
+    )
+    #: The magento increment id for this shipment. This is filled when a
+    #: shipment is created corresponding to the shipment to openerp
+    #: in magento.
+    magento_increment_id = fields.Char(
+        "Magento Increment ID", readonly=True
+    )
+
+    @staticmethod
+    def default_is_tracking_exported_to_magento():
+        return False
+
+    def export_tracking_info_to_magento(self):
+        """
+        Export tracking info to magento for the specified shipment.
+
+        :param shipment: Browse record of shipment
+        :return: Shipment increment ID
+        """
+        MagentoCarrier = Pool().get('magento.instance.carrier')
+        Instance = Pool().get('magento.instance')
+        Shipment = Pool().get('stock.shipment.out')
+
+        instance = Instance(Transaction().context['magento_instance'])
+
+        carriers = MagentoCarrier.search([
+            ('instance', '=', instance.id),
+            ('carrier', '=', self.carrier.id)
+        ])
+
+        if not carriers:
+            # The carrier linked to this shipment is not found mapped to a
+            # magento carrier.
+            return
+
+        # Add tracking info to the shipment on magento
+        with magento.Shipment(
+            instance.url, instance.api_user, instance.api_key
+        ) as shipment_api:
+            shipment_increment_id = shipment_api.addtrack(
+                self.magento_increment_id,
+                carriers[0].code,
+                carriers[0].title,
+                self.tracking_number,
+            )
+
+            Shipment.write([self], {
+                'is_tracking_exported_to_magento': True
+            })
+
+        return shipment_increment_id

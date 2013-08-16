@@ -18,6 +18,7 @@ from trytond.transaction import Transaction
 from trytond.pyson import PYSONEncoder, Eval
 from trytond.wizard import Wizard, StateView, Button, StateAction
 from .api import OrderConfig, Core
+from .sale import SaleLine
 
 
 __all__ = [
@@ -25,7 +26,8 @@ __all__ = [
     'TestConnectionStart', 'TestConnection', 'ImportWebsitesStart',
     'ImportWebsites', 'ExportInventoryStart', 'ExportInventory',
     'StorePriceTier', 'ExportTierPricesStart', 'ExportTierPrices',
-    'ExportTierPricesStatus',
+    'ExportTierPricesStatus', 'ExportShipmentStatusStart',
+    'ExportShipmentStatus',
 ]
 __metaclass__ = PoolMeta
 
@@ -225,7 +227,7 @@ class Instance(ModelSQL, ModelView):
 
                     # Create store views
                     for mag_store_view in mag_store_views:
-                        StoreView.find_or_create(store, mag_store_view)
+                            StoreView.find_or_create(store, mag_store_view)
 
     @classmethod
     @ModelView.button_action('magento.wizard_import_carriers')
@@ -560,6 +562,18 @@ class WebsiteStoreView(ModelSQL, ModelView):
     last_order_import_time = fields.DateTime('Last Order Import Time')
     last_order_export_time = fields.DateTime("Last Order Export Time")
 
+    #: Last time at which the shipment status was exported to magento
+    last_shipment_export_time = fields.DateTime('Last shipment export time')
+
+    #: Checking this will make sure that only the done shipments which have a
+    #: carrier and tracking reference are exported.
+    export_tracking_information = fields.Boolean(
+        'Export tracking information', help='Checking this will make sure'
+        ' that only the done shipments which have a carrier and tracking '
+        'reference are exported. This will update carrier and tracking '
+        'reference on magento for the exported shipments as well.'
+    )
+
     def get_instance(self, name):
         """
         Returns instance related to store
@@ -733,6 +747,107 @@ class WebsiteStoreView(ModelSQL, ModelView):
 
         for store_view in store_views:
             store_view.import_order_from_store_view()
+
+    @classmethod
+    def export_shipment_status(cls, store_views=None):
+        """
+        Export Shipment status for shipments related to current store view.
+        This method is called by cron.
+
+        :param store_views: List of active records of store_view
+        """
+        if not store_views:
+            store_views = cls.search([])
+
+        for store_view in store_views:
+            # Set the instance in context
+            with Transaction().set_context(
+                magento_instance=store_view.instance.id
+            ):
+                store_view.export_shipment_status_to_magento()
+
+    def export_shipment_status_to_magento(self):
+        """
+        Exports shipment status for shipments to magento, if they are shipped
+
+        :return: List of active record of shipment
+        """
+        Shipment = Pool().get('stock.shipment.out')
+        Sale = Pool().get('sale.sale')
+
+        instance = self.instance
+
+        sale_domain = [
+            ('magento_store_view', '=', self.id),
+            ('shipment_state', '=', 'sent'),
+            ('magento_id', '!=', None),
+        ]
+
+        if self.last_shipment_export_time:
+            sale_domain.append(
+                ('write_date', '>=', self.last_shipment_export_time)
+            )
+
+        sales = Sale.search(sale_domain)
+
+        for sale in sales:
+            if not sale.shipments:
+                sales.pop(sale)
+                continue
+            # Get the increment id from the sale reference
+            increment_id = sale.reference[
+                len(instance.order_prefix): len(sale.reference)
+            ]
+            self.write([self], {
+                'last_shipment_export_time': datetime.utcnow()
+            })
+
+            for shipment in sale.shipments:
+                try:
+                    # Some checks to make sure that only valid shipments are
+                    # being exported
+                    if shipment.is_tracking_exported_to_magento or \
+                            shipment.state not in ('packed', 'done') or \
+                            shipment.magento_increment_id:
+                        sales.pop(sale)
+                        continue
+                    with magento.Shipment(
+                        instance.url, instance.api_user, instance.api_key
+                    ) as shipment_api:
+                        item_qty_map = {}
+                        for move in shipment.outgoing_moves:
+                            if isinstance(move.origin, SaleLine) \
+                                    and move.origin.magento_id:
+                                # This is done because there can be multiple
+                                # lines with the same product and they need
+                                # to be send as a sum of quanitities
+                                item_qty_map.setdefault(
+                                    str(move.origin.magento_id), 0
+                                )
+                                item_qty_map[str(move.origin.magento_id)] += \
+                                    move.quantity
+                        shipment_increment_id = shipment_api.create(
+                            order_increment_id=increment_id,
+                            items_qty=item_qty_map
+                        )
+                        Shipment.write(sale.shipments, {
+                            'magento_increment_id': shipment_increment_id,
+                        })
+
+                        if self.export_tracking_information and (
+                            shipment.tracking_number and shipment.carrier
+                        ):
+                            shipment.export_tracking_info_to_magento()
+                except xmlrpclib.Fault, fault:
+                    if fault.faultCode == 102:
+                        # A shipment already exists for this order,
+                        # we cannot do anything about it.
+                        # Maybe it was already exported earlier or was created
+                        # separately on magento
+                        # Hence, just continue
+                        continue
+
+        return sales
 
 
 class StorePriceTier(ModelSQL, ModelView):
@@ -913,3 +1028,45 @@ class ExportTierPrices(Wizard):
         return {
             'products_count': store.export_tier_prices_to_magento()
         }
+
+
+class ExportShipmentStatusStart(ModelView):
+    "Export Shipment Status View"
+    __name__ = 'magento.wizard_export_shipment_status.start'
+
+
+class ExportShipmentStatus(Wizard):
+    """
+    Export Shipment Status Wizard
+
+    Exports shipment status for sale orders related to current store view
+    """
+    __name__ = 'magento.wizard_export_shipment_status'
+
+    start = StateView(
+        'magento.wizard_export_shipment_status.start',
+        'magento.wizard_export_shipment_status_view_start_form',
+        [
+            Button('Cancel', 'end', 'tryton-cancel'),
+            Button('Continue', 'export_', 'tryton-ok', default=True),
+        ]
+    )
+
+    export_ = StateAction('sale.act_sale_form')
+
+    def do_export_(self, action):
+        """Handles the transition"""
+
+        StoreView = Pool().get('magento.store.store_view')
+
+        storeview = StoreView(Transaction().context.get('active_id'))
+
+        sales = storeview.export_shipment_status_to_magento()
+
+        action['pyson_domain'] = PYSONEncoder().encode(
+            [('id', 'in', map(int, sales))]
+        )
+        return action, {}
+
+    def transition_export_(self):
+        return 'end'

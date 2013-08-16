@@ -1,3 +1,4 @@
+<?xml version="1.0"?>
 <tryton>
     <data>
 
@@ -7,6 +8,14 @@
             <field name="type">form</field>
             <field name="inherit" ref="sale.sale_view_form"/>
             <field name="name">sale_form</field>
+        </record>
+
+        <!-- Shipment -->
+        <record model="ir.ui.view" id="shipment_view_form">
+            <field name="model">stock.shipment.out</field>
+            <field name="type">form</field>
+            <field name="inherit" ref="stock.shipment_out_view_form"/>
+            <field name="name">shipment_out_form</field>
         </record>
 
     </data>

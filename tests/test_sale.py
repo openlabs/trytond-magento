@@ -17,6 +17,8 @@ DIR = os.path.abspath(os.path.normpath(
 ))
 if os.path.isdir(DIR):
     sys.path.insert(0, os.path.dirname(DIR))
+from decimal import Decimal
+
 import unittest
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
@@ -63,6 +65,21 @@ def mock_customer_api(mock=None, data=None):
 
     handle = MagicMock(spec=magento.Customer)
     handle.info.side_effect = lambda id: load_json('customers', str(id))
+    if data is None:
+        handle.__enter__.return_value = handle
+    else:
+        handle.__enter__.return_value = data
+    mock.return_value = handle
+    return mock
+
+
+def mock_shipment_api(mock=None, data=None):
+    if mock is None:
+        mock = MagicMock(spec=magento.Shipment)
+
+    handle = MagicMock(spec=magento.Shipment)
+    handle.create.side_effect = lambda *args, **kwargs: 'Shipment created'
+    handle.addtrack.side_effect = lambda *args, **kwargs: True
     if data is None:
         handle.__enter__.return_value = handle
     else:
@@ -287,7 +304,8 @@ class TestSale(TestBase):
                 with Transaction().set_context(company=self.company):
                 # Create sale order using magento data
                     with patch(
-                            'magento.Product', mock_product_api(), create=True):
+                            'magento.Product', mock_product_api(), create=True
+                    ):
                         order = Sale.find_or_create_using_magento_data(
                             order_data
                         )
@@ -459,6 +477,121 @@ class TestSale(TestBase):
                         self.store_view.export_order_status_for_store_view()
 
                     self.assertEqual(len(order_exported), 0)
+
+    def test_0050_export_shipment(self):
+        """
+        Tests if shipments status is being exported for all the shipments
+        related to store view
+        """
+        Sale = POOL.get('sale.sale')
+        Party = POOL.get('party.party')
+        Category = POOL.get('product.category')
+        MagentoOrderState = POOL.get('magento.order_state')
+        Carrier = POOL.get('carrier')
+        ProductTemplate = POOL.get('product.template')
+        MagentoCarrier = POOL.get('magento.instance.carrier')
+        Shipment = POOL.get('stock.shipment.out')
+        Uom = POOL.get('product.uom')
+
+        with Transaction().start(DB_NAME, USER, CONTEXT):
+            self.setup_defaults()
+            with Transaction().set_context({
+                'magento_instance': self.instance1.id,
+                'magento_store_view': self.store_view,
+                'magento_website': self.website1.id,
+            }):
+
+                MagentoOrderState.create_all_using_magento_data(
+                    load_json('order-states', 'all'),
+                )
+
+                category_tree = load_json('categories', 'category_tree')
+                Category.create_tree_using_magento_data(category_tree)
+
+                orders = Sale.search([])
+                self.assertEqual(len(orders), 0)
+
+                order_data = load_json('orders', '100000001')
+
+                with patch(
+                        'magento.Customer', mock_customer_api(), create=True):
+                    party = Party.find_or_create_using_magento_id(
+                        order_data['customer_id']
+                    )
+
+                with Transaction().set_context(company=self.company):
+                # Create sale order using magento data
+                    with patch(
+                            'magento.Product', mock_product_api(), create=True
+                    ):
+                        order = Sale.find_or_create_using_magento_data(
+                            order_data
+                        )
+
+                mag_carriers = MagentoCarrier.create_all_using_magento_data(
+                    load_json('carriers', 'shipping_methods')
+                )
+
+                uom, = Uom.search([('name', '=', 'Unit')], limit=1)
+                product, = ProductTemplate.create([
+                    {
+                        'name': 'Shipping product',
+                        'list_price': Decimal('100'),
+                        'cost_price': Decimal('1'),
+                        'type': 'service',
+                        'account_expense': self.get_account_by_kind('expense'),
+                        'account_revenue': self.get_account_by_kind('revenue'),
+                        'default_uom': uom.id,
+                        'sale_uom': uom.id,
+                        'products': [('create', [{
+                            'code': 'code',
+                            'description': 'This is a product description',
+                        }])]
+                    }]
+                )
+
+                # Create carrier
+                carrier, = Carrier.create([{
+                    'party': party.id,
+                    'carrier_product': product.products[0].id,
+                }])
+                MagentoCarrier.write([mag_carriers[0]], {
+                    'carrier': carrier.id,
+                })
+
+                Sale.write([order], {'invoice_method': 'manual'})
+                order = Sale(order.id)
+                Sale.confirm([order])
+                with Transaction().set_user(0, set_context=True):
+                    Sale.process([order])
+                shipment, = Shipment.search([])
+
+                Shipment.write([shipment], {
+                    'carrier': carrier.id,
+                    'tracking_number': '1234567890',
+                })
+                Shipment.assign([shipment])
+                Shipment.pack([shipment])
+                Shipment.done([shipment])
+
+                shipment = Shipment(shipment.id)
+
+                self.assertFalse(shipment.magento_increment_id)
+
+                with patch(
+                    'magento.Shipment', mock_shipment_api(), create=True
+                ):
+
+                    self.store_view.export_shipment_status_to_magento()
+
+                    shipment = Shipment(shipment.id)
+                    self.assertTrue(shipment.magento_increment_id)
+
+                    # Export Tracking info
+                    self.assertEqual(
+                        shipment.export_tracking_info_to_magento(),
+                        True
+                    )
 
     def test_0070_export_order_status_with_last_order_export_time_case2(self):
         """

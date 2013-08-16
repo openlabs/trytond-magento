@@ -89,7 +89,7 @@ class Party:
         :return: Active record of record created/found
         """
         if not Transaction().context['magento_website']:
-            return cls.raise_user_error('website_not_found')
+            cls.raise_user_error('website_not_found')
 
         party = cls.find_using_magento_data(magento_data)
 
@@ -157,17 +157,35 @@ class MagentoWebsiteParty(ModelSQL, ModelView):
     )
 
     @classmethod
+    def validate(cls, records):
+        super(MagentoWebsiteParty, cls).validate(records)
+        cls.check_unique_party(records)
+
+    @classmethod
     def __setup__(cls):
         """
         Setup the class before adding to pool
         """
         super(MagentoWebsiteParty, cls).__setup__()
-        cls._sql_constraints += [
-            (
-                'magento_id_website_unique', 'UNIQUE(magento_id, website)',
-                'A party must be unique in a website'
-            )
-        ]
+        cls._error_messages.update({
+            'party_exists': 'A party must be unique in a website'
+        })
+
+    @classmethod
+    def check_unique_party(cls, records):
+        """Checks thats each party should be unique in a website if it
+        does not have a magento ID of 0. magento_id of 0 means its a guest
+        customer.
+
+        :param records: List of active records
+        """
+        for magento_partner in records:
+            if magento_partner.magento_id != 0 and cls.search_count([
+                ('magento_id', '=', magento_partner.magento_id),
+                ('website', '=', magento_partner.website.id),
+                ('id', '!=', magento_partner.id),
+            ]) > 0:
+                cls.raise_user_error('party_exists')
 
 
 class Address:
