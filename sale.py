@@ -243,7 +243,6 @@ class Sale:
         """
         Party = Pool().get('party.party')
         Address = Pool().get('party.address')
-        ProductTemplate = Pool().get('product.template')
         StoreView = Pool().get('magento.store.store_view')
         Currency = Pool().get('currency.currency')
         Uom = Pool().get('product.uom')
@@ -291,19 +290,7 @@ class Sale:
             'magento_store_view': store_view.id,
             'invoice_method': tryton_state['invoice_method'],
             'shipment_method': tryton_state['shipment_method'],
-            'lines': [
-                ('create', [{
-                    'magento_id': int(item['item_id']),
-                    'description': item['name'],
-                    'unit_price': Decimal(item['price']),
-                    'unit': unit.id,
-                    'quantity': Decimal(item['qty_ordered']),
-                    'note': item['product_options'],
-                    'product': ProductTemplate.find_or_create_using_magento_id(
-                        item['product_id'],
-                    ).products[0].id
-                }]) for item in order_data['items']
-            ]
+            'lines': cls.get_item_line_data_using_magento_data(order_data)
         }
 
         if Decimal(order_data.get('shipping_amount')):
@@ -322,6 +309,51 @@ class Sale:
         sale.process_sale_using_magento_state(order_data['state'])
 
         return sale
+
+    @classmethod
+    def get_item_line_data_using_magento_data(cls, order_data):
+        """
+        Make data for an item line from the magento data.
+        This method decides the actions to be taken on different product types
+
+        :param order_data: Order Data from magento
+        :return: List of data of order lines in required format
+        """
+        Uom = Pool().get('product.uom')
+        ProductTemplate = Pool().get('product.template')
+        Bom = Pool().get('production.bom')
+
+        unit, = Uom.search([('name', '=', 'Unit')])
+
+        line_data = []
+        for item in order_data['items']:
+            if not item['parent_item_id']:
+                # If its a top level product, create it
+                values = {
+                    'magento_id': int(item['item_id']),
+                    'description': item['name'],
+                    'unit_price': Decimal(item['price']),
+                    'unit': unit.id,
+                    'quantity': Decimal(item['qty_ordered']),
+                    'note': item['product_options'],
+                    'product': ProductTemplate.find_or_create_using_magento_id(
+                        item['product_id'],
+                    ).products[0].id
+                }
+                line_data.append(('create', [values]))
+
+            # If the product is a child product of a bundle product, do not
+            # create a separate line for this.
+            if 'bundle_option' in item['product_options'] and \
+                    item['parent_item_id']:
+                continue
+
+        # Handle bundle products.
+        # Find/Create BoMs for bundle products
+        # If no bundle products exist in sale, nothing extra will happen
+        Bom.find_or_create_bom_for_magento_bundle(order_data)
+
+        return line_data
 
     @classmethod
     def find_or_create_using_magento_increment_id(cls, order_increment_id):

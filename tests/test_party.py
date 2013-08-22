@@ -253,22 +253,6 @@ class TestParty(TestBase):
             # Create party
             party = self.Party.find_or_create_using_magento_data(party_data)
 
-            subdivision1, subdivision2 = self.Subdivision.create([
-                {
-                    'name': 'American Samoa',
-                    'code': 'US-AS',
-                    'type': 'state',
-                    'country': self.country1.id,
-                }, {
-                    'name': 'Alabama',
-                    'code': 'US-AL',
-                    'type': 'state',
-                    'country': self.country1.id,
-                }
-            ])
-            self.assert_(subdivision1)
-            self.assert_(subdivision2)
-
             address_data = load_json('addresses', '1')
 
             address = Address.find_or_create_for_party_using_magento_data(
