@@ -20,7 +20,8 @@ from trytond.wizard import Wizard, StateView, Button, StateAction
 
 __all__ = [
     'MagentoOrderState', 'StockShipmentOut', 'Sale', 'SaleLine',
-    'ImportOrdersStart', 'ImportOrders',
+    'ImportOrdersStart', 'ImportOrders', 'ExportOrderStatusStart',
+    'ExportOrderStatus',
 ]
 __metaclass__ = PoolMeta
 
