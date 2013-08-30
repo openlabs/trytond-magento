@@ -177,6 +177,11 @@
             <field name="wiz_name">magento.wizard_import_carriers</field>
             <field name="model">magento.instance</field>
         </record>
+        <record model="ir.ui.view" id="wizard_import_carriers_start_view_form">
+            <field name="model">magento.wizard_import_carriers.start</field>
+            <field name="type">form</field>
+            <field name="name">wizard_import_carriers_start_form</field>
+        </record>
 
         <!--Order states-->
         <record model="ir.ui.view" id="order_state_view_form">
@@ -188,6 +193,19 @@
             <field name="model">magento.order_state</field>
             <field name="type">tree</field>
             <field name="name">order_state_tree</field>
+        </record>
+
+        <!--Import Order states wizard-->
+        <record model="ir.action.wizard" id="wizard_import_order_states">
+            <field name="name">Import Order States</field>
+            <field name="wiz_name">magento.wizard_import_order_states</field>
+            <field name="model">magento.instance</field>
+        </record>
+
+        <record model="ir.ui.view" id="wizard_import_order_states_start_view_form">
+            <field name="model">magento.wizard_import_order_states.start</field>
+            <field name="type">form</field>
+            <field name="name">wizard_import_order_states_start_form</field>
         </record>
 
         <record model="res.user" id="user_magento">
@@ -202,7 +220,6 @@
             <field name="user" ref="user_magento"/>
             <field name="group" ref="sale.group_sale_admin"/>
         </record>
-
 
         <!--Cron To Export Inventory-->
         <record model="ir.cron" id="ir_cron_export_inventory">

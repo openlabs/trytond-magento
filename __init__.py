@@ -13,7 +13,8 @@ from magento_ import (
     TestConnectionStart, TestConnection, ImportWebsitesStart, ImportWebsites,
     ExportInventoryStart, ExportInventory, StorePriceTier,
     ExportTierPricesStart, ExportTierPrices, ExportTierPricesStatus,
-    ExportShipmentStatusStart, ExportShipmentStatus,
+    ExportShipmentStatusStart, ExportShipmentStatus, ImportOrderStatesStart,
+    ImportOrderStates, ImportCarriersStart, ImportCarriers
 )
 from party import Party, MagentoWebsiteParty, Address
 from product import (
@@ -66,6 +67,8 @@ def register():
         Currency,
         Sale,
         ImportOrdersStart,
+        ImportOrderStatesStart,
+        ImportCarriersStart,
         ExportOrderStatusStart,
         SaleLine,
         BOM,
@@ -74,6 +77,7 @@ def register():
     Pool.register(
         TestConnection,
         ImportWebsites,
+        ImportOrderStates,
         ExportInventory,
         ExportTierPrices,
         ExportShipmentStatus,
@@ -82,5 +86,6 @@ def register():
         ExportCatalog,
         ImportOrders,
         ExportOrderStatus,
+        ImportCarriers,
         module='magento', type_='wizard'
     )
