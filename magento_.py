@@ -614,6 +614,10 @@ class WebsiteStoreView(ModelSQL, ModelView):
             "states_not_found": 'No order states found for importing orders! '
                 'Please configure the order states on magento instance',
         })
+        cls._buttons.update({
+            'import_orders_button': {},
+            'export_order_status_button': {}
+        })
 
     @classmethod
     def find_or_create(cls, store, values):
@@ -641,6 +645,26 @@ class WebsiteStoreView(ModelSQL, ModelView):
             'store': store.id,
             'magento_id': int(values['store_id']),
         }])[0]
+
+    @classmethod
+    @ModelView.button_action('magento.wizard_import_orders')
+    def import_orders_button(cls, store_views):
+        """
+        Calls wizard to import orders for store view
+
+        :param store_views: List of active records of store views
+        """
+        pass
+
+    @classmethod
+    @ModelView.button_action('magento.wizard_export_order_status')
+    def export_order_status_button(cls, store_views):
+        """
+        Calls wizard to export order status for store view
+
+        :param store_views: List of active records of store views
+        """
+        pass
 
     def import_order_from_store_view(self):
         """
