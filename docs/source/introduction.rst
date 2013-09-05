@@ -4,12 +4,12 @@ Introduction
 Magento is a feature-rich eCommerce platform built on open-source technology
 that provides online merchants with unprecedented flexibility and control over
 the look, content and functionality of their eCommerce store. It comes with a
-variety of tools, necessarily for building a successful online shop.
+variety of tools, necessary for building a successful online shop.
 
 A new bridge between Tryton and Magento has been initiated by Openlabs team.
 This module allows synchronization of Magento with Tryton. It
 supports Synchronization of Customers, Addresses, Product Categories, Products,
-Order Statuses, and Orders.
+Order Status, and Orders.
 
 This tutorial will guide you through installation, setup and configuring
 magento integration module. To start with this see `Installation`_ first.
@@ -19,8 +19,8 @@ magento integration module. To start with this see `Installation`_ first.
 Installation
 ============
 
-Install Trytond Magento Integration module by following two simple steps. Read
-along to see how to do that.
+Install Trytond Magento integration module by following the listed steps.
+Continue reading to know more.
 
 Installation of Magento Core API extension
 ++++++++++++++++++++++++++++++++++++++++++
@@ -66,14 +66,15 @@ allows you to edit settings for installation:
 .. note::
    Default state is ``Stable``, change it to ``Beta``.
 
-4. Go to first tab i.e., ``Extensions`` to install magento-connector,
+4. Go to the first tab i.e., ``Extensions`` to install magento-connector,
 
     .. image:: _images/magento-connect-manager.png
        :width: 800
        :align: center
 
-5. The following is the `extension key`_ that you need to copy and paste in your Magento
-   Connect area; it will be used for installing the magento-connector: 
+5. The following is the `extension key`_ that you need to copy and paste in
+   your Magento Connect area; it will be used for installing the
+   magento-connector: 
 
 .. _extension key:
 
@@ -84,7 +85,7 @@ allows you to edit settings for installation:
        :align: center
 
 6. Once you have chosen an extension key, click Install, and wait for the
-   module to be shown for installation with Magento Connect version matching
+   module to appear for installation with Magento Connect version matching
    your current Magento version:
 
     .. image:: _images/loading.png
@@ -123,7 +124,7 @@ Installation of Magento Integration [Tryton module]
 1. The module source is available online and can be downloaded from:vsp
    `here <https://github.com/openlabs/trytond_magento>`_.
 
-2. The module can be downloaded as a `zip` or can be `cloned` by running
+2. The module can be downloaded as a `zip` file or can be `cloned` by running
 
     .. code-block:: sh
 
@@ -135,7 +136,7 @@ Installation of Magento Integration [Tryton module]
 
         $ git clone git@github.com:openlabs/trytond_magento.git
 
-3. If the module is downloaded as a zip, extract the module which will
+3. If the module is downloaded as a zip file, extract the module which will
    give a directory.
 
 4. From the module directory, use the setup.py script with the command:
@@ -165,14 +166,14 @@ Run Tryton client
         :width: 500
         :align: center
 
-    Cancel this window and go to ``File >> Database >> New Database`` to
+    Close this window and go to ``File >> Database >> New Database`` to
     create database for trytond magento connector.
 
     .. image:: _images/create_database.png
         :width: 500
         :align: center
     
-    It will open window to fill database details.
+    It will open a window, which will prompt you to fill the database details.
 
     .. image:: _images/new_database.png
         :width: 500
@@ -181,7 +182,7 @@ Run Tryton client
 Login to Tryton
 ----------------
 
-Now login with created database. And configure tryton using configuration
+Now login with created database and configure tryton using configuration
 wizard displayed.
 
 Now go to ``Administration >> Modules`` and click on Modules that will open
@@ -191,7 +192,7 @@ list of all modules installed.
     :width: 1000
     :align: center
 
-Now Click over Magento module, mark for installation and perform pending
+Now Click on the Magento module, mark for installation and perform pending
 installation/upgrade as shown below:
 
 .. image:: _images/mark_for_installation.png
@@ -203,8 +204,8 @@ installation/upgrade as shown below:
     :width: 1000
     :align: center
 
-Clicking this will open a wizard to start upgrading. Click on Start
-Upgrade as shown below and the module is ready to use.
+Clicking the icon shown above  will open a wizard to start upgradation.
+Click on Start Upgrade as shown below and the module is ready to use.
 
 .. image:: _images/start_upgrade.png
     :width: 1000
