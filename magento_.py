@@ -27,7 +27,8 @@ __all__ = [
     'ImportWebsites', 'ExportInventoryStart', 'ExportInventory',
     'StorePriceTier', 'ExportTierPricesStart', 'ExportTierPrices',
     'ExportTierPricesStatus', 'ExportShipmentStatusStart',
-    'ExportShipmentStatus',
+    'ExportShipmentStatus', 'ImportOrderStatesStart',
+    'ImportOrderStates', 'ImportCarriersStart', 'ImportCarriers'
 ]
 __metaclass__ = PoolMeta
 
@@ -84,7 +85,7 @@ class Instance(ModelSQL, ModelView):
         return 'mag_'
 
     @classmethod
-    @ModelView.button
+    @ModelView.button_action('magento.wizard_import_order_states')
     def import_order_states(cls, instances):
         """
         Import order states for instances
@@ -959,6 +960,62 @@ class ImportWebsites(Wizard):
     def default_start(self, data):
         """Import the websites, store and store views and show user a
         confirmation message
+
+        :param data: Wizard data
+        """
+        return {}
+
+
+class ImportOrderStatesStart(ModelView):
+    "Import Order States Start"
+    __name__ = 'magento.wizard_import_order_states.start'
+
+
+class ImportOrderStates(Wizard):
+    """
+    Wizard to import order states for instance
+    """
+    __name__ = 'magento.wizard_import_order_states'
+
+    start = StateView(
+        'magento.wizard_import_order_states.start',
+        'magento.wizard_import_order_states_start_view_form',
+        [
+            Button('Ok', 'end', 'tryton-ok'),
+        ]
+    )
+
+    def default_start(self, data):
+        """
+        Import order states and show the user appropriate message
+
+        :param data: Wizard data
+        """
+        return {}
+
+
+class ImportCarriersStart(ModelView):
+    "Import Carriers Start"
+    __name__ = 'magento.wizard_import_carriers.start'
+
+
+class ImportCarriers(Wizard):
+    """
+    Wizard to import carriers / shipping methods for instance
+    """
+    __name__ = 'magento.wizard_import_carriers'
+
+    start = StateView(
+        'magento.wizard_import_carriers.start',
+        'magento.wizard_import_carriers_start_view_form',
+        [
+            Button('Ok', 'end', 'tryton-ok'),
+        ]
+    )
+
+    def default_start(self, data):
+        """
+        Import carriers and show the user appropriate message
 
         :param data: Wizard data
         """
