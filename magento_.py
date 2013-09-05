@@ -940,6 +940,8 @@ class ImportWebsitesStart(ModelView):
     "Import Websites Start View"
     __name__ = 'magento.wizard_import_websites.start'
 
+    message = fields.Text("Message", readonly=True)
+
 
 class ImportWebsites(Wizard):
     """
@@ -958,12 +960,18 @@ class ImportWebsites(Wizard):
     )
 
     def default_start(self, data):
-        """Import the websites, store and store views and show user a
+        """
+        Import the websites, store and store views and show user a
         confirmation message
 
         :param data: Wizard data
         """
-        return {}
+        return {
+            'message': "This wizard has imported all the websites for this " +
+                "magento instance. It has also imported all the stores and " +
+                "store views related to the websites imported. If any of " +
+                "the records existed already, it wont be imported."
+        }
 
 
 class ImportOrderStatesStart(ModelView):
@@ -998,6 +1006,8 @@ class ImportCarriersStart(ModelView):
     "Import Carriers Start"
     __name__ = 'magento.wizard_import_carriers.start'
 
+    message = fields.Text("Message", readonly=True)
+
 
 class ImportCarriers(Wizard):
     """
@@ -1019,7 +1029,13 @@ class ImportCarriers(Wizard):
 
         :param data: Wizard data
         """
-        return {}
+        return {
+            'message': "This wizard has imported all the carriers / " +
+                "shipping methods for this magento instance. You should now " +
+                "configure the imported carriers / shipping methods to " +
+                "match the shipment carriers in Tryton to allow seamless " +
+                "synchronisation of tracking information."
+        }
 
 
 class ExportInventoryStart(ModelView):
@@ -1115,6 +1131,8 @@ class ExportShipmentStatusStart(ModelView):
     "Export Shipment Status View"
     __name__ = 'magento.wizard_export_shipment_status.start'
 
+    message = fields.Text("Message", readonly=True)
+
 
 class ExportShipmentStatus(Wizard):
     """
@@ -1134,6 +1152,19 @@ class ExportShipmentStatus(Wizard):
     )
 
     export_ = StateAction('sale.act_sale_form')
+
+    def default_start(self, data):
+        """
+        Sets default data for wizard
+
+        :param data: Wizard data
+        """
+        return {
+            'message': "This wizard will export shipment status for all the " +
+                "shipments related to this store view. To export tracking " +
+                "information also for these shipments please check the " +
+                "checkbox for Export Tracking Information on Store View."
+        }
 
     def do_export_(self, action):
         """Handles the transition"""

@@ -522,6 +522,8 @@ class ImportOrdersStart(ModelView):
     "Import Sale Order Start View"
     __name__ = 'magento.wizard_import_orders.start'
 
+    message = fields.Text("Message", readonly=True)
+
 
 class ImportOrders(Wizard):
     """
@@ -541,6 +543,20 @@ class ImportOrders(Wizard):
     )
 
     import_ = StateAction('sale.act_sale_form')
+
+    def default_start(self, data):
+        """
+        Sets default data for wizard
+
+        :param data: Wizard data
+        """
+        return {
+            'message': "This wizard will import all sale orders placed on " +
+                "this store view on magento after the Last Order Import " +
+                "Time. If Last Order Import Time is missing, then it will " +
+                "import all the orders from beginning of time. [This might " +
+                "be slow depending on number of orders]."
+        }
 
     def do_import_(self, action):
         """Handles the transition"""
@@ -563,6 +579,8 @@ class ExportOrderStatusStart(ModelView):
     "Export Order Status Start View"
     __name__ = 'magento.wizard_export_order_status.start'
 
+    message = fields.Text("Message", readonly=True)
+
 
 class ExportOrderStatus(Wizard):
     """
@@ -582,6 +600,19 @@ class ExportOrderStatus(Wizard):
     )
 
     export_ = StateAction('sale.act_sale_form')
+
+    def default_start(self, data):
+        """
+        Sets default data for wizard
+
+        :param data: Wizard data
+        """
+        return {
+            'message': "This wizard will export orders status to magento " +
+                "for this store view. All the orders edited/updated after " +
+                "the Last Order Export Time will be exported. [NOTE: This " +
+                "feature is currently available only for Canceled Orders]"
+        }
 
     def do_export_(self, action):
         """Handles the transition"""
