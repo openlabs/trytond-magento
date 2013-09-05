@@ -1,7 +1,9 @@
 <?xml version="1.0"?>
 <!-- This file is part of Tryton. The COPYRIGHT file at the top level of
 this repository contains the full copyright notices and license terms. -->
-<form string="Export Tier Prices" col="2">
-    <label name="products_count"/>
+<form string="Export Tier Prices" col="3">
+    <image name="tryton-dialog-information" xexpand="0" xfill="0"/>
+    <label string="The count of product for which tier prices has been exported"
+        id="choose" yalign="0.0" xalign="0.0" xexpand="1"/>
     <field name="products_count"/>
 </form>

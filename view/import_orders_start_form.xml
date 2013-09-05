@@ -1,6 +1,5 @@
 <?xml version="1.0"?>
 <form string="Import Orders" col="2">
     <image name="tryton-dialog-information" xexpand="0" xfill="0"/>
-    <label string="This wizard will import all sale orders placed on this store view on magento after the Last Order Import Time. If Last Order Import Time is missing, then it will import all the orders from beginning of time. [This might be slow depending on number of orders.]"
-        id="choose" yalign="0.0" xalign="0.0" xexpand="1"/>
+    <field name="message"/>
 </form>
