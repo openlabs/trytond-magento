@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+
+<form string="Website Store View">
+    <label name="name"/>
+    <field name="name"/>
+    <label name="code"/>
+    <field name="code"/>
+    <label name="website"/>
+    <field name="website"/>
+    <label name="company"/>
+    <field name="company"/>
+    <label name="instance"/>
+    <field name="instance"/>
+    <notebook>
+        <page id="export_import_time" string="Last Export / Import Time">
+            <label name="last_order_import_time"/>
+            <field name="last_order_import_time"/>
+            <label name="last_order_export_time"/>
+            <field name="last_order_export_time"/>
+        </page>
+    </notebook>
+    <button string="Import Orders" name="import_orders_button" colspan="2"/>
+    <button string="Export Order Status" name="export_order_status_button" colspan="2"/>
+</form>

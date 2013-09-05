@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+
+<form string="Export Order Status" col="2">
+    <image name="tryton-dialog-information" xexpand="0" xfill="0"/>
+    <label string="This wizard will export orders status to magento for this store view. All the orders edited/updated after the Last Order Export Time will be exported. [NOTE: This feature is currently available only for Canceled Orders.]"
+        id="choose" yalign="0.0" xalign="0.0" xexpand="1"/>
+</form>

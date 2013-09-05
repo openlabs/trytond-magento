@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+
+<form string="Magento Instance">
+    <label name="name"/>
+    <field name="name"/>
+    <label name="company"/>
+    <field name="company"/>
+    <label name="active"/>
+    <field name="active"/>
+    <label name="order_prefix"/>
+    <field name="order_prefix"/>
+    <notebook>
+        <page string="API Settings" id="api_settings">
+            <label name="url"/>
+            <field name="url" colspan="3"/>
+            <newline/>
+            <label name="api_user"/>
+            <field name="api_user"/>
+            <label name="api_key"/>
+            <field name="api_key"/>
+        </page>
+        <page string="Websites" id="websites">
+            <field name="websites"/>
+        </page>
+        <page string="Order States" id="order_states">
+            <field name="order_states"/>
+        </page>
+        <page string="Carrier / Shipping Methods" id="carriers">
+            <field name="carriers"/>
+        </page>
+        <page string="Account Settings" id="account_settings">
+            <label name="default_account_expense"/>
+            <field name="default_account_expense"/>
+            <label name="default_account_revenue"/>
+            <field name="default_account_revenue"/>
+        </page>
+    </notebook>
+    <button string="Test Connection" name="test_connection" colspan="2"/>
+    <button string="Import Websites" name="import_websites" colspan="2"/>
+    <button string="Import Order states" name="import_order_states" colspan="2"/>
+    <button string="Import Shipping Methods" name="import_carriers" colspan="2"/>
+</form>

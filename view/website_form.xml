@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+
+<form string="Instance Website">
+    <label name="name"/>
+    <field name="name"/>
+    <label name="code"/>
+    <field name="code"/>
+    <label name="company"/>
+    <field name="company"/>
+    <label name="instance"/>
+    <field name="instance"/>
+    <label name="magento_root_category_id"/>
+    <field name="magento_root_category_id"/>
+    <notebook>
+        <page string="Stores" id="stores">
+            <field name="stores"/>
+        </page>
+        <page string="Magento Product Templates" id="magento_product_templates">
+            <field name="magento_product_templates"/>
+        </page>
+    </notebook>
+</form>

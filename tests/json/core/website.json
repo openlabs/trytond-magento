@@ -1,0 +1,9 @@
+{
+    "__comment__": "Website data similar to website",
+    "code": "base",
+    "name": "Main Website",
+    "website_id": "1",
+    "is_default": "1",
+    "sort_order": "0",
+    "default_group_id": "1"
+}

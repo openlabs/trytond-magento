@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<!-- This file is part of Tryton. The COPYRIGHT file at the top level of
+this repository contains the full copyright notices and license terms. -->
+<data>
+    <xpath expr="/form/notebook/page[@id='general']/field[@name='cost_price_method']" position="after">
+        <label name="magento_product_type"/>
+        <field name="magento_product_type"/>
+    </xpath>
+    <xpath expr="/form/notebook/page[@id='general']" position="after">
+        <page string="Magento" id="magento_product_templates">
+            <field name="magento_ids"/>
+            <field name="price_tiers"/>
+        </page>
+    </xpath>
+</data>

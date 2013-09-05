@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<form string="Magento Carriers / Shipping Methods" col="4">
+    <label name="title"/>
+    <field name="title"/>
+    <label name="code"/>
+    <field name="code"/>
+    <newline/>
+    <label name="carrier"/>
+    <field name="carrier"/>
+    <label name="instance"/>
+    <field name="instance"/>
+</form>

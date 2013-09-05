@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<!-- This file is part of Tryton. The COPYRIGHT file at the top level of
+this repository contains the full copyright notices and license terms. -->
+<form string="Website Product Template" col="6">
+    <label name="magento_id"/>
+    <field name="magento_id"/>
+    <label name="website"/>
+    <field name="website"/>
+    <label name="template"/>
+    <field name="template"/>
+    <newline/>
+    <button name="update_product_from_magento" string="Update from Magento"/>
+</form>

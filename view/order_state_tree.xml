@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<tree string="Magento Order States">
+    <field name="name"/>
+    <field name="code"/>
+    <field name="use_for_import"/>
+    <field name="tryton_state"/>
+</tree>

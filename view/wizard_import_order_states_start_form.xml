@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+
+<form string="Import Order States">
+    <label id="status" string="Order states has been imported successfully for this magento instance"
+      colspan="2"/>
+</form>

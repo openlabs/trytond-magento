@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<tree string="Magento Carriers / Shipping Methods">
+    <field name="title"/>
+    <field name="code"/>
+    <field name="carrier"/>
+    <field name="instance"/>
+</tree>
