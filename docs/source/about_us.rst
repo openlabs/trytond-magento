@@ -1,20 +1,14 @@
 About Openlabs Technologies and Consulting Private Limited
 ==========================================================
 
-Openlabs Technologies and Consulting Private Limited is a global 
-Information Technology and Management Consulting Company that helps 
-small and medium businesses achieve high efficiency with cost effective 
-business solutions. With customers and partners in four continents, 
-Openlabs designs and delivers technology enabled innovative business 
-solutions that addresses the needs of small and medium enterprises. Openlabs 
-provides end to end solutions to businessess using a range of Free and 
-Opensource Solutions (FOSS) Implemented by a team of highly skilled workforce 
-comprising of domain and business experts.
-
-The software division of Openlabs is a specialised division of Rapid 
-Application Development of business application with a proven expertise 
-in OpenERP (and OpenObject), Tryton and Django.
-
+Openlabs builds custom software solutions in the realm of Open Source. We
+provide clients with tailor-made, innovative solutions that cater to their
+specific needs. We work on business process re-engineering, ERP implementation,
+Open Source ERP, OpenERP, Tryton, Python Application Development, Web
+application development, Training and support, server maintenance, building
+websites and much more. Openlabs thrives on creativity and innovation. We are
+the winner of NASSCOM EMERGE Top 50 2012 and feature in the list of 2013 Top 100
+Red Herring Asia finalists.
 
 Technical Support
 """""""""""""""""
