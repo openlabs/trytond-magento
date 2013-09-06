@@ -20,3 +20,6 @@ SDF L-12A, Noida Special Economic Zone (NSEZ), Phase II Noida-201306, U.P, India
 Regd. Office: 2J, Skyline Daffodil, Petta, Thrippunithura, Kochi-682301, Kerala, India
 
 w: `www.openlabs.co.in <http://www.openlabs.co.in>`_ | t: +1 813 793 6736
+
+For support or addition of any novel feature, customers or developers can mail
+us at support@openlabs.co.in.
