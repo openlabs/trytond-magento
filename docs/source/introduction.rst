@@ -128,13 +128,13 @@ Installation of Magento Integration [Tryton module]
 
     .. code-block:: sh
 
-        $ git clone https://github.com/openlabs/trytond_magento.git
+        $ git clone https://github.com/openlabs/trytond-magento.git
 
     OR
 
     .. code-block:: sh
 
-        $ git clone git@github.com:openlabs/trytond_magento.git
+        $ git clone git@github.com:openlabs/trytond-magento.git
 
 3. If the module is downloaded as a zip file, extract the module which will
    give a directory.
