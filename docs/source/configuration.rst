@@ -233,7 +233,7 @@ To export catalog, do the following:
    export its catalog, and click on ``Export Product Catalog To Magento``.
 
 2. Now you get a wizard screen where you can add information which you would
-  like to export. This exports the products of the current website.
+like to export. This exports the products of the current website.
 
    .. image:: _images/info_to_export_catalog.png
         :width: 800

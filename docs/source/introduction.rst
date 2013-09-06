@@ -121,8 +121,8 @@ Installation of Magento Integration [Tryton module]
 
 **Downloading the module**
 
-1. The module source is available online and can be downloaded from:vsp
-   `here <https://github.com/openlabs/trytond_magento>`_.
+1. The module source is available online and can be downloaded from
+   `here <https://github.com/openlabs/trytond-magento>`_.
 
 2. The module can be downloaded as a `zip` file or can be `cloned` by running
 
