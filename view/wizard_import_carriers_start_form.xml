@@ -1,5 +1,6 @@
 <?xml version="1.0"?>
 
 <form string="Import Carriers / Shipping Methods">
-    <label id="status" string="This wizard has imported all the carriers / shipping methods for this magento instance. You should now configure the imported carriers / shipping methods to match the shipment carriers in Tryton to allow seamless synchronisation of tracking information."/>
+    <image name="tryton-dialog-information" xexpand="0" xfill="0"/>
+    <field name="message"/>
 </form>
