@@ -128,4 +128,4 @@ class BOM:
                     'bom': bom.id,
                 }])
 
-        return bom
+        return product_bom
