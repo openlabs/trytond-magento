@@ -198,7 +198,8 @@ class Sale:
         """
         Checks if instance of store view is same as instance of sale order
         """
-        if self.magento_store_view.instance != self.magento_instance:
+        if self.magento_id and \
+                self.magento_store_view.instance != self.magento_instance:
             return False
         return True
 

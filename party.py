@@ -288,7 +288,7 @@ class Address:
             'zip': address_data['postcode'],
             'city': address_data['city'],
             'country': country.id,
-            'subdivision': subdivision.id,
+            'subdivision': subdivision and subdivision.id or None,
         }])
 
         # Create phone as contact mechanism
