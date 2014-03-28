@@ -2,7 +2,7 @@
 '''
     product
 
-    :copyright: (c) 2013 by Openlabs Technologies & Consulting (P) Limited
+    :copyright: (c) 2013-2014 by Openlabs Technologies & Consulting (P) Limited
     :license: BSD, see LICENSE for more details.
 '''
 import magento
@@ -39,7 +39,7 @@ class Category:
 
         :param category_tree: Category Tree from Magento
         """
-        #Create the root
+        # Create the root
         root_category = cls.find_or_create_using_magento_data(
             category_tree
         )

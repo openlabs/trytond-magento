@@ -2,7 +2,7 @@
 """
     test_product
 
-    :copyright: (c) 2013 by Openlabs Technologies & Consulting (P) Limited
+    :copyright: (c) 2013-2014 by Openlabs Technologies & Consulting (P) Limited
     :license: BSD, see LICENSE for more details.
 """
 import sys
@@ -80,7 +80,7 @@ class TestProduct(TestBase):
                 self.assertTrue(
                     categories_before_import < categories_after_import
                 )
-                  # Look for Root Category
+                # Look for Root Category
                 root_categories = Category.search([
                     ('parent', '=', None)
                 ])

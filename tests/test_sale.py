@@ -4,7 +4,7 @@
 
     Test Sale
 
-    :copyright: (c) 2013 by Openlabs Technologies & Consulting (P) Limited
+    :copyright: (c) 2013-2014 by Openlabs Technologies & Consulting (P) Limited
     :license: BSD, see LICENSE for more details.
 """
 import sys
@@ -252,7 +252,7 @@ class TestSale(TestBase):
                     )
 
                 with Transaction().set_context(company=self.company):
-                # Create sale order using magento data
+                    # Create sale order using magento data
                     with patch(
                             'magento.Product', mock_product_api(), create=True):
                         order = Sale.find_or_create_using_magento_data(
@@ -302,7 +302,7 @@ class TestSale(TestBase):
                     )
 
                 with Transaction().set_context(company=self.company):
-                # Create sale order using magento data
+                    # Create sale order using magento data
                     with patch(
                             'magento.Product', mock_product_api(), create=True
                     ):
@@ -403,7 +403,7 @@ class TestSale(TestBase):
                     )
 
                 with Transaction().set_context(company=self.company):
-                # Create sale order using magento data
+                    # Create sale order using magento data
                     with patch(
                             'magento.Product', mock_product_api(), create=True):
                         order = Sale.find_or_create_using_magento_data(
@@ -453,7 +453,7 @@ class TestSale(TestBase):
                     )
 
                 with Transaction().set_context(company=self.company):
-                # Create sale order using magento data
+                    # Create sale order using magento data
                     with patch(
                             'magento.Product', mock_product_api(), create=True):
                         order = Sale.find_or_create_using_magento_data(
@@ -520,7 +520,7 @@ class TestSale(TestBase):
                     )
 
                 with Transaction().set_context(company=self.company):
-                # Create sale order using magento data
+                    # Create sale order using magento data
                     with patch(
                             'magento.Product', mock_product_api(), create=True
                     ):
@@ -625,7 +625,7 @@ class TestSale(TestBase):
                     )
 
                 with Transaction().set_context(company=self.company):
-                # Create sale order using magento data
+                    # Create sale order using magento data
                     with patch(
                             'magento.Product', mock_product_api(), create=True):
                         order = Sale.find_or_create_using_magento_data(
