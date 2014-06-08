@@ -1,0 +1,5 @@
+[run]
+source = trytond.modules.magento
+
+[report]
+omit = */tests/*, */fabfile.py
