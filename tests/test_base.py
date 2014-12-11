@@ -14,6 +14,7 @@ from dateutil.relativedelta import relativedelta
 import trytond.tests.test_tryton
 from trytond.tests.test_tryton import POOL, USER
 from trytond.transaction import Transaction
+from trytond.pyson import Eval
 
 
 ROOT_JSON_FOLDER = os.path.join(
@@ -86,9 +87,54 @@ class TestBase(unittest.TestCase):
         self.Property = POOL.get('ir.property')
         self.ModelField = POOL.get('ir.model.field')
 
+        self.country1, = self.Country.create([{
+            'name': 'United States',
+            'code': 'US',
+        }])
+
+        self.country2, = self.Country.create([{
+            'name': 'India',
+            'code': 'IN',
+        }])
+
+        self.subdivision1, = self.Subdivision.create([{
+            'name': 'Florida',
+            'code': 'US-FL',
+            'country': self.country1.id,
+            'type': 'state',
+        }])
+
+        self.subdivision2, = self.Subdivision.create([{
+            'name': 'Uttar Pradesh',
+            'code': 'IN-UP',
+            'country': self.country2.id,
+            'type': 'state',
+        }])
+
+        self.subdivision3, self.subdivision4 = self.Subdivision.create([
+                {
+                    'name': 'American Samoa',
+                    'code': 'US-AS',
+                    'type': 'state',
+                    'country': self.country1.id,
+                }, {
+                    'name': 'Alabama',
+                    'code': 'US-AL',
+                    'type': 'state',
+                    'country': self.country1.id,
+                }
+        ])
+
         with Transaction().set_context(company=None):
             self.party, = self.Party.create([{
                 'name': 'ABC',
+                'addresses': [('create', [{
+                    'name': 'Bruce Wayne',
+                    'party': Eval('id'),
+                    'city': 'Gotham',
+                    'country': self.country1.id,
+                    'subdivision': self.subdivision1.id,
+                }])],
             }])
             self.usd, = self.Currency.create([{
                 'name': 'US Dollar',
@@ -237,44 +283,6 @@ class TestBase(unittest.TestCase):
             'store': self.store,
             'code': '123',
         }])
-
-        self.country1, = self.Country.create([{
-            'name': 'United States',
-            'code': 'US',
-        }])
-
-        self.country2, = self.Country.create([{
-            'name': 'India',
-            'code': 'IN',
-        }])
-
-        self.subdivision1, = self.Subdivision.create([{
-            'name': 'Florida',
-            'code': 'US-FL',
-            'country': self.country1.id,
-            'type': 'state',
-        }])
-
-        self.subdivision2, = self.Subdivision.create([{
-            'name': 'Uttar Pradesh',
-            'code': 'IN-UP',
-            'country': self.country2.id,
-            'type': 'state',
-        }])
-
-        self.subdivision3, self.subdivision4 = self.Subdivision.create([
-                {
-                    'name': 'American Samoa',
-                    'code': 'US-AS',
-                    'type': 'state',
-                    'country': self.country1.id,
-                }, {
-                    'name': 'Alabama',
-                    'code': 'US-AL',
-                    'type': 'state',
-                    'country': self.country1.id,
-                }
-        ])
 
         model_field, = self.ModelField.search([
             ('name', '=', 'account_revenue'),
