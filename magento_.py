@@ -855,7 +855,7 @@ class WebsiteStoreView(ModelSQL, ModelView):
                             order_increment_id=increment_id,
                             items_qty=item_qty_map
                         )
-                        Shipment.write(sale.shipments, {
+                        Shipment.write(list(sale.shipments), {
                             'magento_increment_id': shipment_increment_id,
                         })
 
