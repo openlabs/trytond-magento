@@ -268,30 +268,44 @@ class Sale:
                 'customer_id': 0
             })
 
-        party_invoice_address = \
-            Address.find_or_create_for_party_using_magento_data(
-                party, order_data['billing_address']
-            )
-        party_shipping_address = \
-            Address.find_or_create_for_party_using_magento_data(
-                party, order_data['shipping_address']
-            )
+        party_invoice_address = None
+        if order_data['billing_address']:
+            party_invoice_address = \
+                Address.find_or_create_for_party_using_magento_data(
+                    party, order_data['billing_address']
+                )
+
+        party_shipping_address = None
+        if order_data['shipping_address']:
+            party_shipping_address = \
+                Address.find_or_create_for_party_using_magento_data(
+                    party, order_data['shipping_address']
+                )
         unit, = Uom.search([('name', '=', 'Unit')])
 
         tryton_state = MagentoOrderState.get_tryton_state(order_data['state'])
+
+        if not party_shipping_address:
+            # if there is no shipment address, this could be a digital
+            # delivery which won't need a shipment. No shipment_address is
+            # hence assumed as no shipment needed. So set the method as
+            # manual
+            shipment_method = 'manual'
+        else:
+            shipment_method = tryton_state['shipment_method']
 
         sale_data = {
             'reference': instance.order_prefix + order_data['increment_id'],
             'sale_date': order_data['created_at'].split()[0],
             'party': party.id,
             'currency': currency.id,
-            'invoice_address': party_invoice_address.id,
-            'shipment_address': party_shipping_address.id,
+            'invoice_address': party_invoice_address,
+            'shipment_address': party_shipping_address or party_invoice_address,
             'magento_id': int(order_data['order_id']),
             'magento_instance': instance.id,
             'magento_store_view': store_view.id,
             'invoice_method': tryton_state['invoice_method'],
-            'shipment_method': tryton_state['shipment_method'],
+            'shipment_method': shipment_method,
             'lines': cls.get_item_line_data_using_magento_data(order_data)
         }
 
