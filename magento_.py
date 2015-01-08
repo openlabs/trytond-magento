@@ -27,7 +27,7 @@ __all__ = [
     'ImportWebsites', 'ExportInventoryStart', 'ExportInventory',
     'StorePriceTier', 'ExportTierPricesStart', 'ExportTierPrices',
     'ExportTierPricesStatus', 'ExportShipmentStatusStart',
-    'ExportShipmentStatus', 'ImportOrderStatesStart',
+    'ExportShipmentStatus', 'ImportOrderStatesStart', 'MagentoException',
     'ImportOrderStates', 'ImportCarriersStart', 'ImportCarriers'
 ]
 __metaclass__ = PoolMeta
@@ -1182,3 +1182,25 @@ class ExportShipmentStatus(Wizard):
 
     def transition_export_(self):
         return 'end'
+
+
+class MagentoException(ModelSQL, ModelView):
+    """
+    Magento Exception model
+    """
+    __name__ = 'magento.exception'
+
+    origin = fields.Reference(
+        "Origin", selection='models_get', select=True,
+    )
+    log = fields.Text('Exception Log')
+
+    @classmethod
+    def models_get(cls):
+        '''
+        Return valid models allowed for origin
+        '''
+        return [
+            ('sale.sale', 'Sale'),
+            ('sale.line', 'Sale Line'),
+        ]

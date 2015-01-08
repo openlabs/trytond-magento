@@ -13,6 +13,7 @@ import xmlrpclib
 
 from trytond.model import ModelView, ModelSQL, fields
 from trytond.transaction import Transaction
+from trytond.exceptions import UserError
 from trytond.pool import PoolMeta, Pool
 from trytond.pyson import Eval, Not, Bool, PYSONEncoder
 from trytond.wizard import Wizard, StateView, Button, StateAction
@@ -172,6 +173,14 @@ class Sale:
     magento_store_view = fields.Many2One(
         'magento.store.store_view', 'Store View', readonly=True,
     )
+    magento_exceptions = fields.Function(
+        fields.One2Many('magento.exception', None, 'Magento Exceptions'),
+        'get_magento_exceptions'
+    )
+    has_magento_exception = fields.Function(
+        fields.Boolean('Has Magento import exception'),
+        'get_has_magento_exception'
+    )
 
     @classmethod
     def __setup__(cls):
@@ -192,6 +201,7 @@ class Sale:
         cls._error_messages.update({
             'invalid_instance': 'Store view must have same instance as sale '
                 'order',
+            'magento_exception': 'Magento exception in sale %s.'
         })
 
     def check_store_view_instance(self):
@@ -202,6 +212,35 @@ class Sale:
                 self.magento_store_view.instance != self.magento_instance:
             return False
         return True
+
+    def get_magento_exceptions(self, name):
+        """
+        Return magento exceptions related to sale
+        """
+        MagentoException = Pool().get('magento.exception')
+
+        return map(int, MagentoException.search([
+            ('origin', '=', '%s,%s' % (self.__name__, self.id)),
+        ]))
+
+    def get_has_magento_exception(self, name):
+        """
+        Return True is any sale line has magento exception
+        """
+        SaleLine = Pool().get('sale.line')
+
+        return bool(SaleLine.search([
+            ('sale', '=', self),
+            ('has_magento_exception', '=', True),
+        ], limit=1))
+
+    @classmethod
+    def confirm(cls, sales):
+        "Validate sale before confirming"
+        for sale in sales:
+            if sale.has_magento_exception:
+                cls.raise_user_error('magento_exception', sale.reference)
+        super(Sale, cls).confirm(sales)
 
     @classmethod
     def find_or_create_using_magento_data(cls, order_data):
@@ -246,6 +285,7 @@ class Sale:
         Party = Pool().get('party.party')
         Address = Pool().get('party.address')
         StoreView = Pool().get('magento.store.store_view')
+        MagentoException = Pool().get('magento.exception')
         Currency = Pool().get('currency.currency')
         Uom = Pool().get('product.uom')
 
@@ -322,7 +362,17 @@ class Sale:
         sale, = cls.create([sale_data])
 
         # Process sale now
-        sale.process_sale_using_magento_state(order_data['state'])
+        try:
+            sale.process_sale_using_magento_state(order_data['state'])
+        except UserError, e:
+            # Expecting UserError will only come when sale order has
+            # magento exception.
+            # Just ignore the error and leave this order in draft state
+            # and let the user fix this manually.
+            MagentoException.create([{
+                'origin': '%s,%s' % (sale.__name__, sale.id),
+                'log': e.message
+            }])
 
         return sale
 
@@ -345,6 +395,16 @@ class Sale:
         for item in order_data['items']:
             if not item['parent_item_id']:
                 # If its a top level product, create it
+                try:
+                    product = ProductTemplate.find_or_create_using_magento_id(
+                        item['product_id'],
+                    ).products[0]
+                except xmlrpclib.Fault, exception:
+                    if exception.faultCode == 101:
+                        # Case when product doesnot exist on magento
+                        product = None
+                    else:
+                        raise
                 values = {
                     'magento_id': int(item['item_id']),
                     'description': item['name'],
@@ -352,9 +412,8 @@ class Sale:
                     'unit': unit.id,
                     'quantity': Decimal(item['qty_ordered']),
                     'note': item['product_options'],
-                    'product': ProductTemplate.find_or_create_using_magento_id(
-                        item['product_id'],
-                    ).products[0].id
+                    'product': product,
+                    'has_magento_exception': (product is None),
                 }
                 line_data.append(('create', [values]))
 
@@ -652,6 +711,11 @@ class SaleLine:
 
     #: This field stores the magento ID corresponding to this sale line
     magento_id = fields.Integer('Magento ID', readonly=True)
+    has_magento_exception = fields.Boolean('Has Magento import exception')
+
+    @staticmethod
+    def default_has_magento_exception():
+        return False
 
 
 class StockShipmentOut:
