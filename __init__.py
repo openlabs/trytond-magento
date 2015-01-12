@@ -14,7 +14,7 @@ from magento_ import (
     ExportInventoryStart, ExportInventory, StorePriceTier,
     ExportTierPricesStart, ExportTierPrices, ExportTierPricesStatus,
     ExportShipmentStatusStart, ExportShipmentStatus, ImportOrderStatesStart,
-    ImportOrderStates, ImportCarriersStart, ImportCarriers
+    ImportOrderStates, ImportCarriersStart, ImportCarriers, MagentoException
 )
 from party import Party, MagentoWebsiteParty, Address
 from product import (
@@ -54,6 +54,7 @@ def register():
         Party,
         MagentoWebsiteParty,
         Category,
+        MagentoException,
         MagentoInstanceCategory,
         Template,
         MagentoWebsiteTemplate,

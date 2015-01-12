@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<form string="Magento Exception" col="4">
+    <label name="origin"/>
+    <field name="origin"/>
+    <newline />
+    <label name="log"/>
+    <field name="log"/>
+</form>
