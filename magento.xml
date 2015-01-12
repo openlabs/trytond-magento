@@ -354,5 +354,17 @@
             <field name="name">export_shipment_status_start_form</field>
         </record>
 
+        <!--Magento Exception-->
+        <record model="ir.ui.view" id="magento_exception_form_view">
+            <field name="model">magento.exception</field>
+            <field name="type">form</field>
+            <field name="name">magento_exception_form</field>
+        </record>
+        <record model="ir.ui.view" id="magento_exception_tree_view">
+            <field name="model">magento.exception</field>
+            <field name="type">tree</field>
+            <field name="name">magento_exception_tree</field>
+        </record>
+
     </data>
 </tryton>

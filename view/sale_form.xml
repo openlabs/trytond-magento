@@ -8,6 +8,11 @@
             <field name="magento_instance"/>
             <label name="magento_store_view"/>
             <field name="magento_store_view"/>
+            <label name="has_magento_exception"/>
+            <field name="has_magento_exception"/>
+        </page>
+        <page string="Magento Exceptions" id="magento_exceptions_tab">
+            <field name="magento_exceptions"/>
         </page>
     </xpath>
 </data>
