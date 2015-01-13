@@ -371,7 +371,8 @@ class Sale:
             # and let the user fix this manually.
             MagentoException.create([{
                 'origin': '%s,%s' % (sale.__name__, sale.id),
-                'log': e.message
+                'log': "Error occurred on transitioning to state %s.\nError "
+                    "Message: %s" % (tryton_state['tryton_state'], e.message),
             }])
 
         return sale
