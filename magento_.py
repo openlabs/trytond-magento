@@ -706,8 +706,12 @@ class WebsiteStoreView(ModelSQL, ModelView):
                     'state': {'in': order_states_to_import_in},
                 }
                 if self.last_order_import_time:
+                    last_order_import_time = \
+                        self.last_order_import_time.replace(microsecond=0)
                     filter.update({
-                        'updated_at': {'gteq': self.last_order_import_time},
+                        'updated_at': {
+                            'gteq': last_order_import_time.isoformat(' ')
+                        },
                     })
                 self.write([self], {
                     'last_order_import_time': datetime.utcnow()
