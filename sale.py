@@ -15,7 +15,7 @@ from trytond.model import ModelView, ModelSQL, fields
 from trytond.transaction import Transaction
 from trytond.exceptions import UserError
 from trytond.pool import PoolMeta, Pool
-from trytond.pyson import Eval, Not, Bool, PYSONEncoder
+from trytond.pyson import Eval, Not, Bool
 from trytond.wizard import Wizard, StateView, Button, StateAction
 
 
@@ -617,7 +617,7 @@ class ImportOrders(Wizard):
         ]
     )
 
-    import_ = StateAction('sale.act_sale_form')
+    import_ = StateAction('magento.act_sale_form_all')
 
     def default_start(self, data):
         """
@@ -642,9 +642,8 @@ class ImportOrders(Wizard):
 
         sales = store_view.import_order_from_store_view()
 
-        action['pyson_domain'] = PYSONEncoder().encode(
-            [('id', 'in', map(int, sales))])
-        return action, {}
+        data = {'res_id': [sale.id for sale in sales]}
+        return action, data
 
     def transition_import_(self):
         return 'end'
@@ -674,7 +673,7 @@ class ExportOrderStatus(Wizard):
         ]
     )
 
-    export_ = StateAction('sale.act_sale_form')
+    export_ = StateAction('magento.act_sale_form_all')
 
     def default_start(self, data):
         """
@@ -698,9 +697,8 @@ class ExportOrderStatus(Wizard):
 
         sales = store_view.export_order_status_for_store_view()
 
-        action['pyson_domain'] = PYSONEncoder().encode(
-            [('id', 'in', map(int, sales))])
-        return action, {}
+        data = {'res_id': [sale.id for sale in sales]}
+        return action, data
 
     def transition_export_(self):
         return 'end'
