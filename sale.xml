@@ -10,6 +10,21 @@
             <field name="name">sale_form</field>
         </record>
 
+        <record model="ir.action.act_window" id="act_sale_form_all">
+            <field name="name">Sales</field>
+            <field name="res_model">sale.sale</field>
+        </record>
+        <record model="ir.action.act_window.view" id="act_sale_form_view1">
+            <field name="sequence" eval="10"/>
+            <field name="view" ref="sale.sale_view_tree"/>
+            <field name="act_window" ref="act_sale_form_all"/>
+        </record>
+        <record model="ir.action.act_window.view" id="act_sale_form_view2">
+            <field name="sequence" eval="20"/>
+            <field name="view" ref="sale.sale_view_form"/>
+            <field name="act_window" ref="act_sale_form_all"/>
+        </record>
+
         <!--Sale Line -->
         <record model="ir.ui.view" id="sale_line_view_form">
             <field name="model">sale.line</field>
