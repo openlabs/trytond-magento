@@ -173,14 +173,15 @@ class Sale:
     magento_store_view = fields.Many2One(
         'magento.store.store_view', 'Store View', readonly=True,
     )
+    has_magento_exception = fields.Boolean('Has Magento import exception')
     magento_exceptions = fields.Function(
         fields.One2Many('magento.exception', None, 'Magento Exceptions'),
         'get_magento_exceptions'
     )
-    has_magento_exception = fields.Function(
-        fields.Boolean('Has Magento import exception'),
-        'get_has_magento_exception'
-    )
+
+    @staticmethod
+    def default_has_magento_exception():
+        return False
 
     @classmethod
     def __setup__(cls):
@@ -222,17 +223,6 @@ class Sale:
         return map(int, MagentoException.search([
             ('origin', '=', '%s,%s' % (self.__name__, self.id)),
         ]))
-
-    def get_has_magento_exception(self, name):
-        """
-        Return True is any sale line has magento exception
-        """
-        SaleLine = Pool().get('sale.line')
-
-        return bool(SaleLine.search([
-            ('sale', '=', self),
-            ('has_magento_exception', '=', True),
-        ], limit=1))
 
     @classmethod
     def confirm(cls, sales):
@@ -346,20 +336,9 @@ class Sale:
             'magento_store_view': store_view.id,
             'invoice_method': tryton_state['invoice_method'],
             'shipment_method': shipment_method,
-            'lines': cls.get_item_line_data_using_magento_data(order_data)
         }
-
-        if Decimal(order_data.get('shipping_amount')):
-            sale_data['lines'].append(
-                cls.get_shipping_line_data_using_magento_data(order_data)
-            )
-
-        if Decimal(order_data.get('discount_amount')):
-            sale_data['lines'].append(
-                cls.get_discount_line_data_using_magento_data(order_data)
-            )
-
         sale, = cls.create([sale_data])
+        sale.add_lines_using_magento_data(order_data)
 
         # Process sale now
         try:
@@ -377,18 +356,19 @@ class Sale:
 
         return sale
 
-    @classmethod
-    def get_item_line_data_using_magento_data(cls, order_data):
+    def add_lines_using_magento_data(self, order_data):
         """
-        Make data for an item line from the magento data.
+        Create sale lines from the magento data and associate them with
+        the current sale.
         This method decides the actions to be taken on different product types
 
         :param order_data: Order Data from magento
-        :return: List of data of order lines in required format
         """
         Uom = Pool().get('product.uom')
         ProductTemplate = Pool().get('product.template')
         Bom = Pool().get('production.bom')
+        MagentoException = Pool().get('magento.exception')
+        Sale = Pool().get('sale.sale')
 
         unit, = Uom.search([('name', '=', 'Unit')])
 
@@ -403,10 +383,16 @@ class Sale:
                 except xmlrpclib.Fault, exception:
                     if exception.faultCode == 101:
                         # Case when product doesnot exist on magento
+                        # create magento exception
+                        MagentoException.create([{
+                            'origin': '%s,%s' % (self.__name__, self.id),
+                            'log': "Product does not exists."
+                        }])
                         product = None
                     else:
                         raise
                 values = {
+                    'sale': self.id,
                     'magento_id': int(item['item_id']),
                     'description': item['name'],
                     'unit_price': Decimal(item['price']),
@@ -414,7 +400,6 @@ class Sale:
                     'quantity': Decimal(item['qty_ordered']),
                     'note': item['product_options'],
                     'product': product,
-                    'has_magento_exception': (product is None),
                 }
                 line_data.append(('create', [values]))
 
@@ -429,7 +414,19 @@ class Sale:
         # If no bundle products exist in sale, nothing extra will happen
         Bom.find_or_create_bom_for_magento_bundle(order_data)
 
-        return line_data
+        if Decimal(order_data.get('shipping_amount')):
+            line_data.append(
+                self.get_shipping_line_data_using_magento_data(order_data)
+            )
+
+        if Decimal(order_data.get('discount_amount')):
+            line_data.append(
+                self.get_discount_line_data_using_magento_data(order_data)
+            )
+
+        Sale.write([self], {
+            'lines': line_data
+        })
 
     @classmethod
     def find_or_create_using_magento_increment_id(cls, order_increment_id):
@@ -710,11 +707,6 @@ class SaleLine:
 
     #: This field stores the magento ID corresponding to this sale line
     magento_id = fields.Integer('Magento ID', readonly=True)
-    has_magento_exception = fields.Boolean('Has Magento import exception')
-
-    @staticmethod
-    def default_has_magento_exception():
-        return False
 
 
 class StockShipmentOut:
