@@ -1,7 +1,0 @@
-<?xml version="1.0"?>
-<data>
-    <xpath expr="/form/notebook/page[@id='general']/field[@name='delivery_date']" position="after">
-        <label name="has_magento_exception"/>
-        <field name="has_magento_exception"/>
-    </xpath>
-</data>
