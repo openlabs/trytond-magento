@@ -373,6 +373,7 @@ class Sale:
         unit, = Uom.search([('name', '=', 'Unit')])
 
         line_data = []
+        has_magento_exception = False
         for item in order_data['items']:
             if not item['parent_item_id']:
                 # If its a top level product, create it
@@ -386,9 +387,11 @@ class Sale:
                         # create magento exception
                         MagentoException.create([{
                             'origin': '%s,%s' % (self.__name__, self.id),
-                            'log': "Product does not exists."
+                            'log': "Product #%s does not exist" %
+                                item['product_id']
                         }])
                         product = None
+                        has_magento_exception = True
                     else:
                         raise
                 values = {
@@ -424,9 +427,14 @@ class Sale:
                 self.get_discount_line_data_using_magento_data(order_data)
             )
 
-        Sale.write([self], {
-            'lines': line_data
-        })
+        values = {
+            'lines': line_data,
+        }
+
+        if has_magento_exception:
+            values['has_magento_exception'] = has_magento_exception
+
+        Sale.write([self], values)
 
     @classmethod
     def find_or_create_using_magento_increment_id(cls, order_increment_id):
