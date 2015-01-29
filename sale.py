@@ -504,11 +504,26 @@ class Sale:
         :param order_data: Order Data from magento
         """
         Uom = Pool().get('product.uom')
+        MagentoCarrier = Pool().get('magento.instance.carrier')
 
+        carrier_data = {}
         unit, = Uom.search([('name', '=', 'Unit')])
+
+        # Fetch carrier code from shipping_method
+        # ex: shipping_method : flaterate_flaterate
+        #     carrier_code    : flaterate
+        carrier_data['code'], _ = order_data['shipping_method'].split('_', 1)
+
+        magento_carrier = MagentoCarrier.find_using_magento_data(carrier_data)
+
+        if magento_carrier and magento_carrier.carrier:
+            product = magento_carrier.carrier.carrier_product
+        else:
+            product = None
 
         return ('create', [{
             'description': 'Magento Shipping',
+            'product': product,
             'unit_price': Decimal(order_data.get('shipping_amount', 0.00)),
             'unit': unit.id,
             'note': ' - '.join([
