@@ -522,11 +522,13 @@ class Sale:
             product = None
 
         return ('create', [{
-            'description': 'Magento Shipping',
+            'description': order_data['shipping_description'] or
+                    'Magento Shipping',
             'product': product,
             'unit_price': Decimal(order_data.get('shipping_amount', 0.00)),
             'unit': unit.id,
             'note': ' - '.join([
+                    'Magento Shipping',
                     order_data['shipping_method'],
                     order_data['shipping_description']
             ]),
