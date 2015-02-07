@@ -265,19 +265,16 @@ class Sale:
         return sales and sales[0] or None
 
     @classmethod
-    def create_using_magento_data(cls, order_data):
+    def get_sale_using_magento_data(cls, order_data):
         """
-        Create a sale from magento data
-
-        :param order_data: Order data from magento
-        :return: Active record of record created
+        Return an active record of the sale from magento data
         """
         Party = Pool().get('party.party')
         Address = Pool().get('party.address')
         StoreView = Pool().get('magento.store.store_view')
-        MagentoException = Pool().get('magento.exception')
         Currency = Pool().get('currency.currency')
         Uom = Pool().get('product.uom')
+        MagentoOrderState = Pool().get('magento.order_state')
 
         store_view = StoreView(Transaction().context.get('magento_store_view'))
         instance = store_view.instance
@@ -337,10 +334,31 @@ class Sale:
             'invoice_method': tryton_state['invoice_method'],
             'shipment_method': shipment_method,
         }
-        sale, = cls.create([sale_data])
+        Sale = Pool().get('sale.sale')
+        return Sale(**sale_data)
+
+    @classmethod
+    def create_using_magento_data(cls, order_data):
+        """
+        Create a sale from magento data. If you wish to override the creation
+        process, it is recommended to subclass and manipulate the returned
+        unsaved active record from the `get_sale_using_magento_data` method.
+
+        :param order_data: Order data from magento
+        :return: Active record of record created
+        """
+        MagentoException = Pool().get('magento.exception')
+        MagentoOrderState = Pool().get('magento.order_state')
+
+        sale = cls.get_sale_using_magento_data(order_data)
+        sale.save()
+
+        # TODO: make the add_lines_using_magento_data method also work
+        # with unsaved active records
         sale.add_lines_using_magento_data(order_data)
 
         # Process sale now
+        tryton_state = MagentoOrderState.get_tryton_state(order_data['state'])
         try:
             sale.process_sale_using_magento_state(order_data['state'])
         except UserError, e:
