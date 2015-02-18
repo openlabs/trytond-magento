@@ -584,8 +584,8 @@ class Sale:
 
         return (
             'create', [{
-                'description': order_data['discount_description']
-                    or 'Magento Discount',
+                'description': order_data['discount_description'] or
+                    'Magento Discount',
                 'unit_price': Decimal(order_data.get('discount_amount', 0.00)),
                 'unit': unit.id,
                 'note': order_data['discount_description'],

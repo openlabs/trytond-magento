@@ -9,13 +9,6 @@
 """
 import sys
 import os
-DIR = os.path.abspath(os.path.normpath(
-    os.path.join(
-        __file__, '..', '..', '..', '..', '..', 'trytond'
-    )
-))
-if os.path.isdir(DIR):
-    sys.path.insert(0, os.path.dirname(DIR))
 
 import unittest
 
@@ -24,6 +17,14 @@ from trytond.tests.test_tryton import DB_NAME, USER, CONTEXT
 from trytond.transaction import Transaction
 from trytond.exceptions import UserError
 from tests.test_base import TestBase
+
+DIR = os.path.abspath(os.path.normpath(
+    os.path.join(
+        __file__, '..', '..', '..', '..', '..', 'trytond'
+    )
+))
+if os.path.isdir(DIR):
+    sys.path.insert(0, os.path.dirname(DIR))
 
 
 class TestCountry(TestBase):
