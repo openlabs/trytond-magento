@@ -459,7 +459,7 @@ class Sale:
                 'unit_price': Decimal(item['price']),
                 'unit': unit.id,
                 'quantity': Decimal(item['qty_ordered']),
-                'note': item['product_options'],
+                'note': item.get('comments'),
                 'product': product,
             }
         return values, has_magento_exception
