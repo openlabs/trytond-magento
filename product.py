@@ -743,19 +743,9 @@ class ImportCatalog(Wizard):
         with magento.Product(
             instance.url, instance.api_user, instance.api_key
         ) as product_api:
-            magento_products = []
+            magento_products = product_api.list()
+
             products = []
-
-            # Products are linked to websites. But the magento api filters
-            # the products based on store views. The products available on
-            # website are always available on all of its store views.
-            # So we get one store view for each website in current instance.
-            magento_products.extend(
-                product_api.list(
-                    store_view=website.stores[0].store_views[0].magento_id
-                )
-            )
-
             for magento_product in magento_products:
                 products.append(
                     Product.find_or_create_using_magento_id(
