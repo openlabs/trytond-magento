@@ -382,46 +382,14 @@ class Sale:
 
         :param order_data: Order Data from magento
         """
-        Uom = Pool().get('product.uom')
-        ProductTemplate = Pool().get('product.template')
         Bom = Pool().get('production.bom')
-        MagentoException = Pool().get('magento.exception')
         Sale = Pool().get('sale.sale')
 
-        unit, = Uom.search([('name', '=', 'Unit')])
-
         line_data = []
-        has_magento_exception = False
         for item in order_data['items']:
-            if not item['parent_item_id']:
-                # If its a top level product, create it
-                try:
-                    product = ProductTemplate.find_or_create_using_magento_id(
-                        item['product_id'],
-                    ).products[0]
-                except xmlrpclib.Fault, exception:
-                    if exception.faultCode == 101:
-                        # Case when product doesnot exist on magento
-                        # create magento exception
-                        MagentoException.create([{
-                            'origin': '%s,%s' % (self.__name__, self.id),
-                            'log': "Product #%s does not exist" %
-                                item['product_id']
-                        }])
-                        product = None
-                        has_magento_exception = True
-                    else:
-                        raise
-                values = {
-                    'sale': self.id,
-                    'magento_id': int(item['item_id']),
-                    'description': item['name'],
-                    'unit_price': Decimal(item['price']),
-                    'unit': unit.id,
-                    'quantity': Decimal(item['qty_ordered']),
-                    'note': item['product_options'],
-                    'product': product,
-                }
+            values, has_magento_exception = \
+                self.get_sale_line_using_magento_data(item)
+            if values:
                 line_data.append(('create', [values]))
 
             # If the product is a child product of a bundle product, do not
@@ -453,6 +421,48 @@ class Sale:
             values['has_magento_exception'] = has_magento_exception
 
         Sale.write([self], values)
+
+    def get_sale_line_using_magento_data(self, item):
+        """
+        Get sale.line data from magento data.
+        """
+        ProductTemplate = Pool().get('product.template')
+        MagentoException = Pool().get('magento.exception')
+        Uom = Pool().get('product.uom')
+
+        has_magento_exception = False
+        values = {}
+        unit, = Uom.search([('name', '=', 'Unit')])
+        if not item['parent_item_id']:
+            # If its a top level product, create it
+            try:
+                product = ProductTemplate.find_or_create_using_magento_id(
+                    item['product_id'],
+                ).products[0]
+            except xmlrpclib.Fault, exception:
+                if exception.faultCode == 101:
+                    # Case when product doesnot exist on magento
+                    # create magento exception
+                    MagentoException.create([{
+                        'origin': '%s,%s' % (self.__name__, self.id),
+                        'log': "Product #%s does not exist" %
+                            item['product_id']
+                    }])
+                    product = None
+                    has_magento_exception = True
+                else:
+                    raise
+            values = {
+                'sale': self.id,
+                'magento_id': int(item['item_id']),
+                'description': item['name'],
+                'unit_price': Decimal(item['price']),
+                'unit': unit.id,
+                'quantity': Decimal(item['qty_ordered']),
+                'note': item['product_options'],
+                'product': product,
+            }
+        return values, has_magento_exception
 
     @classmethod
     def find_or_create_using_magento_increment_id(cls, order_increment_id):
