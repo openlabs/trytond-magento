@@ -10,6 +10,13 @@
 import os
 import sys
 import unittest
+
+import trytond.tests.test_tryton
+from trytond.tests.test_tryton import POOL, USER, DB_NAME, CONTEXT
+from test_base import TestBase, load_json
+from trytond.transaction import Transaction
+from trytond.exceptions import UserError
+
 DIR = os.path.abspath(os.path.normpath(
     os.path.join(
         __file__,
@@ -18,12 +25,6 @@ DIR = os.path.abspath(os.path.normpath(
 ))
 if os.path.isdir(DIR):
     sys.path.insert(0, os.path.dirname(DIR))
-
-import trytond.tests.test_tryton
-from trytond.tests.test_tryton import POOL, USER, DB_NAME, CONTEXT
-from test_base import TestBase, load_json
-from trytond.transaction import Transaction
-from trytond.exceptions import UserError
 
 
 class TestParty(TestBase):

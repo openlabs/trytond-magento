@@ -92,9 +92,9 @@ setup(
         'trytond.modules.%s.tests' % module_name,
     ],
     package_data={
-        'trytond.modules.%s' % module_name: info.get('xml', [])
-            + ['tryton.cfg', 'view/*.xml']
-            + info.get('translation', []),
+        'trytond.modules.%s' % module_name: info.get('xml', []) +
+            ['tryton.cfg', 'view/*.xml'] +
+            info.get('translation', []),
     },
     classifiers=[
         'Development Status :: 4 - Beta',

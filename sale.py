@@ -459,7 +459,7 @@ class Sale:
                 'unit_price': Decimal(item['price']),
                 'unit': unit.id,
                 'quantity': Decimal(item['qty_ordered']),
-                'note': item['product_options'],
+                'note': item.get('comments'),
                 'product': product,
             }
         return values, has_magento_exception
@@ -584,8 +584,8 @@ class Sale:
 
         return (
             'create', [{
-                'description': order_data['discount_description']
-                    or 'Magento Discount',
+                'description': order_data['discount_description'] or
+                    'Magento Discount',
                 'unit_price': Decimal(order_data.get('discount_amount', 0.00)),
                 'unit': unit.id,
                 'note': order_data['discount_description'],

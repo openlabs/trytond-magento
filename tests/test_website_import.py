@@ -9,6 +9,13 @@
 """
 import sys
 import os
+
+import unittest
+import trytond.tests.test_tryton
+from trytond.transaction import Transaction
+from test_base import TestBase, load_json
+from trytond.tests.test_tryton import USER, DB_NAME, CONTEXT
+
 DIR = os.path.abspath(os.path.normpath(
     os.path.join(
         __file__,
@@ -17,12 +24,6 @@ DIR = os.path.abspath(os.path.normpath(
 ))
 if os.path.isdir(DIR):
     sys.path.insert(0, os.path.dirname(DIR))
-
-import unittest
-import trytond.tests.test_tryton
-from trytond.transaction import Transaction
-from test_base import TestBase, load_json
-from trytond.tests.test_tryton import USER, DB_NAME, CONTEXT
 
 
 class TestWebsiteImport(TestBase):

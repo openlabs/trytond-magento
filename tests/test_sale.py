@@ -9,14 +9,6 @@
 """
 import sys
 import os
-DIR = os.path.abspath(os.path.normpath(
-    os.path.join(
-        __file__,
-        '..', '..', '..', '..', '..', 'trytond'
-    )
-))
-if os.path.isdir(DIR):
-    sys.path.insert(0, os.path.dirname(DIR))
 from decimal import Decimal
 
 import unittest
@@ -29,6 +21,15 @@ import trytond.tests.test_tryton
 from trytond.transaction import Transaction
 from trytond.tests.test_tryton import POOL, USER, DB_NAME, CONTEXT
 from test_base import TestBase, load_json
+
+DIR = os.path.abspath(os.path.normpath(
+    os.path.join(
+        __file__,
+        '..', '..', '..', '..', '..', 'trytond'
+    )
+))
+if os.path.isdir(DIR):
+    sys.path.insert(0, os.path.dirname(DIR))
 
 
 def mock_product_api(mock=None, data=None):
