@@ -575,6 +575,17 @@ class WebsiteStoreView(ModelSQL, ModelView):
         'reference on magento for the exported shipments as well.'
     )
 
+    taxes = fields.One2Many(
+        "magento.store.store_view.tax", "store_view", "Taxes"
+    )
+
+    def get_taxes(self, rate):
+        "Return list of tax records with the given rate"
+        for store_view_tax in self.taxes:
+            if store_view_tax.tax_percent == rate:
+                return list(store_view_tax.taxes)
+        return []
+
     def get_instance(self, name):
         """
         Returns instance related to store
@@ -877,6 +888,12 @@ class WebsiteStoreView(ModelSQL, ModelView):
                         continue
 
         return sales
+
+    @classmethod
+    def get_current_store_view(cls):
+        """Helper method to get the current store view.
+        """
+        return cls(Transaction().context.get('magento_store_view'))
 
 
 class StorePriceTier(ModelSQL, ModelView):

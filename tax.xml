@@ -1,0 +1,14 @@
+<tryton>
+    <data>
+        <record model="ir.ui.view" id="store_view_tax_form">
+            <field name="model">magento.store.store_view.tax</field>
+            <field name="type">form</field>
+            <field name="name">storeview_tax_form</field>
+        </record>
+        <record model="ir.ui.view" id="store_view_tax_tree">
+            <field name="model">magento.store.store_view.tax</field>
+            <field name="type">tree</field>
+            <field name="name">storeview_tax_tree</field>
+        </record>
+    </data>
+</tryton>

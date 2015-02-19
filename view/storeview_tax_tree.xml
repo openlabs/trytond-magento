@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<tree string="Website Store View Taxes">
+    <field name="tax_percent"/>
+</tree>

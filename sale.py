@@ -429,6 +429,7 @@ class Sale:
         ProductTemplate = Pool().get('product.template')
         MagentoException = Pool().get('magento.exception')
         Uom = Pool().get('product.uom')
+        StoreView = Pool().get('magento.store.store_view')
 
         has_magento_exception = False
         values = {}
@@ -452,7 +453,7 @@ class Sale:
                     has_magento_exception = True
                 else:
                     raise
-            values = {
+            values.update({
                 'sale': self.id,
                 'magento_id': int(item['item_id']),
                 'description': item['name'],
@@ -461,7 +462,13 @@ class Sale:
                 'quantity': Decimal(item['qty_ordered']),
                 'note': item.get('comments'),
                 'product': product,
-            }
+            })
+        if item.get('tax_percent') and Decimal(item.get('tax_percent')):
+            store_view = StoreView.get_current_store_view()
+            taxes = store_view.get_taxes(
+                Decimal(item['tax_percent']) / 100
+            )
+            values['taxes'] = [('add', map(int, taxes))]
         return values, has_magento_exception
 
     @classmethod

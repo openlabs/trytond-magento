@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<form string="Website Store View Tax">
+    <group id="tax_percent" colspan="4">
+        <label name="tax_percent"/>
+        <field name="tax_percent" factor="100" xexpand="0"/>
+        <label name="tax_percent" string="%" xalign="0.0" xexpand="1"/>
+    </group>
+    <field name="taxes" colspan="4"/>
+</form>
