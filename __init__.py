@@ -30,6 +30,7 @@ from sale import (
     ExportOrderStatusStart, ExportOrderStatus, StockShipmentOut, SaleLine
 )
 from bom import BOM
+from tax import StoreViewTax, StoreViewTaxRelation
 
 
 def register():
@@ -73,6 +74,8 @@ def register():
         ExportOrderStatusStart,
         SaleLine,
         BOM,
+        StoreViewTaxRelation,
+        StoreViewTax,
         module='magento', type_='model'
     )
     Pool.register(
