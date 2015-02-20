@@ -74,8 +74,8 @@ def register():
         ExportOrderStatusStart,
         SaleLine,
         BOM,
-        StoreViewTaxRelation,
         StoreViewTax,
+        StoreViewTaxRelation,
         module='magento', type_='model'
     )
     Pool.register(
