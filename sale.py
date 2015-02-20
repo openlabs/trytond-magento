@@ -403,7 +403,7 @@ class Sale:
         # If no bundle products exist in sale, nothing extra will happen
         Bom.find_or_create_bom_for_magento_bundle(order_data)
 
-        if Decimal(order_data.get('shipping_amount')):
+        if order_data.get('shipping_method'):
             line_data.append(
                 self.get_shipping_line_data_using_magento_data(order_data)
             )
