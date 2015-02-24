@@ -330,7 +330,7 @@ class Template:
                 product_data.get('price') or
                 0.00
             ),
-            'cost_price': Decimal(product_data.get('price') or 0.00),
+            'cost_price': Decimal(product_data.get('cost') or 0.00),
             'default_uom': website.default_uom.id,
             'salable': True,
             'sale_uom': website.default_uom.id,
