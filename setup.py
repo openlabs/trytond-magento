@@ -60,7 +60,7 @@ minor_version = int(minor_version)
 module_name = 'magento'
 
 requires = [
-    'magento',
+    'magento==0.4',
 ]
 for dep in info.get('depends', []):
     if not re.match(r'(ir|res|webdav)(\W|$)', dep):
