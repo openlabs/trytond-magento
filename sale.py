@@ -141,25 +141,24 @@ class MagentoOrderState(ModelSQL, ModelView):
         :param magento_data: Magento data in form of dict
         :return: List of active records of records created
         """
-        new_records = []
+        order_states_to_create = []
 
         for code, name in magento_data.iteritems():
             if cls.search([
                 ('code', '=', code),
-                ('instance', '=',
-                    Transaction().context.get('magento_instance'))
+                ('instance', '=', Transaction().context.get('magento_instance'))
             ]):
                 continue
 
-            vals = cls.get_tryton_state(code)
-            vals.update({
+            data_map = cls.get_tryton_state(code)
+            data_map.update({
                 'name': name,
                 'code': code,
                 'instance': Transaction().context.get('magento_instance'),
             })
-            new_records.extend(cls.create([vals]))
+            order_states_to_create.append(data_map)
 
-        return new_records
+        return cls.create(order_states_to_create)
 
 
 class Sale:
@@ -196,14 +195,18 @@ class Sale:
                 'A sale must be unique in an instance',
             )
         ]
-        cls._constraints += [
-            ('check_store_view_instance', 'invalid_instance'),
-        ]
         cls._error_messages.update({
             'invalid_instance': 'Store view must have same instance as sale '
                 'order',
             'magento_exception': 'Magento exception in sale %s.'
         })
+
+    @classmethod
+    def validate(cls, sales):
+        super(Sale, cls).validate(sales)
+
+        for sale in sales:
+            sale.check_store_view_instance()
 
     def check_store_view_instance(self):
         """
@@ -211,8 +214,7 @@ class Sale:
         """
         if self.magento_id and \
                 self.magento_store_view.instance != self.magento_instance:
-            return False
-        return True
+            self.raise_user_error("invalid_instance")
 
     def get_magento_exceptions(self, name):
         """
@@ -269,6 +271,7 @@ class Sale:
         """
         Return an active record of the sale from magento data
         """
+        Sale = Pool().get('sale.sale')
         Party = Pool().get('party.party')
         Address = Pool().get('party.address')
         StoreView = Pool().get('magento.store.store_view')
@@ -321,7 +324,7 @@ class Sale:
         else:
             shipment_method = tryton_state['shipment_method']
 
-        sale_data = {
+        return Sale(**{
             'reference': instance.order_prefix + order_data['increment_id'],
             'sale_date': order_data['created_at'].split()[0],
             'party': party.id,
@@ -333,9 +336,7 @@ class Sale:
             'magento_store_view': store_view.id,
             'invoice_method': tryton_state['invoice_method'],
             'shipment_method': shipment_method,
-        }
-        Sale = Pool().get('sale.sale')
-        return Sale(**sale_data)
+        })
 
     @classmethod
     def create_using_magento_data(cls, order_data):
@@ -383,14 +384,12 @@ class Sale:
         :param order_data: Order Data from magento
         """
         Bom = Pool().get('production.bom')
-        Sale = Pool().get('sale.sale')
 
-        line_data = []
         for item in order_data['items']:
-            values, has_magento_exception = \
+            sale_line, has_magento_exception = \
                 self.get_sale_line_using_magento_data(item)
-            if values:
-                line_data.append(('create', [values]))
+            if sale_line is not None:
+                sale_line.save()
 
             # If the product is a child product of a bundle product, do not
             # create a separate line for this.
@@ -404,35 +403,31 @@ class Sale:
         Bom.find_or_create_bom_for_magento_bundle(order_data)
 
         if order_data.get('shipping_method'):
-            line_data.append(
+            shipping_line = \
                 self.get_shipping_line_data_using_magento_data(order_data)
-            )
+            shipping_line.save()
 
         if Decimal(order_data.get('discount_amount')):
-            line_data.append(
+            discount_line = \
                 self.get_discount_line_data_using_magento_data(order_data)
-            )
-
-        values = {
-            'lines': line_data,
-        }
+            discount_line.save()
 
         if has_magento_exception:
-            values['has_magento_exception'] = has_magento_exception
-
-        Sale.write([self], values)
+            self.has_magento_exception = has_magento_exception
+            self.save()
 
     def get_sale_line_using_magento_data(self, item):
         """
         Get sale.line data from magento data.
         """
+        SaleLine = Pool().get('sale.line')
         ProductTemplate = Pool().get('product.template')
         MagentoException = Pool().get('magento.exception')
         Uom = Pool().get('product.uom')
         StoreView = Pool().get('magento.store.store_view')
 
         has_magento_exception = False
-        values = {}
+        sale_line = None
         unit, = Uom.search([('name', '=', 'Unit')])
         if not item['parent_item_id']:
             # If its a top level product, create it
@@ -453,7 +448,7 @@ class Sale:
                     has_magento_exception = True
                 else:
                     raise
-            values.update({
+            sale_line = SaleLine(**{
                 'sale': self.id,
                 'magento_id': int(item['item_id']),
                 'description': item['name'],
@@ -463,13 +458,13 @@ class Sale:
                 'note': item.get('comments'),
                 'product': product,
             })
-        if item.get('tax_percent') and Decimal(item.get('tax_percent')):
-            store_view = StoreView.get_current_store_view()
-            taxes = store_view.get_taxes(
-                Decimal(item['tax_percent']) / 100
-            )
-            values['taxes'] = [('add', map(int, taxes))]
-        return values, has_magento_exception
+            if item.get('tax_percent') and Decimal(item.get('tax_percent')):
+                store_view = StoreView.get_current_store_view()
+                taxes = store_view.get_taxes(
+                    Decimal(item['tax_percent']) / 100
+                )
+                sale_line.taxes = taxes
+        return sale_line, has_magento_exception
 
     @classmethod
     def find_or_create_using_magento_increment_id(cls, order_increment_id):
@@ -539,15 +534,16 @@ class Sale:
 
         return sales and sales[0] or None
 
-    @classmethod
-    def get_shipping_line_data_using_magento_data(cls, order_data):
+    def get_shipping_line_data_using_magento_data(self, order_data):
         """
-        Create a shipping line for the given sale using magento data
+        Returns an unsaved shipping line active record for the given sale
+        using magento data.
 
         :param order_data: Order Data from magento
         """
         Uom = Pool().get('product.uom')
         MagentoCarrier = Pool().get('magento.instance.carrier')
+        SaleLine = Pool().get('sale.line')
 
         carrier_data = {}
         unit, = Uom.search([('name', '=', 'Unit')])
@@ -564,7 +560,8 @@ class Sale:
         else:
             product = None
 
-        return ('create', [{
+        return SaleLine(**{
+            'sale': self.id,
             'description': order_data['shipping_description'] or
                     'Magento Shipping',
             'product': product,
@@ -576,29 +573,29 @@ class Sale:
                     order_data['shipping_description']
             ]),
             'quantity': 1,
-        }])
+        })
 
-    @classmethod
-    def get_discount_line_data_using_magento_data(cls, order_data):
+    def get_discount_line_data_using_magento_data(self, order_data):
         """
-        Create a discount line for the given sale using magento data
+        Returns an unsaved discount line AR for the given sale using magento
+        data.
 
         :param order_data: Order Data from magento
         """
+        SaleLine = Pool().get('sale.line')
         Uom = Pool().get('product.uom')
 
         unit, = Uom.search([('name', '=', 'Unit')])
 
-        return (
-            'create', [{
-                'description': order_data['discount_description'] or
-                    'Magento Discount',
-                'unit_price': Decimal(order_data.get('discount_amount', 0.00)),
-                'unit': unit.id,
-                'note': order_data['discount_description'],
-                'quantity': 1,
-            }]
-        )
+        return SaleLine(**{
+            'sale': self.id,
+            'description': order_data['discount_description'] or
+                'Magento Discount',
+            'unit_price': Decimal(order_data.get('discount_amount', 0.00)),
+            'unit': unit.id,
+            'note': order_data['discount_description'],
+            'quantity': 1,
+        })
 
     def process_sale_using_magento_state(self, magento_state):
         """

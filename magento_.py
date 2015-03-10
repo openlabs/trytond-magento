@@ -155,10 +155,11 @@ class Instance(ModelSQL, ModelView):
 
         :param instances: Active record list of magento instance
         """
-        if len(instances) != 1:
+        try:
+            instance, = instances
+        except ValueError:
             cls.raise_user_error('multiple_instances')
 
-        instance = instances[0]
         try:
             with magento.API(
                 instance.url, instance.api_user, instance.api_key
@@ -182,10 +183,10 @@ class Instance(ModelSQL, ModelView):
         StoreView = Pool().get('magento.store.store_view')
         MagentoOrderState = Pool().get('magento.order_state')
 
-        if len(instances) != 1:
+        try:
+            instance, = instances
+        except ValueError:
             cls.raise_user_error('multiple_instances')
-
-        instance = instances[0]
 
         with Transaction().set_context(magento_instance=instance.id):
 
@@ -361,7 +362,7 @@ class InstanceWebsite(ModelSQL, ModelView):
 
     def export_inventory_to_magento(self):
         """
-        Exports stock data of products from openerp to magento for this
+        Exports stock data of products from tryton to magento for this
         website
 
         :return: List of product templates
@@ -743,7 +744,7 @@ class WebsiteStoreView(ModelSQL, ModelView):
 
         :param store_views: List of active record of store view
         """
-        if not store_views:
+        if store_views is None:
             store_views = self.search([])
 
         for store_view in store_views:
@@ -767,9 +768,9 @@ class WebsiteStoreView(ModelSQL, ModelView):
 
         sales = Sale.search(domain)
 
-        self.write([self], {
-            'last_order_export_time': datetime.utcnow()
-        })
+        self.last_order_export_time = datetime.utcnow()
+        self.save()
+
         for sale in sales:
             exported_sales.append(sale.export_order_status_to_magento())
 
@@ -782,7 +783,7 @@ class WebsiteStoreView(ModelSQL, ModelView):
 
         :param store_views: Active record list of store views
         """
-        if not store_views:
+        if store_views is None:
             store_views = cls.search([])
 
         for store_view in store_views:
@@ -796,7 +797,7 @@ class WebsiteStoreView(ModelSQL, ModelView):
 
         :param store_views: List of active records of store_view
         """
-        if not store_views:
+        if store_views is None:
             store_views = cls.search([])
 
         for store_view in store_views:
@@ -821,6 +822,7 @@ class WebsiteStoreView(ModelSQL, ModelView):
             ('magento_store_view', '=', self.id),
             ('shipment_state', '=', 'sent'),
             ('magento_id', '!=', None),
+            ('shipments', '!=', None),
         ]
 
         if self.last_shipment_export_time:
@@ -830,17 +832,14 @@ class WebsiteStoreView(ModelSQL, ModelView):
 
         sales = Sale.search(sale_domain)
 
+        self.last_shipment_export_time = datetime.utcnow()
+        self.save()
+
         for sale in sales:
-            if not sale.shipments:
-                sales.pop(sale)
-                continue
             # Get the increment id from the sale reference
             increment_id = sale.reference[
                 len(instance.order_prefix): len(sale.reference)
             ]
-            self.write([self], {
-                'last_shipment_export_time': datetime.utcnow()
-            })
 
             for shipment in sale.shipments:
                 try:
@@ -907,12 +906,9 @@ class StorePriceTier(ModelSQL, ModelView):
     __name__ = 'magento.store.price_tier'
 
     store = fields.Many2One(
-        'magento.website.store', 'Magento Store', required=True,
-        readonly=True,
+        'magento.website.store', 'Magento Store', required=True, readonly=True,
     )
-    quantity = fields.Float(
-        'Quantity', required=True
-    )
+    quantity = fields.Float('Quantity', required=True)
 
     @classmethod
     def __setup__(cls):
