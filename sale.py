@@ -336,6 +336,7 @@ class Sale:
             'magento_store_view': store_view.id,
             'invoice_method': tryton_state['invoice_method'],
             'shipment_method': shipment_method,
+            'lines': [],
         })
 
     @classmethod
@@ -352,11 +353,9 @@ class Sale:
         MagentoOrderState = Pool().get('magento.order_state')
 
         sale = cls.get_sale_using_magento_data(order_data)
-        sale.save()
 
-        # TODO: make the add_lines_using_magento_data method also work
-        # with unsaved active records
         sale.add_lines_using_magento_data(order_data)
+        sale.save()
 
         # Process sale now
         tryton_state = MagentoOrderState.get_tryton_state(order_data['state'])
@@ -386,10 +385,6 @@ class Sale:
         Bom = Pool().get('production.bom')
 
         for item in order_data['items']:
-            sale_line, has_magento_exception = \
-                self.get_sale_line_using_magento_data(item)
-            if sale_line is not None:
-                sale_line.save()
 
             # If the product is a child product of a bundle product, do not
             # create a separate line for this.
@@ -397,24 +392,24 @@ class Sale:
                     item['parent_item_id']:
                 continue
 
+            sale_line = self.get_sale_line_using_magento_data(item)
+            if sale_line is not None:
+                self.lines.append(sale_line)
+
         # Handle bundle products.
         # Find/Create BoMs for bundle products
         # If no bundle products exist in sale, nothing extra will happen
         Bom.find_or_create_bom_for_magento_bundle(order_data)
 
         if order_data.get('shipping_method'):
-            shipping_line = \
+            self.lines.append(
                 self.get_shipping_line_data_using_magento_data(order_data)
-            shipping_line.save()
+            )
 
         if Decimal(order_data.get('discount_amount')):
-            discount_line = \
+            self.lines.append(
                 self.get_discount_line_data_using_magento_data(order_data)
-            discount_line.save()
-
-        if has_magento_exception:
-            self.has_magento_exception = has_magento_exception
-            self.save()
+            )
 
     def get_sale_line_using_magento_data(self, item):
         """
@@ -426,7 +421,6 @@ class Sale:
         Uom = Pool().get('product.uom')
         StoreView = Pool().get('magento.store.store_view')
 
-        has_magento_exception = False
         sale_line = None
         unit, = Uom.search([('name', '=', 'Unit')])
         if not item['parent_item_id']:
@@ -445,7 +439,7 @@ class Sale:
                             item['product_id']
                     }])
                     product = None
-                    has_magento_exception = True
+                    self.has_magento_exception = True
                 else:
                     raise
             sale_line = SaleLine(**{
@@ -464,7 +458,7 @@ class Sale:
                     Decimal(item['tax_percent']) / 100
                 )
                 sale_line.taxes = taxes
-        return sale_line, has_magento_exception
+        return sale_line
 
     @classmethod
     def find_or_create_using_magento_increment_id(cls, order_increment_id):
