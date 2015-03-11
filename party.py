@@ -70,12 +70,15 @@ class Party:
         """
         MagentoParty = Pool().get('magento.website.party')
 
-        magento_parties = MagentoParty.search([
-            ('magento_id', '=', magento_id),
-            ('website', '=', Transaction().context.get('magento_website'))
-        ])
-
-        return magento_parties and magento_parties[0].party or None
+        try:
+            magento_party, = MagentoParty.search([
+                ('magento_id', '=', magento_id),
+                ('website', '=', Transaction().context.get('magento_website'))
+            ])
+        except ValueError:
+            return None
+        else:
+            return magento_party.party
 
     @classmethod
     def find_or_create_using_magento_data(cls, magento_data):
@@ -88,7 +91,7 @@ class Party:
         :param magento_data: Dictionary of values for customer sent by magento
         :return: Active record of record created/found
         """
-        if not Transaction().context['magento_website']:
+        if Transaction().context.get('magento_website') is None:
             cls.raise_user_error('website_not_found')
 
         party = cls.find_using_magento_data(magento_data)
@@ -137,11 +140,15 @@ class Party:
         """
         MagentoParty = Pool().get('magento.website.party')
 
-        magento_parties = MagentoParty.search([
-            ('magento_id', '=', magento_data['customer_id']),
-            ('website', '=', Transaction().context['magento_website'])
-        ])
-        return magento_parties and magento_parties[0].party or None
+        try:
+            magento_party, = MagentoParty.search([
+                ('magento_id', '=', magento_data['customer_id']),
+                ('website', '=', Transaction().context['magento_website'])
+            ])
+        except ValueError:
+            return None
+        else:
+            return magento_party.party
 
 
 class MagentoWebsiteParty(ModelSQL, ModelView):
@@ -180,11 +187,11 @@ class MagentoWebsiteParty(ModelSQL, ModelView):
         :param records: List of active records
         """
         for magento_partner in records:
-            if magento_partner.magento_id != 0 and cls.search_count([
+            if magento_partner.magento_id != 0 and cls.search([
                 ('magento_id', '=', magento_partner.magento_id),
                 ('website', '=', magento_partner.website.id),
                 ('id', '!=', magento_partner.id),
-            ]) > 0:
+            ], count=True) > 0:
                 cls.raise_user_error('party_exists')
 
 
