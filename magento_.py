@@ -229,7 +229,11 @@ class Instance(ModelSQL, ModelView):
 
                     # Create store views
                     for mag_store_view in mag_store_views:
-                            StoreView.find_or_create(store, mag_store_view)
+                            store_view = StoreView.find_or_create(
+                                store, mag_store_view
+                            )
+                            # AR refactoring
+                            store_view.save()
 
     @classmethod
     @ModelView.button_action('magento.wizard_import_carriers')
@@ -652,12 +656,12 @@ class WebsiteStoreView(ModelSQL, ModelView):
         if store_views:
             return store_views[0]
 
-        return cls.create([{
+        return cls(**{
             'name': values['name'],
             'code': values['code'],
             'store': store.id,
             'magento_id': int(values['store_id']),
-        }])[0]
+        })
 
     @classmethod
     @ModelView.button_action('magento.wizard_import_orders')
