@@ -112,9 +112,10 @@ class TestWebsiteImport(TestBase):
                 )
 
                 store_views_before_import = self.StoreView.search([])
-                self.StoreView.find_or_create(
+                store_view = self.StoreView.find_or_create(
                     store, load_json('core', 'store_view')
                 )
+                store_view.save()
                 store_views_after_import = self.StoreView.search([])
 
                 self.assertTrue(
