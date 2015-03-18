@@ -121,7 +121,8 @@ class Party:
             ],
             'contact_mechanisms': [
                 ('create', [{
-                    'email': magento_data['email']
+                    'type': 'email',
+                    'value': magento_data['email'],
                 }])
             ]
         }])
