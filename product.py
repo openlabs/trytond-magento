@@ -324,7 +324,8 @@ class Template:
 
         website = Website(Transaction().context.get('magento_website'))
         return {
-            'name': product_data['name'],
+            'name': product_data.get('name') or
+                ('SKU: ' + product_data.get('sku')),
             'list_price': Decimal(
                 product_data.get('special_price') or
                 product_data.get('price') or
