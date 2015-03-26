@@ -624,19 +624,22 @@ class Sale:
             return self
 
         instance = self.magento_instance
-        if self.state == 'cancel':
-            increment_id = self.reference.split(instance.order_prefix)[1]
-            # This try except is placed because magento might not accept this
-            # order status change due to its workflow constraints.
-            # TODO: Find a better way to do it
-            try:
-                with magento.Order(
-                    instance.url, instance.api_user, instance.api_key
-                ) as order_api:
+        increment_id = self.reference.split(instance.order_prefix)[1]
+        # This try except is placed because magento might not accept this
+        # order status change due to its workflow constraints.
+        # TODO: Find a better way to do it
+        try:
+            with magento.Order(
+                instance.url, instance.api_user, instance.api_key
+            ) as order_api:
+                if self.state == 'cancel':
                     order_api.cancel(increment_id)
-            except xmlrpclib.Fault, exception:
-                if exception.faultCode == 103:
-                    return self
+                elif self.state == 'done':
+                    # TODO: update shipping and invoice
+                    order_api.addcomment(increment_id, 'complete')
+        except xmlrpclib.Fault, exception:
+            if exception.faultCode == 103:
+                return self
 
         return self
 
