@@ -30,8 +30,8 @@ class MagentoInstanceCarrier(ModelSQL, ModelView):
     code = fields.Char("Code", readonly=True)
     carrier = fields.Many2One('carrier', 'Carrier')
     title = fields.Char('Title', readonly=True)
-    instance = fields.Many2One(
-        'magento.instance', 'Magento Instance', readonly=True
+    channel = fields.Many2One(
+        'sale.channel', 'Magento Channel', readonly=True
     )
 
     @classmethod
@@ -42,8 +42,8 @@ class MagentoInstanceCarrier(ModelSQL, ModelView):
         super(MagentoInstanceCarrier, cls).__setup__()
         cls._sql_constraints += [
             (
-                'code_instance_unique', 'unique(code, instance)',
-                'Shipping methods must be unique in instance'
+                'code_channel_unique', 'unique(code, channel)',
+                'Shipping methods must be unique in channel'
             )
         ]
 
@@ -52,7 +52,7 @@ class MagentoInstanceCarrier(ModelSQL, ModelView):
         """
         Creates record for list of carriers sent by magento.
         It creates a new carrier only if one with the same code does not
-        exist for this instance.
+        exist for this channel.
 
         :param magento_data: List of Dictionary of carriers sent by magento
         :return: List of active records of carriers Created/Found
@@ -78,7 +78,7 @@ class MagentoInstanceCarrier(ModelSQL, ModelView):
         carrier, = cls.create([{
             'code': carrier_data['code'],
             'title': carrier_data['label'],
-            'instance': Transaction().context['magento_instance'],
+            'channel': Transaction().context['current_channel'],
         }])
 
         return carrier
@@ -86,7 +86,7 @@ class MagentoInstanceCarrier(ModelSQL, ModelView):
     @classmethod
     def find_using_magento_data(cls, carrier_data):
         """
-        Search for an existing carrier by matching code and instance.
+        Search for an existing carrier by matching code and channel.
         If found, return its active record else None
 
         :param carrier_data: Dictionary of carrier sent by magento
@@ -95,7 +95,7 @@ class MagentoInstanceCarrier(ModelSQL, ModelView):
         try:
             carrier, = cls.search([
                 ('code', '=', carrier_data['code']),
-                ('instance', '=', Transaction().context['magento_instance']),
+                ('channel', '=', Transaction().context['current_channel']),
             ])
         except ValueError:
             return None
