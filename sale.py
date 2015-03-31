@@ -735,8 +735,7 @@ class ExportOrderStatus(Wizard):
         return {
             'message': "This wizard will export orders status to magento " +
                 "for this store view. All the orders edited/updated after " +
-                "the Last Order Export Time will be exported. [NOTE: This " +
-                "feature is currently available only for Canceled Orders]"
+                "the Last Order Export Time will be exported."
         }
 
     def do_export_(self, action):
