@@ -18,7 +18,7 @@ from trytond.pyson import Eval
 
 
 ROOT_JSON_FOLDER = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), 'json'
+    os.path.dirname(os.path.abspath(__file__)), 'json_mock'
 )
 
 
