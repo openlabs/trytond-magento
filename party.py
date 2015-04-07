@@ -295,7 +295,7 @@ class Address:
             'street': address_data['street'],
             'zip': address_data['postcode'],
             'city': address_data['city'],
-            'country': country.id,
+            'country': country and country.id or None,
             'subdivision': subdivision and subdivision.id or None,
         }])
 
