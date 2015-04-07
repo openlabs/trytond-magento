@@ -300,7 +300,7 @@ class Address:
         }])
 
         # Create phone as contact mechanism
-        if not ContactMechanism.search([
+        if address_data.get('telephone') and not ContactMechanism.search([
             ('party', '=', party.id),
             ('type', 'in', ['phone', 'mobile']),
             ('value', '=', address_data['telephone']),
