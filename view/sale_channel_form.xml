@@ -1,0 +1,65 @@
+<?xml version="1.0"?>
+<data>
+    <xpath expr="/form/notebook/page[@id='order']" position="after">
+        <page string="Magento" id="magento" states="{'invisible': Not(Eval('source') == 'magento')}" >
+            <label name="magento_url"/>
+            <field name="magento_url" colspan="3"/>
+            <label name="magento_api_user"/>
+            <field name="magento_api_user"/>
+            <label name="magento_api_key"/>
+            <field name="magento_api_key"/>
+            <notebook>
+                <page string="General" id="general">
+                    <label name="magento_website_id"/>
+                    <field name="magento_website_id"/>
+                    <label name="magento_website_name"/>
+                    <field name="magento_website_name"/>
+                    <label name="magento_website_code"/>
+                    <field name="magento_website_code"/>
+                    <label name="magento_store_name"/>
+                    <field name="magento_store_name"/>
+                    <label name="magento_store_id"/>
+                    <field name="magento_store_id"/>
+                </page>
+                <page string="Orders" id="order_states" col="6">
+                    <label name="magento_last_order_import_time"/>
+                    <field name="magento_last_order_import_time"/>
+                    <label name="magento_last_order_export_time"/>
+                    <field name="magento_last_order_export_time"/>
+                    <label name="magento_order_prefix"/>
+                    <field name="magento_order_prefix"/>
+                    <field name="magento_order_states" colspan="8"/>
+                </page>
+                <page string="Carrier / Shipping Methods" id="carriers">
+                    <field name="magento_carriers" colspan="4"/>
+                </page>
+                <page string="Account Settings" id="account_settings">
+                    <label name="magento_default_account_expense"/>
+                    <field name="magento_default_account_expense"/>
+                    <label name="magento_default_account_revenue"/>
+                    <field name="magento_default_account_revenue"/> 
+                </page>
+                <page string="Catalog" id="catalog">
+                    <label name="magento_root_category_id"/>
+                    <field name="magento_root_category_id" colspan="3"/>
+                    <label name="magento_default_uom"/>
+                    <field name="magento_default_uom"/>
+                </page>
+                <page string="Price Tiers" id="price_tiers">
+                     <field name="magento_price_tiers" colspan="8"/>
+                </page>
+                <page string="Others" id="others">
+                    <label name="magento_last_shipment_export_time"/>
+                    <field name="magento_last_shipment_export_time"/>
+                    <label name="magento_export_tracking_information"/>
+                    <field name="magento_export_tracking_information"/>
+                </page>
+                <page string="Taxes" id="taxes">
+                    <field name="magento_taxes" colspan="8"/>
+                </page>   
+            </notebook>
+            <button string="Test Connection" name="test_connection" colspan="2"/>         
+        </page> 
+    </xpath>
+</data>
+

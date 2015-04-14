@@ -62,11 +62,15 @@ module_name = 'magento'
 requires = [
     'magento==0.4',
 ]
+MODULE2PREFIX = {
+    'sale_channel': 'openlabs',
+}
 for dep in info.get('depends', []):
     if not re.match(r'(ir|res|webdav)(\W|$)', dep):
         requires.append(
-            'trytond_%s >= %s.%s, < %s.%s' % (
-                dep, major_version, minor_version, major_version,
+            '%s_%s >= %s.%s, < %s.%s' % (
+                MODULE2PREFIX.get(dep, 'trytond'), dep,
+                major_version, minor_version, major_version,
                 minor_version + 1
             )
         )

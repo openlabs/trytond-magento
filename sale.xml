@@ -32,6 +32,5 @@
             <field name="inherit" ref="stock.shipment_out_view_form"/>
             <field name="name">shipment_out_form</field>
         </record>
-
     </data>
 </tryton>

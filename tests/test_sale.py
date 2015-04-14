@@ -96,7 +96,7 @@ class TestSale(TestBase):
 
     def test_0005_import_sale_order_states(self):
         """
-        Test the import and creation of sale order states for an instance
+        Test the import and creation of sale order states for an channel
         """
         MagentoOrderState = POOL.get('magento.order_state')
 
@@ -105,7 +105,7 @@ class TestSale(TestBase):
 
             states_before_import = MagentoOrderState.search([])
             with Transaction().set_context({
-                    'magento_instance': self.instance1.id}):
+                    'current_channel': self.channel1.id}):
                 states = MagentoOrderState.create_all_using_magento_data(
                     load_json('order-states', 'all')
                 )
@@ -115,7 +115,7 @@ class TestSale(TestBase):
 
             for state in states:
                 self.assertEqual(
-                    state.instance.id, self.instance1.id
+                    state.channel.id, self.channel1.id
                 )
 
     def test_0010_check_tryton_state(self):
@@ -207,7 +207,7 @@ class TestSale(TestBase):
 
             carriers_before_import = MagentoCarrier.search([])
             with Transaction().set_context({
-                    'magento_instance': self.instance1.id
+                    'current_channel': self.channel1.id
             }):
                 carriers = MagentoCarrier.create_all_using_magento_data(
                     load_json('carriers', 'shipping_methods')
@@ -217,8 +217,8 @@ class TestSale(TestBase):
                 self.assertTrue(carriers_after_import > carriers_before_import)
                 for carrier in carriers:
                     self.assertEqual(
-                        carrier.instance.id,
-                        Transaction().context['magento_instance']
+                        carrier.channel.id,
+                        Transaction().context['current_channel']
                     )
 
     def test_0030_import_sale_order_with_products_with_new(self):
@@ -233,9 +233,7 @@ class TestSale(TestBase):
             self.setup_defaults()
 
             with Transaction().set_context({
-                'magento_instance': self.instance1.id,
-                'magento_store_view': self.store_view,
-                'magento_website': self.website1.id,
+                'current_channel': self.channel1.id,
             }):
 
                 category_tree = load_json('categories', 'category_tree')
@@ -284,9 +282,7 @@ class TestSale(TestBase):
             self.setup_defaults()
 
             with Transaction().set_context({
-                'magento_instance': self.instance1.id,
-                'magento_store_view': self.store_view,
-                'magento_website': self.website1.id,
+                'current_channel': self.channel1.id,
             }):
 
                 category_tree = load_json('categories', 'category_tree')
@@ -333,9 +329,7 @@ class TestSale(TestBase):
         with Transaction().start(DB_NAME, USER, CONTEXT):
             self.setup_defaults()
             with Transaction().set_context({
-                'magento_instance': self.instance1.id,
-                'magento_store_view': self.store_view.id,
-                'magento_website': self.website1.id,
+                'current_channel': self.channel1.id,
             }):
 
                 category_tree = load_json('categories', 'category_tree')
@@ -385,9 +379,7 @@ class TestSale(TestBase):
             self.setup_defaults()
 
             with Transaction().set_context({
-                'magento_instance': self.instance1.id,
-                'magento_store_view': self.store_view.id,
-                'magento_website': self.website1.id,
+                'current_channel': self.channel1.id,
             }):
 
                 category_tree = load_json('categories', 'category_tree')
@@ -418,7 +410,7 @@ class TestSale(TestBase):
 
                 with patch('magento.Order', mock_order_api(), create=True):
                     order_exported = \
-                        self.store_view.export_order_status_for_store_view()
+                        self.channel1.export_order_status_for_store_view()
 
                     self.assertEqual(len(order_exported), 1)
                     self.assertEqual(order_exported[0], order)
@@ -435,9 +427,7 @@ class TestSale(TestBase):
             self.setup_defaults()
 
             with Transaction().set_context({
-                'magento_instance': self.instance1.id,
-                'magento_store_view': self.store_view.id,
-                'magento_website': self.website1.id,
+                'current_channel': self.channel1.id,
             }):
 
                 category_tree = load_json('categories', 'category_tree')
@@ -466,17 +456,17 @@ class TestSale(TestBase):
                 self.assertEqual(len(Sale.search([])), 1)
 
                 export_date = datetime.utcnow() + relativedelta(days=1)
-                self.StoreView.write([self.store_view], {
-                    'last_order_export_time': export_date
-                })
+                self.channel1.magento_last_order_export_time = export_date
+                self.channel1.save()
 
                 self.assertTrue(
-                    self.store_view.last_order_export_time > order.write_date
+                    self.channel1.magento_last_order_export_time
+                    > order.write_date
                 )
 
                 with patch('magento.Order', mock_order_api(), create=True):
                     order_exported = \
-                        self.store_view.export_order_status_for_store_view()
+                        self.channel1.export_order_status_for_store_view()
 
                     self.assertEqual(len(order_exported), 0)
 
@@ -498,9 +488,7 @@ class TestSale(TestBase):
         with Transaction().start(DB_NAME, USER, CONTEXT):
             self.setup_defaults()
             with Transaction().set_context({
-                'magento_instance': self.instance1.id,
-                'magento_store_view': self.store_view,
-                'magento_website': self.website1.id,
+                'current_channel': self.channel1.id,
             }):
 
                 MagentoOrderState.create_all_using_magento_data(
@@ -584,7 +572,7 @@ class TestSale(TestBase):
                     'magento.Shipment', mock_shipment_api(), create=True
                 ):
 
-                    self.store_view.export_shipment_status_to_magento()
+                    self.channel1.export_shipment_status_to_magento()
 
                     shipment = Shipment(shipment.id)
                     self.assertTrue(shipment.magento_increment_id)
@@ -607,9 +595,7 @@ class TestSale(TestBase):
             self.setup_defaults()
 
             with Transaction().set_context({
-                'magento_instance': self.instance1.id,
-                'magento_store_view': self.store_view.id,
-                'magento_website': self.website1.id,
+                'current_channel': self.channel1.id,
             }):
 
                 category_tree = load_json('categories', 'category_tree')
@@ -638,17 +624,18 @@ class TestSale(TestBase):
                 self.assertEqual(len(Sale.search([])), 1)
 
                 export_date = datetime.utcnow() - relativedelta(days=1)
-                self.StoreView.write([self.store_view], {
-                    'last_order_export_time': export_date
+                self.Channel.write([self.channel1], {
+                    'magento_last_order_export_time': export_date
                 })
 
                 self.assertTrue(
-                    self.store_view.last_order_export_time < order.write_date
+                    self.channel1.magento_last_order_export_time
+                    < order.write_date
                 )
 
                 with patch('magento.Order', mock_order_api(), create=True):
                     order_exported = \
-                        self.store_view.export_order_status_for_store_view()
+                        self.channel1.export_order_status_for_store_view()
 
                     self.assertEqual(len(order_exported), 1)
                     self.assertEqual(order_exported[0], order)
@@ -658,7 +645,7 @@ class TestSale(TestBase):
         Tests import of sale order with bundle product using magento data
         """
         Sale = POOL.get('sale.sale')
-        ProductTemplate = POOL.get('product.template')
+        Product = POOL.get('product.product')
         Category = POOL.get('product.category')
         MagentoOrderState = POOL.get('magento.order_state')
 
@@ -666,9 +653,7 @@ class TestSale(TestBase):
             self.setup_defaults()
 
             with Transaction().set_context({
-                'magento_instance': self.instance1.id,
-                'magento_store_view': self.store_view.id,
-                'magento_website': self.website1.id,
+                'current_channel': self.channel1.id,
             }):
 
                 MagentoOrderState.create_all_using_magento_data(
@@ -711,9 +696,7 @@ class TestSale(TestBase):
                 )
 
                 # There should be a BoM for the bundle product
-                product_template = \
-                    ProductTemplate.find_or_create_using_magento_id(158)
-                product = product_template.products[0]
+                product = Product.find_or_create_using_magento_id(158)
                 self.assertEqual(len(product.boms), 1)
                 self.assertEqual(
                     len(product.boms[0].bom.inputs), 2
@@ -725,16 +708,14 @@ class TestSale(TestBase):
         This tests that the duplication of BoMs doesnot happen
         """
         Sale = POOL.get('sale.sale')
-        ProductTemplate = POOL.get('product.template')
+        Product = POOL.get('product.product')
         Category = POOL.get('product.category')
         MagentoOrderState = POOL.get('magento.order_state')
 
         with Transaction().start(DB_NAME, USER, CONTEXT):
             self.setup_defaults()
             with Transaction().set_context({
-                'magento_instance': self.instance1.id,
-                'magento_store_view': self.store_view.id,
-                'magento_website': self.website1.id,
+                'current_channel': self.channel1.id,
             }):
 
                 MagentoOrderState.create_all_using_magento_data(
@@ -760,9 +741,7 @@ class TestSale(TestBase):
                         Sale.find_or_create_using_magento_data(order_data)
 
                 # There should be a BoM for the bundle product
-                product_template = \
-                    ProductTemplate.find_or_create_using_magento_id(158)
-                product = product_template.products[0]
+                product = Product.find_or_create_using_magento_id(158)
                 self.assertTrue(len(product.boms), 1)
                 self.assertTrue(len(product.boms[0].bom.inputs), 2)
 
@@ -773,10 +752,9 @@ class TestSale(TestBase):
                     Sale.find_or_create_using_magento_data(order_data)
 
                 # There should be a BoM for the bundle product
-                product_template = \
-                    ProductTemplate.find_or_create_using_magento_id(
-                        158
-                    )
+                product = Product.find_or_create_using_magento_id(
+                    158
+                )
                 self.assertEqual(len(product.boms), 1)
                 self.assertEqual(len(product.boms[0].bom.inputs), 2)
 
@@ -793,9 +771,7 @@ class TestSale(TestBase):
         with Transaction().start(DB_NAME, USER, CONTEXT):
             self.setup_defaults()
             with Transaction().set_context({
-                'magento_instance': self.instance1.id,
-                'magento_store_view': self.store_view.id,
-                'magento_website': self.website1.id,
+                'current_channel': self.channel1.id,
             }):
 
                 MagentoOrderState.create_all_using_magento_data(
