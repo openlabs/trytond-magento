@@ -19,6 +19,15 @@ from .api import OrderConfig
 __metaclass__ = PoolMeta
 __all__ = ['Channel']
 
+MAGENTO_STATES = {
+    'invisible': ~(Eval('source') == 'magento'),
+    'required': Eval('source') == 'magento'
+}
+
+INVISIBLE_IF_NOT_MAGENTO = {
+    'invisible': ~(Eval('source') == 'magento'),
+}
+
 
 class Channel:
     """
@@ -27,19 +36,27 @@ class Channel:
     __name__ = 'sale.channel'
 
     # Instance
-    magento_url = fields.Char("Magento Site URL")
-    magento_api_user = fields.Char("API User")
-    magento_api_key = fields.Char("API Key")
+    magento_url = fields.Char(
+        "Magento Site URL", states=MAGENTO_STATES, depends=['source']
+    )
+    magento_api_user = fields.Char(
+        "API User", states=MAGENTO_STATES, depends=['source']
+    )
+    magento_api_key = fields.Char(
+        "API Key", states=MAGENTO_STATES, depends=['source']
+    )
     magento_order_states = fields.One2Many(
-        "magento.order_state", "channel", "Order States"
+        "magento.order_state", "channel", "Order States", readonly=True,
+        states=INVISIBLE_IF_NOT_MAGENTO, depends=['source']
     )
     magento_carriers = fields.One2Many(
-        "magento.instance.carrier", "channel", "Carriers / Shipping Methods"
+        "magento.instance.carrier", "channel", "Carriers / Shipping Methods",
+        states=INVISIBLE_IF_NOT_MAGENTO, depends=['source']
     )
     magento_order_prefix = fields.Char(
         'Sale Order Prefix',
-        help="This helps to distinguish between orders from different "
-            "channels"
+        help="This helps to distinguish between orders from different channels",
+        states=INVISIBLE_IF_NOT_MAGENTO, depends=['source']
     )
     magento_default_account_expense = fields.Property(fields.Many2One(
         'account.account', 'Account Expense', domain=[
@@ -57,28 +74,42 @@ class Channel:
 
     # website
     magento_website_id = fields.Integer(
-        'Website ID', readonly=True
+        'Website ID', readonly=True,
+        states=INVISIBLE_IF_NOT_MAGENTO, depends=['source']
     )
     magento_website_name = fields.Char(
-        'Website Name', readonly=True
+        'Website Name', readonly=True,
+        states=INVISIBLE_IF_NOT_MAGENTO, depends=['source']
     )
     magento_website_code = fields.Char(
-        'Website Code', readonly=True
+        'Website Code', readonly=True,
+        states=INVISIBLE_IF_NOT_MAGENTO, depends=['source']
     )
     magento_default_uom = fields.Many2One('product.uom', 'Default Product UOM')
     magento_root_category_id = fields.Integer(
-        'Root Category ID'
+        'Root Category ID', states=INVISIBLE_IF_NOT_MAGENTO, depends=['source']
     )
-    magento_store_name = fields.Char('Store Name', readonly=True)
+    magento_store_name = fields.Char(
+        'Store Name', readonly=True, states=INVISIBLE_IF_NOT_MAGENTO,
+        depends=['source']
+    )
     magento_store_id = fields.Integer(
-        'Store ID'
+        'Store ID', readonly=True, states=INVISIBLE_IF_NOT_MAGENTO,
+        depends=['source']
     )
-    magento_last_order_import_time = fields.DateTime('Last Order Import Time')
-    magento_last_order_export_time = fields.DateTime("Last Order Export Time")
+    magento_last_order_import_time = fields.DateTime(
+        'Last Order Import Time', states=INVISIBLE_IF_NOT_MAGENTO,
+        depends=['source']
+    )
+    magento_last_order_export_time = fields.DateTime(
+        "Last Order Export Time", states=INVISIBLE_IF_NOT_MAGENTO,
+        depends=['source']
+    )
 
     #: Last time at which the shipment status was exported to magento
     magento_last_shipment_export_time = fields.DateTime(
-        'Last shipment export time'
+        'Last shipment export time', states=INVISIBLE_IF_NOT_MAGENTO,
+        depends=['source']
     )
 
     #: Checking this will make sure that only the done shipments which have a
@@ -87,13 +118,16 @@ class Channel:
         'Export tracking information', help='Checking this will make sure'
         ' that only the done shipments which have a carrier and tracking '
         'reference are exported. This will update carrier and tracking '
-        'reference on magento for the exported shipments as well.'
+        'reference on magento for the exported shipments as well.',
+        states=INVISIBLE_IF_NOT_MAGENTO, depends=['source']
     )
     magento_taxes = fields.One2Many(
-        "sale.channel.magento.tax", "channel", "Taxes"
+        "sale.channel.magento.tax", "channel", "Taxes",
+        states=INVISIBLE_IF_NOT_MAGENTO, depends=['source']
     )
     magento_price_tiers = fields.One2Many(
-        'sale.channel.magento.price_tier', 'channel', 'Default Price Tiers'
+        'sale.channel.magento.price_tier', 'channel', 'Default Price Tiers',
+        states=INVISIBLE_IF_NOT_MAGENTO, depends=['source']
     )
     product_listings = fields.One2Many(
         'product.product.channel_listing', 'channel', 'Product Listings',
