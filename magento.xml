@@ -32,7 +32,6 @@
         <menuitem sequence="40" parent='menu_magento'
             action="act_instance_form" id="menu_instance_form"/>
 
-
         <!--Instance Website-->
         <record model="ir.ui.view" id="website_view_form">
             <field name="model">magento.instance.website</field>
@@ -61,7 +60,6 @@
         </record>
         <menuitem sequence="40" parent='menu_magento'
             action="act_website_form" id="menu_website_form"/>
-
 
         <!--Website Store-->
         <record model="ir.ui.view" id="store_form">
@@ -102,18 +100,6 @@
             <field name="model">magento.website.template</field>
             <field name="type">tree</field>
             <field name="name">magento_product_template_tree</field>
-        </record>
-
-        <!-- Store Price Tiers -->
-        <record model="ir.ui.view" id="store_price_tier_view_form">
-            <field name="model">magento.store.price_tier</field>
-            <field name="type">form</field>
-            <field name="name">store_price_tier_form</field>
-        </record>
-        <record model="ir.ui.view" id="store_price_tier_view_tree">
-            <field name="model">magento.store.price_tier</field>
-            <field name="type">tree</field>
-            <field name="name">store_price_tier_tree</field>
         </record>
 
         <!--Website Store View-->

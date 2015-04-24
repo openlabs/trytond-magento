@@ -8,5 +8,17 @@
             <field name="inherit" ref="sale_channel.sale_channel_view_form"/>
         </record>
 
+        <!-- Price Tiers -->
+        <record model="ir.ui.view" id="price_tier_view_form">
+            <field name="model">magento.price_tier</field>
+            <field name="type">form</field>
+            <field name="name">price_tier_form</field>
+        </record>
+        <record model="ir.ui.view" id="price_tier_view_tree">
+            <field name="model">magento.price_tier</field>
+            <field name="type">tree</field>
+            <field name="name">price_tier_tree</field>
+        </record>
+
     </data>
 </tryton>
