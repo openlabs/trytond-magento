@@ -348,19 +348,19 @@ class Channel:
 
         return new_sales
 
-    def export_order_status(self, channels=None):
+    @classmethod
+    def export_order_status_to_magento_using_cron(cls):
         """
-        Export sales orders status to magento.
+        Export sales orders status to magento using cron
 
         :param store_views: List of active record of store view
         """
-        if channels is None:
-            channels = self.search([])
+        channels = cls.search([('source', '=', 'magento')])
 
         for channel in channels:
-            channel.export_order_status_for_store_view()
+            channel.export_order_status_to_magento()
 
-    def export_order_status_for_store_view(self):
+    def export_order_status_to_magento(self):
         """
         Export sale orders to magento for the current store view.
         If last export time is defined, export only those orders which are
@@ -389,35 +389,24 @@ class Channel:
         return exported_sales
 
     @classmethod
-    def import_orders(cls, store_views=None):
+    def import_magento_orders(cls):
         """
-        Import orders from magento for store views
-
-        :param store_views: Active record list of store views
+        Import orders from magento for magento channels
         """
-        if store_views is None:
-            store_views = cls.search([])
+        channels = cls.search([('source', '=', 'magento')])
 
-        for store_view in store_views:
-            store_view.import_order_from_store_view()
+        for channel in channels:
+            channel.import_orders_from_magento()
 
     @classmethod
-    def export_shipment_status(cls, store_views=None):
+    def export_shipment_status_to_magento_using_cron(cls):
         """
-        Export Shipment status for shipments related to current store view.
-        This method is called by cron.
-
-        :param store_views: List of active records of store_view
+        Export Shipment status for shipments using cron
         """
-        if store_views is None:
-            store_views = cls.search([])
+        channels = cls.search([('source', '=', 'magento')])
 
-        for store_view in store_views:
-            # Set the channel in context
-            with Transaction().set_context(
-                magento_channel=store_view.channel.id
-            ):
-                store_view.export_shipment_status_to_magento()
+        for channel in channels:
+            channel.export_shipment_status_to_magento()
 
     def export_shipment_status_to_magento(self):
         """
@@ -499,6 +488,16 @@ class Channel:
                         continue
 
         return sales
+
+    @classmethod
+    def export_inventory_to_magento_using_cron(cls):
+        """
+        Cron method to export inventory to magento
+        """
+        channels = cls.search([('source', '=', 'magento')])
+
+        for channel in channels:
+            channel.export_inventory_to_magento()
 
     def export_inventory_to_magento(self):
         """
