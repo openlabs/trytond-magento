@@ -58,19 +58,6 @@ class Channel:
         help="This helps to distinguish between orders from different channels",
         states=INVISIBLE_IF_NOT_MAGENTO, depends=['source']
     )
-    magento_default_account_expense = fields.Property(fields.Many2One(
-        'account.account', 'Account Expense', domain=[
-            ('kind', '=', 'expense'),
-            ('company', '=', Eval('company')),
-        ], depends=['company']
-    ))
-    #: Used to set revenue account while creating products.
-    magento_default_account_revenue = fields.Property(fields.Many2One(
-        'account.account', 'Account Revenue', domain=[
-            ('kind', '=', 'revenue'),
-            ('company', '=', Eval('company')),
-        ], depends=['company']
-    ))
 
     # website
     magento_website_id = fields.Integer(
@@ -85,7 +72,6 @@ class Channel:
         'Website Code', readonly=True,
         states=INVISIBLE_IF_NOT_MAGENTO, depends=['source']
     )
-    magento_default_uom = fields.Many2One('product.uom', 'Default Product UOM')
     magento_root_category_id = fields.Integer(
         'Root Category ID', states=INVISIBLE_IF_NOT_MAGENTO, depends=['source']
     )
@@ -185,15 +171,6 @@ class Channel:
         Sets default value for magento order prefix
         """
         return 'mag_'
-
-    @staticmethod
-    def default_magento_default_uom():
-        """
-        Sets default product uom for channel
-        """
-        ProductUom = Pool().get('product.uom')
-
-        return ProductUom.search([('name', '=', 'Unit')])[0].id
 
     @staticmethod
     def default_magento_root_category_id():
