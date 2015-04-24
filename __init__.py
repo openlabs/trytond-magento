@@ -4,16 +4,17 @@
 
     Initialize Module
 
-    :copyright: (c) 2013 by Openlabs Technologies & Consulting (P) Limited
+    :copyright: (c) 2013-2015 by Openlabs Technologies & Consulting (P) Limited
     :license: BSD, see LICENSE for more details.
 """
 from trytond.pool import Pool
 from magento_ import (
-    TestConnectionStart, TestConnection, ImportWebsitesStart, ImportWebsites,
+    TestMagentoConnectionStart, ImportWebsitesStart,
     ExportInventoryStart, ExportInventory, MagentoTier,
     ExportTierPricesStart, ExportTierPrices, ExportTierPricesStatus,
     ExportShipmentStatusStart, ExportShipmentStatus, ImportOrderStatesStart,
-    ImportOrderStates, ImportCarriersStart, ImportCarriers, MagentoException
+    ImportOrderStates, ImportCarriersStart, ImportCarriers, MagentoException,
+    ConfigureMagento, ImportStoresStart, FailureStart, SuccessStart
 )
 from channel import Channel
 from party import Party, MagentoWebsiteParty, Address
@@ -42,7 +43,10 @@ def register():
         Channel,
         MagentoTier,
         MagentoInstanceCarrier,
-        TestConnectionStart,
+        TestMagentoConnectionStart,
+        ImportStoresStart,
+        FailureStart,
+        SuccessStart,
         ImportWebsitesStart,
         ExportInventoryStart,
         ExportTierPricesStart,
@@ -77,8 +81,6 @@ def register():
         module='magento', type_='model'
     )
     Pool.register(
-        TestConnection,
-        ImportWebsites,
         ImportOrderStates,
         ExportInventory,
         ExportTierPrices,
@@ -89,5 +91,6 @@ def register():
         ImportOrders,
         ExportOrderStatus,
         ImportCarriers,
+        ConfigureMagento,
         module='magento', type_='wizard'
     )

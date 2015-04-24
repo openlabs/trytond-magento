@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+
+<form string="Configuration Success">
+    <image name="tryton-dialog-information" xexpand="0" xfill="0"/>
+    <label id="status" string="Magento channel has been configured successfully!"/>
+</form>

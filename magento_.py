@@ -7,19 +7,25 @@
     :copyright: (c) 2013 by Openlabs Technologies & Consulting (P) Limited
     :license: BSD, see LICENSE for more details.
 """
+import json
+from .api import Core
+
 from trytond.model import ModelView, ModelSQL, fields
 from trytond.pool import PoolMeta, Pool
 from trytond.transaction import Transaction
 from trytond.pyson import PYSONEncoder
-from trytond.wizard import Wizard, StateView, Button, StateAction
+from trytond.wizard import (
+    Wizard, StateView, Button, StateAction, StateTransition
+)
 
 __all__ = [
-    'TestConnectionStart', 'TestConnection', 'ImportWebsitesStart',
-    'ImportWebsites', 'ExportInventoryStart', 'ExportInventory',
+    'ExportInventoryStart', 'ExportInventory',
     'ExportTierPricesStart', 'ExportTierPrices', 'MagentoTier',
     'ExportTierPricesStatus', 'ExportShipmentStatusStart',
     'ExportShipmentStatus', 'ImportOrderStatesStart', 'MagentoException',
-    'ImportOrderStates', 'ImportCarriersStart', 'ImportCarriers'
+    'ImportOrderStates', 'ImportCarriersStart', 'ImportCarriers',
+    'ConfigureMagento', 'TestMagentoConnectionStart', 'ImportWebsitesStart',
+    'ImportStoresStart', 'FailureStart', 'SuccessStart'
 ]
 __metaclass__ = PoolMeta
 
@@ -51,73 +57,6 @@ class MagentoTier(ModelSQL, ModelView):
                 'Quantity in price tiers must be unique for a channel'
             )
         ]
-
-
-class TestConnectionStart(ModelView):
-    "Test Connection"
-    __name__ = 'magento.wizard_test_connection.start'
-
-
-class TestConnection(Wizard):
-    """
-    Test Connection Wizard
-
-    Test the connection to magento channel(s)
-    """
-    __name__ = 'magento.wizard_test_connection'
-
-    start = StateView(
-        'magento.wizard_test_connection.start',
-        'magento.wizard_test_connection_view_form',
-        [
-            Button('Ok', 'end', 'tryton-ok'),
-        ]
-    )
-
-    def default_start(self, data):
-        """Test the connection and show the user appropriate message
-
-        :param data: Wizard data
-        """
-        return {}
-
-
-class ImportWebsitesStart(ModelView):
-    "Import Websites Start View"
-    __name__ = 'magento.wizard_import_websites.start'
-
-    message = fields.Text("Message", readonly=True)
-
-
-class ImportWebsites(Wizard):
-    """
-    Import Websites Wizard
-
-    Import the websites and their stores/view from magento
-    """
-    __name__ = 'magento.wizard_import_websites'
-
-    start = StateView(
-        'magento.wizard_import_websites.start',
-        'magento.wizard_import_websites_view_form',
-        [
-            Button('Ok', 'end', 'tryton-ok'),
-        ]
-    )
-
-    def default_start(self, data):
-        """
-        Import the websites, store and store views and show user a
-        confirmation message
-
-        :param data: Wizard data
-        """
-        return {
-            'message': "This wizard has imported all the websites for this " +
-                "magento channel. It has also imported all the stores and " +
-                "store views related to the websites imported. If any of " +
-                "the records existed already, it wont be imported."
-        }
 
 
 class ImportOrderStatesStart(ModelView):
@@ -350,3 +289,231 @@ class MagentoException(ModelSQL, ModelView):
             ('sale.sale', 'Sale'),
             ('sale.line', 'Sale Line'),
         ]
+
+
+class ConfigureMagento(Wizard):
+    """
+    Wizard To Configure Magento
+    """
+    __name__ = 'magento.wizard_configure_magento'
+
+    start = StateView(
+        'magento.wizard_test_connection.start',
+        'magento.wizard_test_magento_connection_view_form',
+        [
+            Button('Cancel', 'end', 'tryton-cancel'),
+            Button('Next', 'website', 'tryton-go-next', 'True'),
+        ]
+    )
+
+    website = StateTransition()
+
+    import_website = StateView(
+        'magento.wizard_import_websites.start',
+        'magento.wizard_import_websites_view_form',
+        [
+            Button('Next', 'store', 'tryton-go-next', 'True'),
+        ]
+    )
+
+    store = StateTransition()
+
+    import_store = StateView(
+        'magento.wizard_import_stores.start',
+        'magento.wizard_import_stores_view_form',
+        [
+            Button('Next', 'success', 'tryton-go-next', 'True'),
+        ]
+    )
+
+    success = StateView(
+        'magento.wizard_configuration_success.start',
+        'magento.wizard_configuration_success_view_form',
+        [
+            Button('Ok', 'end', 'tryton-ok')
+        ]
+    )
+
+    failure = StateView(
+        'magento.wizard_configuration_failure.start',
+        'magento.wizard_configuration_failure_view_form',
+        [
+            Button('Ok', 'end', 'tryton-ok')
+        ]
+    )
+
+    def default_start(self, data):
+        """
+        Test the connection for current magento channel
+        """
+        Channel = Pool().get('sale.channel')
+
+        magento_channel = Channel(Transaction().context.get('active_id'))
+
+        # Test Connection
+        magento_channel.test_magento_connection()
+
+        return {
+            'channel': magento_channel.id
+        }
+
+    def transition_website(self):
+        """
+        Import websites for current magento channel
+        """
+        magento_channel = self.start.channel
+
+        self.import_website.__class__.magento_websites.selection = \
+            self.get_websites()
+
+        if not (
+            magento_channel.magento_website_id and
+            magento_channel.magento_store_id
+        ):
+            return 'import_website'
+        if not self.validate_websites():
+            return 'failure'
+        return 'end'
+
+    def transition_store(self):
+        """
+        Initialize the values of website in sale channel
+        """
+        self.import_store.__class__.magento_stores.selection = \
+            self.get_stores()
+
+        return 'import_store'
+
+    def default_success(self, data):
+        """
+        Initialize the values of store in sale channel
+        """
+        channel = self.start.channel
+        imported_store = self.import_store.magento_stores
+        imported_website = self.import_website.magento_websites
+
+        magento_website = json.loads(imported_website)
+        channel.magento_website_id = magento_website['id']
+        channel.magento_website_name = magento_website['name']
+        channel.magento_website_code = magento_website['code']
+
+        magento_store = json.loads(imported_store)
+        channel.magento_store_id = magento_store['store_id']
+        channel.magento_store_name = magento_store['name']
+
+        channel.save()
+        return {}
+
+    def get_websites(self):
+        """
+        Returns the list of websites
+        """
+        magento_channel = self.start.channel
+
+        with Core(
+            magento_channel.magento_url, magento_channel.magento_api_user,
+            magento_channel.magento_api_key
+        ) as core_api:
+            websites = core_api.websites()
+
+        selection = []
+
+        for website in websites:
+            # XXX: An UGLY way to map json to selection, fix me
+            website_data = {
+                'code': website['code'],
+                'id': website['website_id'],
+                'name': website['name']
+            }
+            website_data = json.dumps(website_data)
+            selection.append((website_data, website['name']))
+
+        return selection
+
+    def get_stores(self):
+        """
+        Return list of all stores
+        """
+        magento_channel = self.start.channel
+
+        selected_website = json.loads(self.import_website.magento_websites)
+
+        with Core(
+            magento_channel.magento_url, magento_channel.magento_api_user,
+            magento_channel.magento_api_key
+        ) as core_api:
+            stores = core_api.stores(selected_website['id'])
+
+        all_stores = []
+        for store in stores:
+            # Create the new dictionary of required values from a dictionary,
+            # and convert it into the string
+            store_data = {
+                'store_id': store['default_store_id'],
+                'name': store['name']
+            }
+            store_data = json.dumps(store_data)
+            all_stores.append((store_data, store['name']))
+
+        return all_stores
+
+    def validate_websites(self):
+        """
+        Validate the website of magento channel
+        """
+        magento_channel = self.start.channel
+
+        current_website_configurations = {
+            'code': magento_channel.magento_website_code,
+            'id': str(magento_channel.magento_website_id),
+            'name': magento_channel.magento_website_name
+        }
+
+        current_website = (
+            json.dumps(current_website_configurations),
+            magento_channel.magento_website_name
+        )
+        if current_website not in self.get_websites():
+            return False
+        return True
+
+
+class TestMagentoConnectionStart(ModelView):
+    "Test Connection"
+    __name__ = 'magento.wizard_test_connection.start'
+
+    channel = fields.Many2One(
+        'sale.channel', 'Sale Channel', required=True, readonly=True
+    )
+
+
+class ImportWebsitesStart(ModelView):
+    """
+    Import Websites Start View
+    """
+    __name__ = 'magento.wizard_import_websites.start'
+
+    magento_websites = fields.Selection([], 'Select Website', required=True)
+
+
+class ImportStoresStart(ModelView):
+    """
+    Import stores from websites
+    """
+    __name__ = 'magento.wizard_import_stores.start'
+
+    magento_stores = fields.Selection([], 'Select Store', required=True)
+
+
+class FailureStart(ModelView):
+    """
+    Failure wizard
+    """
+    __name__ = 'magento.wizard_configuration_failure.start'
+
+
+class SuccessStart(ModelView):
+    """
+    Get Done
+    """
+    __name__ = 'magento.wizard_configuration_success.start'

@@ -15,12 +15,9 @@ from trytond.transaction import Transaction
 from trytond.pyson import Eval
 from trytond.model import ModelView, fields
 from .api import OrderConfig
-from trytond.wizard import Wizard, StateView, Button
 
 __metaclass__ = PoolMeta
-__all__ = [
-    'Channel', 'TestConnectionStart', 'TestConnection'
-]
+__all__ = ['Channel']
 
 
 class Channel:
@@ -120,16 +117,24 @@ class Channel:
                 "Please check and correct the API settings on channel.",
             "multiple_channels": 'Selected operation can be done only for one'
                 ' channel at a time',
+            'invalid_magento_channel':
+                'Current channel does not belongs to Magento !'
         })
         cls._buttons.update({
-            'test_connection': {},
-            'import_websites': {},
             'import_order_states': {},
             'import_carriers': {},
+            'configure_magento_connection': {}
         })
         cls._error_messages.update({
             "missing_magento_channel": 'Magento channel is not in context',
         })
+
+    def validate_magento_channel(self):
+        """
+        Make sure channel source is magento
+        """
+        if self.source != 'magento':
+            self.raise_user_error('invalid_magento_channel')
 
     @classmethod
     def get_source(cls):
@@ -196,28 +201,33 @@ class Channel:
                 )
 
     @classmethod
-    @ModelView.button_action('magento.wizard_test_connection')
-    def test_connection(cls, channels):
+    @ModelView.button_action('magento.wizard_configure_magento')
+    def configure_magento_connection(cls, channels):
+        """
+        Configure magento connection for current channel
+
+        :param channels: List of active records of channels
+        """
+        pass
+
+    def test_magento_connection(self):
         """
         Test magento connection and display appropriate message to user
-
         :param channels: Active record list of magento channels
         """
-        try:
-            channel, = channels
-        except ValueError:
-            cls.raise_user_error('multiple_channel')
+        # Make sure channel belongs to magento
+        self.validate_magento_channel()
 
         try:
             with magento.API(
-                channel.magento_url, channel.magento_api_user,
-                channel.magento_api_key
+                self.magento_url, self.magento_api_user,
+                self.magento_api_key
             ):
                 return
         except (
             xmlrpclib.Fault, IOError, xmlrpclib.ProtocolError, socket.timeout
         ):
-            cls.raise_user_error("connection_error")
+            self.raise_user_error("connection_error")
 
     @classmethod
     @ModelView.button_action('magento.wizard_import_carriers')
@@ -511,31 +521,3 @@ class Channel:
                     )
 
         return products
-
-
-class TestConnection(Wizard):
-    """
-    Test Connection Wizard
-
-    Test the connection to magento channel(s)
-    """
-    __name__ = 'magento.wizard_test_connection'
-
-    start = StateView(
-        'magento.wizard_test_connection.start',
-        'magento.wizard_test_connection_view_form',
-        [
-            Button('Ok', 'end', 'tryton-ok'),
-        ]
-    )
-
-    def default_start(self, data):
-        """Test the connection and show the user appropriate message
-        :param data: Wizard data
-        """
-        return {}
-
-
-class TestConnectionStart(ModelView):
-    "Test Connection"
-    __name__ = 'magento.wizard_test_connection.start'

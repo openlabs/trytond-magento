@@ -58,7 +58,7 @@
                     <field name="magento_taxes" colspan="8"/>
                 </page>   
             </notebook>
-            <button string="Test Connection" name="test_connection" colspan="2"/>         
+            <button string="Configure Magento Connection" name="configure_magento_connection" colspan="2"/>         
         </page> 
     </xpath>
 </data>

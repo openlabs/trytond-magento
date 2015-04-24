@@ -143,33 +143,7 @@
             <field name="act_window" ref="act_store_view_form"/>
         </record>
         <menuitem sequence="40" parent='menu_magento'
-            action="act_store_view_form" id="menu_store_view_form"/>
-
-        <!--Test Connection Wizard-->
-        <record model="ir.action.wizard" id="wizard_test_connection">
-            <field name="name">Test Connection</field>
-            <field name="wiz_name">magento.wizard_test_connection</field>
-            <field name="model">magento.instance</field>
-        </record>
-
-        <record model="ir.ui.view" id="wizard_test_connection_view_form">
-            <field name="model">magento.wizard_test_connection.start</field>
-            <field name="type">form</field>
-            <field name="name">wizard_test_connection_start_form</field>
-        </record>
-
-        <!--Import Websites Wizard-->
-        <record model="ir.action.wizard" id="wizard_import_websites">
-            <field name="name">Import Websites</field>
-            <field name="wiz_name">magento.wizard_import_websites</field>
-            <field name="model">magento.instance</field>
-        </record>
-
-        <record model="ir.ui.view" id="wizard_import_websites_view_form">
-            <field name="model">magento.wizard_import_websites.start</field>
-            <field name="type">form</field>
-            <field name="name">wizard_import_websites_start_form</field>
-        </record>
+          action="act_store_view_form" id="menu_store_view_form"/>
 
         <!--Import Carriers Wizard-->
         <record model="ir.action.wizard" id="wizard_import_carriers">

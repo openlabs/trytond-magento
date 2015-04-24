@@ -21,6 +21,51 @@
             <field name="model">magento.wizard_test_connection.start</field>
             <field name="type">form</field>
             <field name="name">wizard_test_connection_start_form</field>
-        </record>                                                                     
+        </record>
+
+        <!--Configuration Wizard-->
+        <record model="ir.action.wizard" id="wizard_configure_magento">
+            <field name="name">Configure Magento Connection</field>
+            <field name="wiz_name">magento.wizard_configure_magento</field>
+            <field name="model">sale.channel</field>
+        </record>
+        <record model="ir.action.keyword" id="wizard_configure_magento_keyword">
+            <field name="keyword">form_action</field>
+            <field name="model">sale.channel,-1</field>
+            <field name="action" ref="wizard_configure_magento"/>
+        </record>
+
+        <!--Test Connection Wizard-->
+        <record model="ir.ui.view" id="wizard_test_magento_connection_view_form">
+            <field name="model">magento.wizard_test_connection.start</field>
+            <field name="type">form</field>
+            <field name="name">wizard_test_connection_start_form</field>
+        </record>
+
+        <!--Import Websites Wizard-->
+        <record model="ir.ui.view" id="wizard_import_websites_view_form">
+            <field name="model">magento.wizard_import_websites.start</field>
+            <field name="type">form</field>
+            <field name="name">wizard_import_websites_start_form</field>
+        </record>
+
+        <!--Import Websites Stores-->
+        <record model="ir.ui.view" id="wizard_import_stores_view_form">
+            <field name="model">magento.wizard_import_stores.start</field>
+            <field name="type">form</field>
+            <field name="name">wizard_import_stores_start_form</field>
+        </record>
+
+        <record model="ir.ui.view" id="wizard_configuration_success_view_form">
+            <field name="model">magento.wizard_configuration_success.start</field>
+            <field name="type">form</field>
+            <field name="name">wizard_configuration_success_start_form</field>
+        </record>
+
+        <record model="ir.ui.view" id="wizard_configuration_failure_view_form">
+            <field name="model">magento.wizard_configuration_failure.start</field>
+            <field name="type">form</field>
+            <field name="name">wizard_configuration_failure_start_form</field>
+        </record>       
     </data>
 </tryton>
