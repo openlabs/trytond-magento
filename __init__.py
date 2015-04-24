@@ -8,28 +8,31 @@
     :license: BSD, see LICENSE for more details.
 """
 from trytond.pool import Pool
-from magento_ import (
+from wizard import (
     TestMagentoConnectionStart, ImportWebsitesStart,
-    ExportInventoryStart, ExportInventory, MagentoTier,
-    ExportTierPricesStart, ExportTierPrices, ExportTierPricesStatus,
-    ExportShipmentStatusStart, ExportShipmentStatus, ImportOrderStatesStart,
-    ImportOrderStates, ImportCarriersStart, ImportCarriers, MagentoException,
-    ConfigureMagento, ImportStoresStart, FailureStart, SuccessStart
+    ExportMagentoInventoryStart, ExportMagentoInventory,
+    ExportMagentoTierPricesStart, ExportMagentoTierPrices,
+    ExportMagentoTierPricesStatus, ExportMagentoShipmentStatusStart,
+    ExportMagentoShipmentStatus, ImportMagentoOrderStatesStart,
+    ImportMagentoOrderStates, ImportMagentoCarriersStart,
+    ImportMagentoCarriers, ConfigureMagento, ImportStoresStart, FailureStart,
+    SuccessStart, ImportMagentoOrdersStart, ImportMagentoOrders,
+    ExportMagentoOrderStatusStart, ExportMagentoOrderStatus,
+    UpdateMagentoCatalogStart, UpdateMagentoCatalog,
+    ImportMagentoCatalogStart, ImportMagentoCatalog,
+    ExportMagentoCatalogStart, ExportMagentoCatalog,
 )
-from channel import Channel
+from channel import Channel, MagentoTier, MagentoException
 from party import Party, MagentoWebsiteParty, Address
 from product import (
     Category, MagentoInstanceCategory, Product,
-    ImportCatalogStart, ImportCatalog, UpdateCatalogStart, UpdateCatalog,
-    ProductPriceTier, ExportCatalogStart, ExportCatalog,
-    ProductSaleChannelListing
+    ProductPriceTier, ProductSaleChannelListing
 )
 from country import Country, Subdivision
 from currency import Currency
 from carrier import MagentoInstanceCarrier
 from sale import (
-    MagentoOrderState, Sale, ImportOrdersStart, ImportOrders,
-    ExportOrderStatusStart, ExportOrderStatus, StockShipmentOut, SaleLine
+    MagentoOrderState, Sale,  StockShipmentOut, SaleLine
 )
 from bom import BOM
 from tax import MagentoTax, MagentoTaxRelation
@@ -48,10 +51,10 @@ def register():
         FailureStart,
         SuccessStart,
         ImportWebsitesStart,
-        ExportInventoryStart,
-        ExportTierPricesStart,
-        ExportTierPricesStatus,
-        ExportShipmentStatusStart,
+        ExportMagentoInventoryStart,
+        ExportMagentoTierPricesStart,
+        ExportMagentoTierPricesStatus,
+        ExportMagentoShipmentStatusStart,
         Country,
         Subdivision,
         Party,
@@ -61,18 +64,18 @@ def register():
         MagentoInstanceCategory,
         Product,
         ProductPriceTier,
-        ImportCatalogStart,
-        ExportCatalogStart,
+        ImportMagentoCatalogStart,
+        ExportMagentoCatalogStart,
         MagentoOrderState,
         StockShipmentOut,
         Address,
-        UpdateCatalogStart,
+        UpdateMagentoCatalogStart,
         Currency,
         Sale,
-        ImportOrdersStart,
-        ImportOrderStatesStart,
-        ImportCarriersStart,
-        ExportOrderStatusStart,
+        ImportMagentoOrdersStart,
+        ImportMagentoOrderStatesStart,
+        ImportMagentoCarriersStart,
+        ExportMagentoOrderStatusStart,
         SaleLine,
         BOM,
         MagentoTax,
@@ -81,16 +84,16 @@ def register():
         module='magento', type_='model'
     )
     Pool.register(
-        ImportOrderStates,
-        ExportInventory,
-        ExportTierPrices,
-        ExportShipmentStatus,
-        ImportCatalog,
-        UpdateCatalog,
-        ExportCatalog,
-        ImportOrders,
-        ExportOrderStatus,
-        ImportCarriers,
+        ImportMagentoOrderStates,
+        ExportMagentoInventory,
+        ExportMagentoTierPrices,
+        ExportMagentoShipmentStatus,
+        ImportMagentoCatalog,
+        UpdateMagentoCatalog,
+        ExportMagentoCatalog,
+        ImportMagentoOrders,
+        ExportMagentoOrderStatus,
+        ImportMagentoCarriers,
         ConfigureMagento,
         module='magento', type_='wizard'
     )

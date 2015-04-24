@@ -13,11 +13,11 @@ import socket
 from trytond.pool import PoolMeta, Pool
 from trytond.transaction import Transaction
 from trytond.pyson import Eval
-from trytond.model import ModelView, fields
+from trytond.model import ModelView, ModelSQL, fields
 from .api import OrderConfig
 
 __metaclass__ = PoolMeta
-__all__ = ['Channel']
+__all__ = ['Channel', 'MagentoTier', 'MagentoException']
 
 MAGENTO_STATES = {
     'invisible': ~(Eval('source') == 'magento'),
@@ -532,3 +532,54 @@ class Channel:
                     )
 
         return products
+
+
+class MagentoTier(ModelSQL, ModelView):
+    """Price Tiers for store
+
+    This model stores the default price tiers to be used while sending
+    tier prices for a product from Tryton to Magento.
+    The product also has a similar table like this. If there are no entries in
+    the table on product, then these tiers are used.
+    """
+    __name__ = 'sale.channel.magento.price_tier'
+
+    channel = fields.Many2One(
+        'sale.channel', 'Magento Store', required=True, readonly=True,
+    )
+    quantity = fields.Float('Quantity', required=True)
+
+    @classmethod
+    def __setup__(cls):
+        """
+        Setup the class before adding to pool
+        """
+        super(MagentoTier, cls).__setup__()
+        cls._sql_constraints += [
+            (
+                'channel_quantity_unique', 'UNIQUE(channel, quantity)',
+                'Quantity in price tiers must be unique for a channel'
+            )
+        ]
+
+
+class MagentoException(ModelSQL, ModelView):
+    """
+    Magento Exception model
+    """
+    __name__ = 'magento.exception'
+
+    origin = fields.Reference(
+        "Origin", selection='models_get', select=True,
+    )
+    log = fields.Text('Exception Log')
+
+    @classmethod
+    def models_get(cls):
+        '''
+        Return valid models allowed for origin
+        '''
+        return [
+            ('sale.sale', 'Sale'),
+            ('sale.line', 'Sale Line'),
+        ]

@@ -4,7 +4,7 @@
 
     Sale
 
-    :copyright: (c) 2013 by Openlabs Technologies & Consulting (P) Limited
+    :copyright: (c) 2013-2015 by Openlabs Technologies & Consulting (P) Limited
     :license: BSD, see LICENSE for more details.
 """
 import magento
@@ -16,13 +16,10 @@ from trytond.transaction import Transaction
 from trytond.exceptions import UserError
 from trytond.pool import PoolMeta, Pool
 from trytond.pyson import Eval, Not, Bool
-from trytond.wizard import Wizard, StateView, Button, StateAction
 
 
 __all__ = [
     'MagentoOrderState', 'StockShipmentOut', 'Sale', 'SaleLine',
-    'ImportOrdersStart', 'ImportOrders', 'ExportOrderStatusStart',
-    'ExportOrderStatus',
 ]
 __metaclass__ = PoolMeta
 
@@ -626,116 +623,6 @@ class Sale:
                 return self
 
         return self
-
-
-class ImportOrdersStart(ModelView):
-    "Import Sale Order Start View"
-    __name__ = 'magento.wizard_import_orders.start'
-
-    message = fields.Text("Message", readonly=True)
-
-
-class ImportOrders(Wizard):
-    """
-    Import Orders Wizard
-
-    Import sale orders from magento for the current store view.
-    """
-    __name__ = 'magento.wizard_import_orders'
-
-    start = StateView(
-        'magento.wizard_import_orders.start',
-        'magento.wizard_import_orders_view_start_form',
-        [
-            Button('Cancel', 'end', 'tryton-cancel'),
-            Button('Continue', 'import_', 'tryton-ok', default=True),
-        ]
-    )
-
-    import_ = StateAction('magento.act_sale_form_all')
-
-    def default_start(self, data):
-        """
-        Sets default data for wizard
-
-        :param data: Wizard data
-        """
-        return {
-            'message': "This wizard will import all sale orders placed on " +
-                "this store view on magento after the Last Order Import " +
-                "Time. If Last Order Import Time is missing, then it will " +
-                "import all the orders from beginning of time. [This might " +
-                "be slow depending on number of orders]."
-        }
-
-    def do_import_(self, action):
-        """Handles the transition"""
-
-        StoreView = Pool().get('magento.store.store_view')
-
-        store_view = StoreView(Transaction().context.get('active_id'))
-
-        sales = store_view.import_order_from_store_view()
-
-        data = {'res_id': [sale.id for sale in sales]}
-        return action, data
-
-    def transition_import_(self):
-        return 'end'
-
-
-class ExportOrderStatusStart(ModelView):
-    "Export Order Status Start View"
-    __name__ = 'magento.wizard_export_order_status.start'
-
-    message = fields.Text("Message", readonly=True)
-
-
-class ExportOrderStatus(Wizard):
-    """
-    Export Order Status wizard
-
-    Export order status to magento for the current store view
-    """
-    __name__ = 'magento.wizard_export_order_status'
-
-    start = StateView(
-        'magento.wizard_export_order_status.start',
-        'magento.wizard_export_order_status_view_start_form',
-        [
-            Button('Cancel', 'end', 'tryton-cancel'),
-            Button('Continue', 'export_', 'tryton-ok', default=True),
-        ]
-    )
-
-    export_ = StateAction('magento.act_sale_form_all')
-
-    def default_start(self, data):
-        """
-        Sets default data for wizard
-
-        :param data: Wizard data
-        """
-        return {
-            'message': "This wizard will export orders status to magento " +
-                "for this store view. All the orders edited/updated after " +
-                "the Last Order Export Time will be exported."
-        }
-
-    def do_export_(self, action):
-        """Handles the transition"""
-
-        StoreView = Pool().get('magento.store.store_view')
-
-        store_view = StoreView(Transaction().context.get('active_id'))
-
-        sales = store_view.export_order_status_for_store_view()
-
-        data = {'res_id': [sale.id for sale in sales]}
-        return action, data
-
-    def transition_export_(self):
-        return 'end'
 
 
 class SaleLine:
