@@ -32,7 +32,7 @@ from country import Country, Subdivision
 from currency import Currency
 from carrier import MagentoInstanceCarrier
 from sale import (
-    MagentoOrderState, Sale,  StockShipmentOut, SaleLine
+    MagentoOrderState, Sale, StockShipmentOut, SaleLine
 )
 from bom import BOM
 from tax import MagentoTax, MagentoTaxRelation

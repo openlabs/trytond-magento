@@ -327,13 +327,13 @@ class Product:
                 0.00
             ),
             'cost_price': Decimal(product_data.get('cost') or 0.00),
-            'default_uom': channel.magento_default_uom.id,
+            'default_uom': channel.default_uom.id,
             'salable': True,
-            'sale_uom': channel.magento_default_uom.id,
+            'sale_uom': channel.default_uom.id,
             'account_expense':
-                channel.magento_default_account_expense.id,
+                channel.default_account_expense.id,
             'account_revenue':
-                channel.magento_default_account_revenue.id,
+                channel.default_account_revenue.id,
         }
 
     @classmethod
@@ -368,7 +368,7 @@ class Product:
         )
         product_template_values.update({
             'products': [('create', [{
-                'description': product_data['description'],
+                'description': product_data.get('description'),
                 'code': product_data['sku'],
                 'channel_listings': [('create', [{
                     'product_identifier': product_data['product_id'],
@@ -421,7 +421,7 @@ class Product:
         )
         product_template_values.update({
             'products': [('write', map(int, self.products), {
-                'description': product_data['description'],
+                'description': product_data.get('description'),
                 'code': product_data['sku'],
             })]
         })
@@ -556,8 +556,5 @@ class ProductPriceTier(ModelSQL, ModelView):
         channel = Channel(Transaction().context['current_channel'])
         return channel.price_list.compute(
             None, self.template, self.template.list_price, self.quantity,
-            channel.magento_default_uom
+            channel.default_uom
         )
-
-
-

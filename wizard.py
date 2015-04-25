@@ -48,13 +48,13 @@ class ImportMagentoOrders(Wizard):
     """
     Import Orders Wizard
 
-    Import sale orders from magento for the current store view.
+    Import sale orders from magento for the current channel
     """
     __name__ = 'magento.wizard_import_orders'
 
     start = StateView(
         'magento.wizard_import_orders.start',
-        'magento.wizard_import_orders_view_start_form',
+        'magento.wizard_import_magento_orders_view_start_form',
         [
             Button('Cancel', 'end', 'tryton-cancel'),
             Button('Continue', 'import_', 'tryton-ok', default=True),
@@ -72,20 +72,21 @@ class ImportMagentoOrders(Wizard):
         return {
             'message':
                 "This wizard will import all sale orders placed on " +
-                "this store view on magento after the Last Order Import " +
+                "this channel on after the Last Order Import " +
                 "Time. If Last Order Import Time is missing, then it will " +
                 "import all the orders from beginning of time. [This might " +
                 "be slow depending on number of orders]."
         }
 
     def do_import_(self, action):
-        """Handles the transition"""
+        """
+        Import Orders from mganto
+        """
+        Channel = Pool().get('sale.channel')
 
-        StoreView = Pool().get('magento.store.store_view')
+        channel = Channel(Transaction().context.get('active_id'))
 
-        store_view = StoreView(Transaction().context.get('active_id'))
-
-        sales = store_view.import_order_from_store_view()
+        sales = channel.import_order_from_magento()
 
         data = {'res_id': [sale.id for sale in sales]}
         return action, data
@@ -111,7 +112,7 @@ class ExportMagentoOrderStatus(Wizard):
 
     start = StateView(
         'magento.wizard_export_order_status.start',
-        'magento.wizard_export_order_status_view_start_form',
+        'magento.wizard_export_magento_order_status_view_start_form',
         [
             Button('Cancel', 'end', 'tryton-cancel'),
             Button('Continue', 'export_', 'tryton-ok', default=True),
@@ -134,13 +135,14 @@ class ExportMagentoOrderStatus(Wizard):
         }
 
     def do_export_(self, action):
-        """Handles the transition"""
+        """
+        Export order status to magento
+        """
+        Channel = Pool().get('sale.channel')
 
-        StoreView = Pool().get('magento.store.store_view')
+        channel = Channel(Transaction().context.get('active_id'))
 
-        store_view = StoreView(Transaction().context.get('active_id'))
-
-        sales = store_view.export_order_status_for_store_view()
+        sales = channel.export_order_status_to_magento()
 
         data = {'res_id': [sale.id for sale in sales]}
         return action, data
@@ -162,19 +164,11 @@ class ImportMagentoOrderStates(Wizard):
 
     start = StateView(
         'magento.wizard_import_order_states.start',
-        'magento.wizard_import_order_states_start_view_form',
+        'magento.wizard_import_magento_order_states_start_view_form',
         [
             Button('Ok', 'end', 'tryton-ok'),
         ]
     )
-
-    def default_start(self, data):
-        """
-        Import order states and show the user appropriate message
-
-        :param data: Wizard data
-        """
-        return {}
 
 
 class ImportMagentoCarriersStart(ModelView):
@@ -192,7 +186,7 @@ class ImportMagentoCarriers(Wizard):
 
     start = StateView(
         'magento.wizard_import_carriers.start',
-        'magento.wizard_import_carriers_start_view_form',
+        'magento.wizard_import_magento_carriers_start_view_form',
         [
             Button('Ok', 'end', 'tryton-ok'),
         ]
@@ -229,7 +223,7 @@ class ExportMagentoInventory(Wizard):
 
     start = StateView(
         'magento.wizard_export_inventory.start',
-        'magento.wizard_export_inventory_view_start_form',
+        'magento.wizard_export_magento_inventory_view_start_form',
         [
             Button('Cancel', 'end', 'tryton-cancel'),
             Button('Continue', 'export_', 'tryton-ok', default=True),
@@ -239,7 +233,9 @@ class ExportMagentoInventory(Wizard):
     export_ = StateAction('product.act_template_form')
 
     def do_export_(self, action):
-        """Handles the transition"""
+        """
+        Handles the transition
+        """
 
         Channel = Pool().get('sale.channel')
 
@@ -277,7 +273,7 @@ class ExportMagentoTierPrices(Wizard):
 
     start = StateView(
         'magento.wizard_export_tier_prices.start',
-        'magento.wizard_export_tier_prices_view_start_form',
+        'magento.wizard_export_magento_tier_prices_view_start_form',
         [
             Button('Cancel', 'end', 'tryton-cancel'),
             Button('Continue', 'export_', 'tryton-ok', default=True),
@@ -286,7 +282,7 @@ class ExportMagentoTierPrices(Wizard):
 
     export_ = StateView(
         'magento.wizard_export_tier_prices.status',
-        'magento.wizard_export_tier_prices_view_status_form',
+        'magento.wizard_export_magento_tier_prices_view_status_form',
         [
             Button('OK', 'end', 'tryton-cancel'),
         ]
@@ -294,12 +290,13 @@ class ExportMagentoTierPrices(Wizard):
 
     def default_export_(self, fields):
         """Export price tiers and return count of products"""
-        Store = Pool().get('magento.website.store')
+        Channel = Pool().get('sale.channel')
 
-        store = Store(Transaction().context.get('active_id'))
+        Channel(Transaction().context.get('active_id'))
 
         return {
-            'products_count': store.export_tier_prices_to_magento()
+            # TODO: Need to be implemented first
+            # 'products_count': channel.export_tier_prices_to_magento()
         }
 
 
@@ -320,7 +317,7 @@ class ExportMagentoShipmentStatus(Wizard):
 
     start = StateView(
         'magento.wizard_export_shipment_status.start',
-        'magento.wizard_export_shipment_status_view_start_form',
+        'magento.wizard_export_magento_shipment_status_view_start_form',
         [
             Button('Cancel', 'end', 'tryton-cancel'),
             Button('Continue', 'export_', 'tryton-ok', default=True),
@@ -591,7 +588,7 @@ class SuccessStart(ModelView):
 
 class UpdateMagentoCatalogStart(ModelView):
     'Update Catalog View'
-    __name__ = 'magento.instance.update_catalog.start'
+    __name__ = 'magento.update_catalog.start'
 
 
 class UpdateMagentoCatalog(Wizard):
@@ -600,11 +597,11 @@ class UpdateMagentoCatalog(Wizard):
 
     This is a wizard to update already imported products
     '''
-    __name__ = 'magento.instance.update_catalog'
+    __name__ = 'magento.update_catalog'
 
     start = StateView(
-        'magento.instance.update_catalog.start',
-        'magento.update_catalog_start', [
+        'magento.update_catalog.start',
+        'magento.magento_update_catalog_start_view_form', [
             Button('Cancel', 'end', 'tryton-cancel'),
             Button('Continue', 'update_', 'tryton-ok', default=True),
         ]
@@ -646,7 +643,7 @@ class UpdateMagentoCatalog(Wizard):
 
 class ImportMagentoCatalogStart(ModelView):
     'Import Catalog View'
-    __name__ = 'magento.instance.import_catalog.start'
+    __name__ = 'magento.import_catalog.start'
 
 
 class ImportMagentoCatalog(Wizard):
@@ -656,11 +653,11 @@ class ImportMagentoCatalog(Wizard):
     This is a wizard to import Products from a Magento Website. It opens up
     the list of products after the import has been completed.
     '''
-    __name__ = 'magento.instance.import_catalog'
+    __name__ = 'magento.import_catalog'
 
     start = StateView(
-        'magento.instance.import_catalog.start',
-        'magento.instance_import_catalog_start', [
+        'magento.import_catalog.start',
+        'magento.magento_import_catalog_start_view_form', [
             Button('Cancel', 'end', 'tryton-cancel'),
             Button('Continue', 'import_', 'tryton-ok', default=True),
         ]
@@ -707,7 +704,7 @@ class ImportMagentoCatalog(Wizard):
 
         :param website: Active record of website
         """
-        Product = Pool().get('product.template')
+        Product = Pool().get('product.product')
 
         Transaction().set_context({
             'current_channel': channel.id,
@@ -721,9 +718,7 @@ class ImportMagentoCatalog(Wizard):
             products = []
             for magento_product in magento_products:
                 products.append(
-                    Product.find_or_create_using_magento_data(
-                        magento_product
-                    )
+                    Product.find_or_create_using_magento_data(magento_product)
                 )
 
         return map(int, products)
@@ -731,15 +726,15 @@ class ImportMagentoCatalog(Wizard):
 
 class ExportMagentoCatalogStart(ModelView):
     'Export Catalog View'
-    __name__ = 'magento.website.export_catalog.start'
+    __name__ = 'magento.export_catalog.start'
 
     category = fields.Many2One(
         'product.category', 'Magento Category', required=True,
         domain=[('magento_ids', 'not in', [])],
     )
     products = fields.Many2Many(
-        'product.template', None, None, 'Products', required=True,
-        domain=[('magento_ids', '=', None)],
+        'product.product', None, None, 'Products', required=True,
+        domain=[('channel_listings', '=', None)],
     )
     attribute_set = fields.Selection(
         [], 'Attribute Set', required=True,
@@ -788,11 +783,11 @@ class ExportMagentoCatalog(Wizard):
 
     Export the products selected to the selected category for this channel
     '''
-    __name__ = 'magento.website.export_catalog'
+    __name__ = 'magento.export_catalog'
 
     start = StateView(
-        'magento.website.export_catalog.start',
-        'magento.website_export_catalog_start', [
+        'magento.export_catalog.start',
+        'magento.magento_export_catalog_start_view_form', [
             Button('Cancel', 'end', 'tryton-cancel'),
             Button('Continue', 'export_', 'tryton-ok', default=True),
         ]

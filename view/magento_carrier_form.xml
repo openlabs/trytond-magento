@@ -7,6 +7,6 @@
     <newline/>
     <label name="carrier"/>
     <field name="carrier"/>
-    <label name="instance"/>
-    <field name="instance"/>
+    <label name="channel"/>
+    <field name="channel"/>
 </form>

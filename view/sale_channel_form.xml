@@ -50,8 +50,12 @@
                 <page string="Taxes" id="taxes">
                     <field name="magento_taxes" colspan="8"/>
                 </page>   
-            </notebook>
-            <button string="Configure Magento Connection" name="configure_magento_connection" colspan="4"/>         
+              </notebook>
+            <group id="magento_buttons" col="3" colspan="4">
+                <button string="Configure Magento Connection" name="configure_magento_connection"/>
+                <button string="Import Magento Order States" name="import_magento_order_states"/>
+                <button string="Import Magento Carriers" name="import_magento_carriers"/>
+            </group>
         </page> 
     </xpath>
 </data>

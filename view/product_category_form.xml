@@ -4,6 +4,6 @@ this repository contains the full copyright notices and license terms. -->
 <form string="Product Category Instance">
     <label name="magento_id"/>
     <field name="magento_id"/>
-    <label name="instance"/>
-    <field name="instance"/>
+    <label name="channel"/>
+    <field name="channel"/>
 </form>

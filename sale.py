@@ -163,9 +163,6 @@ class Sale:
     __name__ = 'sale.sale'
 
     magento_id = fields.Integer('Magento ID', readonly=True)
-    channel = fields.Many2One(
-        'sale.channel', 'Channel', readonly=True,
-    )
     has_magento_exception = fields.Boolean('Has Magento import exception')
     magento_exceptions = fields.Function(
         fields.One2Many('magento.exception', None, 'Magento Exceptions'),

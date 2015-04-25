@@ -130,7 +130,7 @@
 
         <!--Export Order Status-->
         <record model="ir.action.wizard" id="wizard_export_magento_order_status">
-            <field name="name">Export Order Status</field>
+            <field name="name">Export Order Status To Magento</field>
             <field name="wiz_name">magento.wizard_export_order_status</field>
             <field name="model">sale.channel</field>
         </record>

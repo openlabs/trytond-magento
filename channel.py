@@ -141,8 +141,8 @@ class Channel:
                 'Current channel does not belongs to Magento !'
         })
         cls._buttons.update({
-            'import_order_states': {},
-            'import_carriers': {},
+            'import_magento_order_states': {},
+            'import_magento_carriers': {},
             'configure_magento_connection': {}
         })
         cls._error_messages.update({
@@ -188,8 +188,8 @@ class Channel:
         return []
 
     @classmethod
-    @ModelView.button_action('magento.wizard_import_order_states')
-    def import_order_states(cls, channels):
+    @ModelView.button_action('magento.wizard_import_magento_order_states')
+    def import_magento_order_states(cls, channels):
         """
         Import order states for magento channel
 
@@ -205,7 +205,8 @@ class Channel:
 
             # Import order states
             with OrderConfig(
-                channel.url, channel.api_user, channel.api_key
+                channel.magento_url, channel.magento_api_user,
+                channel.magento_api_key
             ) as order_config_api:
                 OrderState.create_all_using_magento_data(
                     order_config_api.get_states()
@@ -241,8 +242,8 @@ class Channel:
             self.raise_user_error("connection_error")
 
     @classmethod
-    @ModelView.button_action('magento.wizard_import_carriers')
-    def import_carriers(cls, channels):
+    @ModelView.button_action('magento.wizard_import_magento_carriers')
+    def import_magento_carriers(cls, channels):
         """
         Import carriers/shipping methods from magento for channels
 
@@ -256,7 +257,8 @@ class Channel:
                 'current_channel': channel.id
             }):
                 with OrderConfig(
-                    channel.url, channel.api_user, channel.api_key
+                    channel.magento_url, channel.magento_api_user,
+                    channel.magento_api_key
                 ) as order_config_api:
                     mag_carriers = order_config_api.get_shipping_methods()
 
@@ -327,16 +329,18 @@ class Channel:
                     'store_id': {'=': self.magento_store_id},
                     'state': {'in': order_states_to_import_in},
                 }
-                if self.last_order_import_time:
+                if self.magento_last_order_import_time:
                     last_order_import_time = \
-                        self.last_order_import_time.replace(microsecond=0)
+                        self.magento_last_order_import_time.replace(
+                            microsecond=0
+                        )
                     filter.update({
                         'updated_at': {
                             'gteq': last_order_import_time.isoformat(' ')
                         },
                     })
                 self.write([self], {
-                    'last_order_import_time': datetime.utcnow()
+                    'magento_last_order_import_time': datetime.utcnow()
                 })
                 orders = order_api.list(filter)
                 for order in orders:
