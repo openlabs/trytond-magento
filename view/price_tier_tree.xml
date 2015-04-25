@@ -3,5 +3,5 @@
 this repository contains the full copyright notices and license terms. -->
 <tree string="Price Tiers">
     <field name="quantity"/>
-    <field name="store"/>
+    <field name="channel"/>
 </tree>

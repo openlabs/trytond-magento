@@ -2,7 +2,7 @@
 """
     test_base
 
-    :copyright: (c) 2013 by Openlabs Technologies & Consulting (P) Limited
+    :copyright: (c) 2013-2015 by Openlabs Technologies & Consulting (P) Limited
     :license: BSD, see LICENSE for more details.
 """
 import os
@@ -263,11 +263,11 @@ class TestBase(unittest.TestCase):
                 'magento_url': 'some test url 1',
                 'magento_api_user': 'admin',
                 'magento_api_key': 'testkey',
-                'magento_default_account_expense':
+                'default_account_expense':
                     self.get_account_by_kind('expense'),
-                'magento_default_account_revenue':
+                'default_account_revenue':
                     self.get_account_by_kind('revenue'),
-                'magento_default_uom': self.uom,
+                'default_uom': self.uom,
                 'magento_website_name': 'A test website 1',
                 'magento_website_id': 1,
                 'magento_website_code': 'test_code',
@@ -288,11 +288,11 @@ class TestBase(unittest.TestCase):
                 'magento_url': 'some test url 2',
                 'magento_api_user': 'admin',
                 'magento_api_key': 'testkey',
-                'magento_default_account_expense':
+                'default_account_expense':
                     self.get_account_by_kind('expense'),
-                'magento_default_account_revenue':
+                'default_account_revenue':
                     self.get_account_by_kind('revenue'),
-                'magento_default_uom': self.uom,
+                'default_uom': self.uom,
                 'magento_website_name': 'A test website 1',
                 'magento_website_id': 1,
                 'magento_website_code': 'test_code',
@@ -308,7 +308,7 @@ class TestBase(unittest.TestCase):
         # TODO: This should work without creating new properties
         self.Property.create([{
             'value': 'account.account' + ',' +
-                str(self.channel1.magento_default_account_revenue.id),
+                str(self.channel1.default_account_revenue.id),
             'res': None,
             'field': model_field.id,
         }])

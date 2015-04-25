@@ -4,10 +4,6 @@
         <page string="Magento" id="magento_sale_tab">
             <label name="magento_id"/>
             <field name="magento_id"/>
-            <label name="magento_instance"/>
-            <field name="magento_instance"/>
-            <label name="magento_store_view"/>
-            <field name="magento_store_view"/>
             <label name="has_magento_exception"/>
             <field name="has_magento_exception"/>
         </page>
