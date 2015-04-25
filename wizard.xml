@@ -1,0 +1,216 @@
+<tryton>
+    <data>
+
+        <!--Configuration Wizard-->
+        <record model="ir.action.wizard" id="wizard_configure_magento">
+            <field name="name">Configure Magento Connection</field>
+            <field name="wiz_name">magento.wizard_configure_magento</field>
+            <field name="model">sale.channel</field>
+        </record>
+        <record model="ir.action.keyword" id="wizard_configure_magento_keyword">
+            <field name="keyword">form_action</field>
+            <field name="model">sale.channel,-1</field>
+            <field name="action" ref="wizard_configure_magento"/>
+        </record>
+
+        <!--Test Connection Wizard-->
+        <record model="ir.ui.view" id="wizard_test_magento_connection_view_form">
+            <field name="model">magento.wizard_test_connection.start</field>
+            <field name="type">form</field>
+            <field name="name">wizard_test_connection_start_form</field>
+        </record>
+
+        <!--Import Websites Wizard-->
+        <record model="ir.ui.view" id="wizard_import_websites_view_form">
+            <field name="model">magento.wizard_import_websites.start</field>
+            <field name="type">form</field>
+            <field name="name">wizard_import_websites_start_form</field>
+        </record>
+
+        <!--Import Websites Stores-->
+        <record model="ir.ui.view" id="wizard_import_stores_view_form">
+            <field name="model">magento.wizard_import_stores.start</field>
+            <field name="type">form</field>
+            <field name="name">wizard_import_stores_start_form</field>
+        </record>
+
+        <!--Configuration Success / Failure Wizard-->
+        <record model="ir.ui.view" id="wizard_configuration_success_view_form">
+            <field name="model">magento.wizard_configuration_success.start</field>
+            <field name="type">form</field>
+            <field name="name">wizard_configuration_success_start_form</field>
+        </record>
+
+        <record model="ir.ui.view" id="wizard_configuration_failure_view_form">
+            <field name="model">magento.wizard_configuration_failure.start</field>
+            <field name="type">form</field>
+            <field name="name">wizard_configuration_failure_start_form</field>
+          </record>
+
+        <!--Import Carriers Wizard-->
+        <record model="ir.action.wizard" id="wizard_import_magento_carriers">
+            <field name="name">Import Magento Carriers</field>
+            <field name="wiz_name">magento.wizard_import_carriers</field>
+            <field name="model">sale.channel</field>
+        </record>
+        <record model="ir.ui.view" id="wizard_import_magento_carriers_start_view_form">
+            <field name="model">magento.wizard_import_carriers.start</field>
+            <field name="type">form</field>
+            <field name="name">wizard_import_carriers_start_form</field>
+        </record>
+
+        <!--Import Order states wizard-->
+        <record model="ir.action.wizard" id="wizard_import_magento_order_states">
+            <field name="name">Import Magento Order States</field>
+            <field name="wiz_name">magento.wizard_import_order_states</field>
+            <field name="model">sale.channel</field>
+        </record>
+
+        <record model="ir.ui.view" id="wizard_import_magento_order_states_start_view_form">
+            <field name="model">magento.wizard_import_order_states.start</field>
+            <field name="type">form</field>
+            <field name="name">wizard_import_order_states_start_form</field>
+          </record>
+
+        <!--Export Inventory Wizard-->
+        <record model="ir.action.wizard" id="wizard_export_magento_inventory">
+            <field name="name">Export Magento Inventory</field>
+            <field name="wiz_name">magento.wizard_export_inventory</field>
+            <field name="model">sale.channel</field>
+        </record>
+        <record model="ir.action.keyword" id="wizard_export_magento_inventory_keyword">
+            <field name="keyword">form_action</field>
+            <field name="model">sale.channel,-1</field>
+            <field name="action" ref="wizard_export_magento_inventory"/>
+        </record>
+        <record model="ir.ui.view" id="wizard_export_magento_inventory_view_start_form">
+            <field name="model">magento.wizard_export_inventory.start</field>
+            <field name="type">form</field>
+            <field name="name">export_inventory_start_form</field>
+          </record>
+
+        <!--Export Tier Prices Wizard-->
+        <record model="ir.action.wizard" id="wizard_export_magento_tier_prices">
+            <field name="name">Export Tier Prices to Magento</field>
+            <field name="wiz_name">magento.wizard_export_tier_prices</field>
+            <field name="model">sale.channel</field>
+        </record>
+        <record model="ir.action.keyword" id="wizard_export_magento_tier_prices_keyword">
+            <field name="keyword">form_action</field>
+            <field name="model">sale.channel,-1</field>
+            <field name="action" ref="wizard_export_magento_tier_prices"/>
+        </record>
+        <record model="ir.ui.view" id="wizard_export_magento_tier_prices_view_start_form">
+            <field name="model">magento.wizard_export_tier_prices.start</field>
+            <field name="type">form</field>
+            <field name="name">export_tier_prices_start_form</field>
+        </record>
+        <record model="ir.ui.view" id="wizard_export_magento_tier_prices_view_status_form">
+            <field name="model">magento.wizard_export_tier_prices.status</field>
+            <field name="type">form</field>
+            <field name="name">export_tier_prices_status_form</field>
+          </record>
+
+        <!--Import Orders Wizard-->
+        <record model="ir.action.wizard" id="wizard_import_magento_orders">
+            <field name="name">Import Magento Orders</field>
+            <field name="wiz_name">magento.wizard_import_orders</field>
+            <field name="model">sale.channel</field>
+        </record>
+        <record model="ir.action.keyword" id="wizard_import_magento_orders_keyword">
+            <field name="keyword">form_action</field>
+            <field name="model">sale.channel,-1</field>
+            <field name="action" ref="wizard_import_magento_orders"/>
+        </record>
+        <record model="ir.ui.view" id="wizard_import_magento_orders_view_start_form">
+            <field name="model">magento.wizard_import_orders.start</field>
+            <field name="type">form</field>
+            <field name="name">import_orders_start_form</field>
+        </record>
+
+        <!--Export Order Status-->
+        <record model="ir.action.wizard" id="wizard_export_magento_order_status">
+            <field name="name">Export Order Status</field>
+            <field name="wiz_name">magento.wizard_export_order_status</field>
+            <field name="model">sale.channel</field>
+        </record>
+        <record model="ir.action.keyword" id="wizard_export_magento_order_status_keyword">
+            <field name="keyword">form_action</field>
+            <field name="model">sale.channel,-1</field>
+            <field name="action" ref="wizard_export_magento_order_status"/>
+        </record>
+        <record model="ir.ui.view" id="wizard_export_magento_order_status_view_start_form">
+            <field name="model">magento.wizard_export_order_status.start</field>
+            <field name="type">form</field>
+            <field name="name">export_order_status_start_form</field>
+        </record>
+
+        <!--Export Shipment Status Wizard-->
+        <record model="ir.action.wizard" id="wizard_export_magento_shipment_status">
+            <field name="name">Export Shipment Status To Magento</field>
+            <field name="wiz_name">magento.wizard_export_shipment_status</field>
+            <field name="model">sale.channel</field>
+        </record>
+        <record model="ir.action.keyword" id="wizard_export_magento_shipment_status_keyword">
+            <field name="keyword">form_action</field>
+            <field name="model">sale.channel,-1</field>
+            <field name="action" ref="wizard_export_magento_shipment_status"/>
+        </record>
+        <record model="ir.ui.view" id="wizard_export_magento_shipment_status_view_start_form">
+            <field name="model">magento.wizard_export_shipment_status.start</field>
+            <field name="type">form</field>
+            <field name="name">export_shipment_status_start_form</field>
+        </record>
+
+        <!--Import Product Catalog wizard-->
+        <record model="ir.action.wizard" id="wizard_magento_import_catalog">
+            <field name="name">Import Magento Product Catalog</field>
+            <field name="wiz_name">magento.import_catalog</field>
+            <field name="model">sale.channel</field>
+        </record>
+        <record model="ir.action.keyword" id="wizard_magento_import_catalog_keyword">
+            <field name="keyword">form_action</field>
+            <field name="model">sale.channel,-1</field>
+            <field name="action" ref="wizard_magento_import_catalog"/>
+        </record>
+        <record model="ir.ui.view" id="magento_import_catalog_start_view_form">
+            <field name="model">magento.import_catalog.start</field>
+            <field name="type">form</field>
+            <field name="name">wizard_import_catalog_start_form</field>
+        </record>
+
+        <!--Export Product Catalog Wizard-->
+        <record model="ir.action.wizard" id="wizard_magento_export_catalog">
+            <field name="name">Export Product Catalog to Magento</field>
+            <field name="wiz_name">magento.export_catalog</field>
+            <field name="model">sale.channel</field>
+        </record>
+        <record model="ir.action.keyword" id="wizard_magento_export_catalog_keyword">
+            <field name="keyword">form_action</field>
+            <field name="model">sale.channel,-1</field>
+            <field name="action" ref="wizard_magento_export_catalog"/>
+        </record>
+        <record model="ir.ui.view" id="magento_export_catalog_start_view_form">
+            <field name="model">magento.export_catalog.start</field>
+            <field name="type">form</field>
+            <field name="name">wizard_export_catalog_start_form</field>
+        </record>
+
+        <!--Update Magento Product Catalog Wizard-->
+        <record model="ir.action.wizard" id="wizard_magento_update_catalog">
+            <field name="name">Update Magento Catalog</field>
+            <field name="wiz_name">magento.update_catalog</field>
+            <field name="model">sale.channel</field>
+        </record>
+        <record model="ir.action.keyword" id="wizard_magento_update_catalog_keyword">
+            <field name="keyword">form_action</field>
+            <field name="model">sale.channel,-1</field>
+            <field name="action" ref="wizard_magento_update_catalog"/>
+        </record>
+        <record model="ir.ui.view" id="magento_update_catalog_start_view_form">
+            <field name="model">magento.update_catalog.start</field>
+            <field name="type">form</field>
+            <field name="name">update_catalog_start_form</field>
+        </record>
+    </data>
+</tryton>
