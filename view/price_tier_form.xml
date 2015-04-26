@@ -4,6 +4,6 @@ this repository contains the full copyright notices and license terms. -->
 <form string="Price Tier" col="6">
     <label name="quantity"/>
     <field name="quantity"/>
-    <label name="store"/>
-    <field name="store"/>
+    <label name="channel"/>
+    <field name="channel"/>
 </form>

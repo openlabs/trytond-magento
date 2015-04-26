@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
 <form string="Export Order Status" col="2">
-    <image name="tryton-dialog-information" xexpand="0" xfill="0"/>
+    <image name="tryton-dialog-information" xexpand="0" xfill="0" colspan="4"/>
     <field name="message"/>
 </form>

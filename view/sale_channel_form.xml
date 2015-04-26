@@ -10,22 +10,25 @@
             <field name="magento_api_key"/>
             <notebook>
                 <page string="General" id="general">
+                    <separator string="Website Info" id="website_info" colspan="4"/>
                     <label name="magento_website_id"/>
                     <field name="magento_website_id"/>
-                    <label name="magento_website_name"/>
-                    <field name="magento_website_name"/>
                     <label name="magento_website_code"/>
                     <field name="magento_website_code"/>
-                    <label name="magento_store_name"/>
-                    <field name="magento_store_name"/>
+                    <label name="magento_website_name"/>
+                    <field name="magento_website_name"/>
+                    <separator string="Store Info" id="store_info" colspan="4"/>
                     <label name="magento_store_id"/>
                     <field name="magento_store_id"/>
+                    <label name="magento_store_name"/>
+                    <field name="magento_store_name"/>
+                    <separator string="Others" id="others" colspan="4"/>
+                    <label name="magento_export_tracking_information"/>
+                    <field name="magento_export_tracking_information"/>
+                    <label name="magento_root_category_id"/>
+                    <field name="magento_root_category_id"/>
                 </page>
-                <page string="Orders" id="order_states" col="6">
-                    <label name="magento_last_order_import_time"/>
-                    <field name="magento_last_order_import_time"/>
-                    <label name="magento_last_order_export_time"/>
-                    <field name="magento_last_order_export_time"/>
+                <page string="Order States" id="order_states" col="6">
                     <label name="magento_order_prefix"/>
                     <field name="magento_order_prefix"/>
                     <field name="magento_order_states" colspan="8"/>
@@ -33,32 +36,26 @@
                 <page string="Carrier / Shipping Methods" id="carriers">
                     <field name="magento_carriers" colspan="4"/>
                 </page>
-                <page string="Account Settings" id="account_settings">
-                    <label name="magento_default_account_expense"/>
-                    <field name="magento_default_account_expense"/>
-                    <label name="magento_default_account_revenue"/>
-                    <field name="magento_default_account_revenue"/> 
-                </page>
-                <page string="Catalog" id="catalog">
-                    <label name="magento_root_category_id"/>
-                    <field name="magento_root_category_id" colspan="3"/>
-                    <label name="magento_default_uom"/>
-                    <field name="magento_default_uom"/>
-                </page>
                 <page string="Price Tiers" id="price_tiers">
                      <field name="magento_price_tiers" colspan="8"/>
                 </page>
-                <page string="Others" id="others">
+                <page string="Import / Export Time" id="import_export_time">
+                    <label name="magento_last_order_import_time"/>
+                    <field name="magento_last_order_import_time"/>
+                    <label name="magento_last_order_export_time"/>
+                    <field name="magento_last_order_export_time"/>
                     <label name="magento_last_shipment_export_time"/>
                     <field name="magento_last_shipment_export_time"/>
-                    <label name="magento_export_tracking_information"/>
-                    <field name="magento_export_tracking_information"/>
                 </page>
                 <page string="Taxes" id="taxes">
                     <field name="magento_taxes" colspan="8"/>
                 </page>   
-            </notebook>
-            <button string="Test Connection" name="test_connection" colspan="2"/>         
+              </notebook>
+            <group id="magento_buttons" col="3" colspan="4">
+                <button string="Configure Magento Connection" name="configure_magento_connection"/>
+                <button string="Import Magento Order States" name="import_magento_order_states"/>
+                <button string="Import Magento Carriers" name="import_magento_carriers"/>
+            </group>
         </page> 
     </xpath>
 </data>

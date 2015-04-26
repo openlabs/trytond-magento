@@ -4,7 +4,7 @@
 
     Sale
 
-    :copyright: (c) 2013 by Openlabs Technologies & Consulting (P) Limited
+    :copyright: (c) 2013-2015 by Openlabs Technologies & Consulting (P) Limited
     :license: BSD, see LICENSE for more details.
 """
 import magento
@@ -16,15 +16,16 @@ from trytond.transaction import Transaction
 from trytond.exceptions import UserError
 from trytond.pool import PoolMeta, Pool
 from trytond.pyson import Eval, Not, Bool
-from trytond.wizard import Wizard, StateView, Button, StateAction
 
 
 __all__ = [
     'MagentoOrderState', 'StockShipmentOut', 'Sale', 'SaleLine',
-    'ImportOrdersStart', 'ImportOrders', 'ExportOrderStatusStart',
-    'ExportOrderStatus',
 ]
 __metaclass__ = PoolMeta
+
+INVISIBLE_IF_NOT_MAGENTO = {
+    'invisible': ~(Eval('channel_type') == 'magento'),
+}
 
 
 class MagentoOrderState(ModelSQL, ModelView):
@@ -141,12 +142,17 @@ class MagentoOrderState(ModelSQL, ModelView):
         :param magento_data: Magento data in form of dict
         :return: List of active records of records created
         """
+        Channel = Pool().get('sale.channel')
+
         order_states_to_create = []
+
+        channel = Channel(Transaction().context['current_channel'])
+        channel.validate_magento_channel()
 
         for code, name in magento_data.iteritems():
             if cls.search([
                 ('code', '=', code),
-                ('channel', '=', Transaction().context.get('current_channel'))
+                ('channel', '=', channel.id)
             ]):
                 continue
 
@@ -154,7 +160,7 @@ class MagentoOrderState(ModelSQL, ModelView):
             data_map.update({
                 'name': name,
                 'code': code,
-                'channel': Transaction().context.get('current_channel'),
+                'channel': channel.id,
             })
             order_states_to_create.append(data_map)
 
@@ -165,14 +171,19 @@ class Sale:
     "Sale"
     __name__ = 'sale.sale'
 
-    magento_id = fields.Integer('Magento ID', readonly=True)
-    channel = fields.Many2One(
-        'sale.channel', 'Channel', readonly=True,
+    magento_id = fields.Integer(
+        'Magento ID', readonly=True, states=INVISIBLE_IF_NOT_MAGENTO,
+        depends=['channel_type']
     )
-    has_magento_exception = fields.Boolean('Has Magento import exception')
+    has_magento_exception = fields.Boolean(
+        'Has Magento import exception', states=INVISIBLE_IF_NOT_MAGENTO,
+        depends=['channel_type']
+    )
     magento_exceptions = fields.Function(
-        fields.One2Many('magento.exception', None, 'Magento Exceptions'),
-        'get_magento_exceptions'
+        fields.One2Many(
+            'magento.exception', None, 'Magento Exceptions',
+            states=INVISIBLE_IF_NOT_MAGENTO, depends=['channel_type']
+        ), 'get_magento_exceptions',
     )
 
     @staticmethod
@@ -262,6 +273,8 @@ class Sale:
         Channel = Pool().get('sale.channel')
 
         channel = Channel(Transaction().context['current_channel'])
+        channel.validate_magento_channel()
+
         currency = Currency.search_using_magento_code(
             order_data['order_currency_code']
         )
@@ -454,11 +467,12 @@ class Sale:
         """
         Channel = Pool().get('sale.channel')
 
+        channel = Channel(Transaction().context['current_channel'])
+        channel.validate_magento_channel()
+
         sale = cls.find_using_magento_increment_id(order_increment_id)
 
         if not sale:
-            channel = Channel(Transaction().context.get('current_channel'))
-
             with magento.Order(
                 channel.magento_url, channel.magento_api_user,
                 channel.magento_api_key
@@ -506,7 +520,7 @@ class Sale:
                 'reference', '=', channel.magento_order_prefix +
                 order_increment_id
             ),
-            ('channel', '=', Transaction().context.get('current_channel'))
+            ('channel', '=', channel.id)
         ])
 
         return sales and sales[0] or None
@@ -607,6 +621,9 @@ class Sale:
             return self
 
         channel = self.channel
+
+        channel.validate_magento_channel()
+
         increment_id = self.reference.split(channel.magento_order_prefix)[1]
         # This try except is placed because magento might not accept this
         # order status change due to its workflow constraints.
@@ -626,116 +643,6 @@ class Sale:
                 return self
 
         return self
-
-
-class ImportOrdersStart(ModelView):
-    "Import Sale Order Start View"
-    __name__ = 'magento.wizard_import_orders.start'
-
-    message = fields.Text("Message", readonly=True)
-
-
-class ImportOrders(Wizard):
-    """
-    Import Orders Wizard
-
-    Import sale orders from magento for the current store view.
-    """
-    __name__ = 'magento.wizard_import_orders'
-
-    start = StateView(
-        'magento.wizard_import_orders.start',
-        'magento.wizard_import_orders_view_start_form',
-        [
-            Button('Cancel', 'end', 'tryton-cancel'),
-            Button('Continue', 'import_', 'tryton-ok', default=True),
-        ]
-    )
-
-    import_ = StateAction('magento.act_sale_form_all')
-
-    def default_start(self, data):
-        """
-        Sets default data for wizard
-
-        :param data: Wizard data
-        """
-        return {
-            'message': "This wizard will import all sale orders placed on " +
-                "this store view on magento after the Last Order Import " +
-                "Time. If Last Order Import Time is missing, then it will " +
-                "import all the orders from beginning of time. [This might " +
-                "be slow depending on number of orders]."
-        }
-
-    def do_import_(self, action):
-        """Handles the transition"""
-
-        StoreView = Pool().get('magento.store.store_view')
-
-        store_view = StoreView(Transaction().context.get('active_id'))
-
-        sales = store_view.import_order_from_store_view()
-
-        data = {'res_id': [sale.id for sale in sales]}
-        return action, data
-
-    def transition_import_(self):
-        return 'end'
-
-
-class ExportOrderStatusStart(ModelView):
-    "Export Order Status Start View"
-    __name__ = 'magento.wizard_export_order_status.start'
-
-    message = fields.Text("Message", readonly=True)
-
-
-class ExportOrderStatus(Wizard):
-    """
-    Export Order Status wizard
-
-    Export order status to magento for the current store view
-    """
-    __name__ = 'magento.wizard_export_order_status'
-
-    start = StateView(
-        'magento.wizard_export_order_status.start',
-        'magento.wizard_export_order_status_view_start_form',
-        [
-            Button('Cancel', 'end', 'tryton-cancel'),
-            Button('Continue', 'export_', 'tryton-ok', default=True),
-        ]
-    )
-
-    export_ = StateAction('magento.act_sale_form_all')
-
-    def default_start(self, data):
-        """
-        Sets default data for wizard
-
-        :param data: Wizard data
-        """
-        return {
-            'message': "This wizard will export orders status to magento " +
-                "for this store view. All the orders edited/updated after " +
-                "the Last Order Export Time will be exported."
-        }
-
-    def do_export_(self, action):
-        """Handles the transition"""
-
-        StoreView = Pool().get('magento.store.store_view')
-
-        store_view = StoreView(Transaction().context.get('active_id'))
-
-        sales = store_view.export_order_status_for_store_view()
-
-        data = {'res_id': [sale.id for sale in sales]}
-        return action, data
-
-    def transition_export_(self):
-        return 'end'
 
 
 class SaleLine:
@@ -763,7 +670,7 @@ class StockShipmentOut:
         'Is Tracking Info Exported To Magento'
     )
     #: The magento increment id for this shipment. This is filled when a
-    #: shipment is created corresponding to the shipment to openerp
+    #: shipment is created corresponding to the shipment to tryton
     #: in magento.
     magento_increment_id = fields.Char(
         "Magento Increment ID", readonly=True
@@ -785,6 +692,7 @@ class StockShipmentOut:
         Shipment = Pool().get('stock.shipment.out')
 
         channel = Channel(Transaction().context['current_channel'])
+        channel.validate_magento_channel()
 
         carriers = MagentoCarrier.search([
             ('channel', '=', channel.id),

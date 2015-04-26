@@ -4,7 +4,7 @@
 
     Party
 
-    :copyright: (c) 2013 by Openlabs Technologies & Consulting (P) Limited
+    :copyright: (c) 2013-2015 by Openlabs Technologies & Consulting (P) Limited
     :license: BSD, see LICENSE for more details.
 """
 import magento
@@ -48,10 +48,11 @@ class Party:
         """
         Channel = Pool().get('sale.channel')
 
+        channel = Channel(Transaction().context['current_channel'])
+        channel.validate_magento_channel()
+
         party = cls.find_using_magento_id(magento_id)
         if not party:
-            channel = Channel(Transaction().context.get('current_channel'))
-
             with magento.Customer(
                 channel.magento_url, channel.magento_api_user,
                 channel.magento_api_key

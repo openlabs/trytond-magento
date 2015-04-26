@@ -3,5 +3,5 @@
     <field name="title"/>
     <field name="code"/>
     <field name="carrier"/>
-    <field name="instance"/>
+    <field name="channel"/>
 </tree>

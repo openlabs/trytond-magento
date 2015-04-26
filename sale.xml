@@ -25,6 +25,18 @@
             <field name="act_window" ref="act_sale_form_all"/>
         </record>
 
+        <!--Order states-->
+        <record model="ir.ui.view" id="order_state_view_form">
+            <field name="model">magento.order_state</field>
+            <field name="type">form</field>
+            <field name="name">order_state_form</field>
+        </record>
+        <record model="ir.ui.view" id="order_state_view_tree">
+            <field name="model">magento.order_state</field>
+            <field name="type">tree</field>
+            <field name="name">order_state_tree</field>
+        </record>
+
         <!-- Shipment -->
         <record model="ir.ui.view" id="shipment_view_form">
             <field name="model">stock.shipment.out</field>

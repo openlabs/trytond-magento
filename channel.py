@@ -13,14 +13,20 @@ import socket
 from trytond.pool import PoolMeta, Pool
 from trytond.transaction import Transaction
 from trytond.pyson import Eval
-from trytond.model import ModelView, fields
+from trytond.model import ModelView, ModelSQL, fields
 from .api import OrderConfig
-from trytond.wizard import Wizard, StateView, Button
 
 __metaclass__ = PoolMeta
-__all__ = [
-    'Channel', 'TestConnectionStart', 'TestConnection'
-]
+__all__ = ['Channel', 'MagentoTier', 'MagentoException']
+
+MAGENTO_STATES = {
+    'invisible': ~(Eval('source') == 'magento'),
+    'required': Eval('source') == 'magento'
+}
+
+INVISIBLE_IF_NOT_MAGENTO = {
+    'invisible': ~(Eval('source') == 'magento'),
+}
 
 
 class Channel:
@@ -30,58 +36,66 @@ class Channel:
     __name__ = 'sale.channel'
 
     # Instance
-    magento_url = fields.Char("Magento Site URL")
-    magento_api_user = fields.Char("API User")
-    magento_api_key = fields.Char("API Key")
+    magento_url = fields.Char(
+        "Magento Site URL", states=MAGENTO_STATES, depends=['source']
+    )
+    magento_api_user = fields.Char(
+        "API User", states=MAGENTO_STATES, depends=['source']
+    )
+    magento_api_key = fields.Char(
+        "API Key", states=MAGENTO_STATES, depends=['source']
+    )
     magento_order_states = fields.One2Many(
-        "magento.order_state", "channel", "Order States"
+        "magento.order_state", "channel", "Order States", readonly=True,
+        states=INVISIBLE_IF_NOT_MAGENTO, depends=['source']
     )
     magento_carriers = fields.One2Many(
-        "magento.instance.carrier", "channel", "Carriers / Shipping Methods"
+        "magento.instance.carrier", "channel", "Carriers / Shipping Methods",
+        states=INVISIBLE_IF_NOT_MAGENTO, depends=['source']
     )
     magento_order_prefix = fields.Char(
         'Sale Order Prefix',
-        help="This helps to distinguish between orders from different "
-            "channels"
+        help="This helps to distinguish between orders from different channels",
+        states=INVISIBLE_IF_NOT_MAGENTO, depends=['source']
     )
-    magento_default_account_expense = fields.Property(fields.Many2One(
-        'account.account', 'Account Expense', domain=[
-            ('kind', '=', 'expense'),
-            ('company', '=', Eval('company')),
-        ], depends=['company']
-    ))
-    #: Used to set revenue account while creating products.
-    magento_default_account_revenue = fields.Property(fields.Many2One(
-        'account.account', 'Account Revenue', domain=[
-            ('kind', '=', 'revenue'),
-            ('company', '=', Eval('company')),
-        ], depends=['company']
-    ))
 
     # website
     magento_website_id = fields.Integer(
-        'Website ID', readonly=True
+        'Website ID', readonly=True,
+        states=INVISIBLE_IF_NOT_MAGENTO, depends=['source']
     )
     magento_website_name = fields.Char(
-        'Website Name', readonly=True
+        'Website Name', readonly=True,
+        states=INVISIBLE_IF_NOT_MAGENTO, depends=['source']
     )
     magento_website_code = fields.Char(
-        'Website Code', readonly=True
+        'Website Code', readonly=True,
+        states=INVISIBLE_IF_NOT_MAGENTO, depends=['source']
     )
-    magento_default_uom = fields.Many2One('product.uom', 'Default Product UOM')
     magento_root_category_id = fields.Integer(
-        'Root Category ID'
+        'Root Category ID', states=INVISIBLE_IF_NOT_MAGENTO, depends=['source']
     )
-    magento_store_name = fields.Char('Store Name', readonly=True)
+    magento_store_name = fields.Char(
+        'Store Name', readonly=True, states=INVISIBLE_IF_NOT_MAGENTO,
+        depends=['source']
+    )
     magento_store_id = fields.Integer(
-        'Store ID'
+        'Store ID', readonly=True, states=INVISIBLE_IF_NOT_MAGENTO,
+        depends=['source']
     )
-    magento_last_order_import_time = fields.DateTime('Last Order Import Time')
-    magento_last_order_export_time = fields.DateTime("Last Order Export Time")
+    magento_last_order_import_time = fields.DateTime(
+        'Last Order Import Time', states=INVISIBLE_IF_NOT_MAGENTO,
+        depends=['source']
+    )
+    magento_last_order_export_time = fields.DateTime(
+        "Last Order Export Time", states=INVISIBLE_IF_NOT_MAGENTO,
+        depends=['source']
+    )
 
     #: Last time at which the shipment status was exported to magento
     magento_last_shipment_export_time = fields.DateTime(
-        'Last shipment export time'
+        'Last shipment export time', states=INVISIBLE_IF_NOT_MAGENTO,
+        depends=['source']
     )
 
     #: Checking this will make sure that only the done shipments which have a
@@ -90,13 +104,16 @@ class Channel:
         'Export tracking information', help='Checking this will make sure'
         ' that only the done shipments which have a carrier and tracking '
         'reference are exported. This will update carrier and tracking '
-        'reference on magento for the exported shipments as well.'
+        'reference on magento for the exported shipments as well.',
+        states=INVISIBLE_IF_NOT_MAGENTO, depends=['source']
     )
     magento_taxes = fields.One2Many(
-        "sale.channel.magento.tax", "channel", "Taxes"
+        "sale.channel.magento.tax", "channel", "Taxes",
+        states=INVISIBLE_IF_NOT_MAGENTO, depends=['source']
     )
     magento_price_tiers = fields.One2Many(
-        'sale.channel.magento.price_tier', 'channel', 'Default Price Tiers'
+        'sale.channel.magento.price_tier', 'channel', 'Default Price Tiers',
+        states=INVISIBLE_IF_NOT_MAGENTO, depends=['source']
     )
     product_listings = fields.One2Many(
         'product.product.channel_listing', 'channel', 'Product Listings',
@@ -120,16 +137,24 @@ class Channel:
                 "Please check and correct the API settings on channel.",
             "multiple_channels": 'Selected operation can be done only for one'
                 ' channel at a time',
+            'invalid_magento_channel':
+                'Current channel does not belongs to Magento !'
         })
         cls._buttons.update({
-            'test_connection': {},
-            'import_websites': {},
-            'import_order_states': {},
-            'import_carriers': {},
+            'import_magento_order_states': {},
+            'import_magento_carriers': {},
+            'configure_magento_connection': {}
         })
         cls._error_messages.update({
             "missing_magento_channel": 'Magento channel is not in context',
         })
+
+    def validate_magento_channel(self):
+        """
+        Make sure channel source is magento
+        """
+        if self.source != 'magento':
+            self.raise_user_error('invalid_magento_channel')
 
     @classmethod
     def get_source(cls):
@@ -148,15 +173,6 @@ class Channel:
         return 'mag_'
 
     @staticmethod
-    def default_magento_default_uom():
-        """
-        Sets default product uom for channel
-        """
-        ProductUom = Pool().get('product.uom')
-
-        return ProductUom.search([('name', '=', 'Unit')])[0].id
-
-    @staticmethod
     def default_magento_root_category_id():
         """
         Sets default root category id. Is set to 1, because the default
@@ -172,8 +188,8 @@ class Channel:
         return []
 
     @classmethod
-    @ModelView.button_action('magento.wizard_import_order_states')
-    def import_order_states(cls, channels):
+    @ModelView.button_action('magento.wizard_import_magento_order_states')
+    def import_magento_order_states(cls, channels):
         """
         Import order states for magento channel
 
@@ -182,46 +198,49 @@ class Channel:
         OrderState = Pool().get('magento.order_state')
 
         for channel in channels:
-
-            Transaction().context.update({
-                'current_channel': channel.id
-            })
-
-            # Import order states
-            with OrderConfig(
-                channel.url, channel.api_user, channel.api_key
-            ) as order_config_api:
-                OrderState.create_all_using_magento_data(
-                    order_config_api.get_states()
-                )
+            channel.validate_magento_channel()
+            with Transaction().set_context({'current_channel': channel.id}):
+                # Import order states
+                with OrderConfig(
+                    channel.magento_url, channel.magento_api_user,
+                    channel.magento_api_key
+                ) as order_config_api:
+                    OrderState.create_all_using_magento_data(
+                        order_config_api.get_states()
+                    )
 
     @classmethod
-    @ModelView.button_action('magento.wizard_test_connection')
-    def test_connection(cls, channels):
+    @ModelView.button_action('magento.wizard_configure_magento')
+    def configure_magento_connection(cls, channels):
+        """
+        Configure magento connection for current channel
+
+        :param channels: List of active records of channels
+        """
+        pass
+
+    def test_magento_connection(self):
         """
         Test magento connection and display appropriate message to user
-
         :param channels: Active record list of magento channels
         """
-        try:
-            channel, = channels
-        except ValueError:
-            cls.raise_user_error('multiple_channel')
+        # Make sure channel belongs to magento
+        self.validate_magento_channel()
 
         try:
             with magento.API(
-                channel.magento_url, channel.magento_api_user,
-                channel.magento_api_key
+                self.magento_url, self.magento_api_user,
+                self.magento_api_key
             ):
                 return
         except (
             xmlrpclib.Fault, IOError, xmlrpclib.ProtocolError, socket.timeout
         ):
-            cls.raise_user_error("connection_error")
+            self.raise_user_error("connection_error")
 
     @classmethod
-    @ModelView.button_action('magento.wizard_import_carriers')
-    def import_carriers(cls, channels):
+    @ModelView.button_action('magento.wizard_import_magento_carriers')
+    def import_magento_carriers(cls, channels):
         """
         Import carriers/shipping methods from magento for channels
 
@@ -230,12 +249,11 @@ class Channel:
         InstanceCarrier = Pool().get('magento.instance.carrier')
 
         for channel in channels:
-
-            with Transaction().set_context({
-                'current_channel': channel.id
-            }):
+            channel.validate_magento_channel()
+            with Transaction().set_context({'current_channel': channel.id}):
                 with OrderConfig(
-                    channel.url, channel.api_user, channel.api_key
+                    channel.magento_url, channel.magento_api_user,
+                    channel.magento_api_key
                 ) as order_config_api:
                     mag_carriers = order_config_api.get_shipping_methods()
 
@@ -254,20 +272,23 @@ class Channel:
         "Import products for this magento channel"
         Product = Pool().get('product.template')
 
-        Transaction().set_context({
-            'current_channel': self.id,
-        })
-        with magento.Product(
-            self.magento_url, self.magento_api_user, self.magento_api_key
-        ) as product_api:
-            # TODO: Implement pagination and import each product as async task
-            magento_products = product_api.list()
+        self.validate_magento_channel()
 
-            products = []
-            for magento_product in magento_products:
-                products.append(
-                    Product.find_or_create_using_magento_data(magento_product)
-                )
+        with Transaction().set_context({'current_channel': self.id}):
+            with magento.Product(
+                self.magento_url, self.magento_api_user, self.magento_api_key
+            ) as product_api:
+                # TODO: Implement pagination and import each product as async
+                # task
+                magento_products = product_api.list()
+
+                products = []
+                for magento_product in magento_products:
+                    products.append(
+                        Product.find_or_create_using_magento_data(
+                            magento_product
+                        )
+                    )
 
         return map(int, products)
 
@@ -280,11 +301,10 @@ class Channel:
         Sale = Pool().get('sale.sale')
         MagentoOrderState = Pool().get('magento.order_state')
 
-        new_sales = []
-        with Transaction().set_context({
-            'current_channel': self.id,
-        }):
+        self.validate_magento_channel()
 
+        new_sales = []
+        with Transaction().set_context({'current_channel': self.id}):
             order_states = MagentoOrderState.search([
                 ('channel', '=', self.id),
                 ('use_for_import', '=', True)
@@ -306,16 +326,18 @@ class Channel:
                     'store_id': {'=': self.magento_store_id},
                     'state': {'in': order_states_to_import_in},
                 }
-                if self.last_order_import_time:
+                if self.magento_last_order_import_time:
                     last_order_import_time = \
-                        self.last_order_import_time.replace(microsecond=0)
+                        self.magento_last_order_import_time.replace(
+                            microsecond=0
+                        )
                     filter.update({
                         'updated_at': {
                             'gteq': last_order_import_time.isoformat(' ')
                         },
                     })
                 self.write([self], {
-                    'last_order_import_time': datetime.utcnow()
+                    'magento_last_order_import_time': datetime.utcnow()
                 })
                 orders = order_api.list(filter)
                 for order in orders:
@@ -327,19 +349,19 @@ class Channel:
 
         return new_sales
 
-    def export_order_status(self, channels=None):
+    @classmethod
+    def export_order_status_to_magento_using_cron(cls):
         """
-        Export sales orders status to magento.
+        Export sales orders status to magento using cron
 
         :param store_views: List of active record of store view
         """
-        if channels is None:
-            channels = self.search([])
+        channels = cls.search([('source', '=', 'magento')])
 
         for channel in channels:
-            channel.export_order_status_for_store_view()
+            channel.export_order_status_to_magento()
 
-    def export_order_status_for_store_view(self):
+    def export_order_status_to_magento(self):
         """
         Export sale orders to magento for the current store view.
         If last export time is defined, export only those orders which are
@@ -348,6 +370,8 @@ class Channel:
         :return: List of active records of sales exported
         """
         Sale = Pool().get('sale.sale')
+
+        self.validate_magento_channel()
 
         exported_sales = []
         domain = [('channel', '=', self.id)]
@@ -368,35 +392,24 @@ class Channel:
         return exported_sales
 
     @classmethod
-    def import_orders(cls, store_views=None):
+    def import_magento_orders(cls):
         """
-        Import orders from magento for store views
-
-        :param store_views: Active record list of store views
+        Import orders from magento for magento channels
         """
-        if store_views is None:
-            store_views = cls.search([])
+        channels = cls.search([('source', '=', 'magento')])
 
-        for store_view in store_views:
-            store_view.import_order_from_store_view()
+        for channel in channels:
+            channel.import_order_from_magento()
 
     @classmethod
-    def export_shipment_status(cls, store_views=None):
+    def export_shipment_status_to_magento_using_cron(cls):
         """
-        Export Shipment status for shipments related to current store view.
-        This method is called by cron.
-
-        :param store_views: List of active records of store_view
+        Export Shipment status for shipments using cron
         """
-        if store_views is None:
-            store_views = cls.search([])
+        channels = cls.search([('source', '=', 'magento')])
 
-        for store_view in store_views:
-            # Set the channel in context
-            with Transaction().set_context(
-                magento_channel=store_view.channel.id
-            ):
-                store_view.export_shipment_status_to_magento()
+        for channel in channels:
+            channel.export_shipment_status_to_magento()
 
     def export_shipment_status_to_magento(self):
         """
@@ -407,6 +420,8 @@ class Channel:
         Shipment = Pool().get('stock.shipment.out')
         Sale = Pool().get('sale.sale')
         SaleLine = Pool().get('sale.line')
+
+        self.validate_magento_channel()
 
         sale_domain = [
             ('channel', '=', self.id),
@@ -479,6 +494,16 @@ class Channel:
 
         return sales
 
+    @classmethod
+    def export_inventory_to_magento_using_cron(cls):
+        """
+        Cron method to export inventory to magento
+        """
+        channels = cls.search([('source', '=', 'magento')])
+
+        for channel in channels:
+            channel.export_inventory_to_magento()
+
     def export_inventory_to_magento(self):
         """
         Exports stock data of products from tryton to magento for this
@@ -486,6 +511,8 @@ class Channel:
         :return: List of product templates
         """
         Location = Pool().get('stock.location')
+
+        self.validate_magento_channel()
 
         products = []
         locations = Location.search([('type', '=', 'storage')])
@@ -513,29 +540,53 @@ class Channel:
         return products
 
 
-class TestConnection(Wizard):
-    """
-    Test Connection Wizard
+class MagentoTier(ModelSQL, ModelView):
+    """Price Tiers for store
 
-    Test the connection to magento channel(s)
+    This model stores the default price tiers to be used while sending
+    tier prices for a product from Tryton to Magento.
+    The product also has a similar table like this. If there are no entries in
+    the table on product, then these tiers are used.
     """
-    __name__ = 'magento.wizard_test_connection'
+    __name__ = 'sale.channel.magento.price_tier'
 
-    start = StateView(
-        'magento.wizard_test_connection.start',
-        'magento.wizard_test_connection_view_form',
-        [
-            Button('Ok', 'end', 'tryton-ok'),
-        ]
+    channel = fields.Many2One(
+        'sale.channel', 'Magento Store', required=True, readonly=True,
+        domain=[('source', '=', 'magento')]
     )
+    quantity = fields.Float('Quantity', required=True)
 
-    def default_start(self, data):
-        """Test the connection and show the user appropriate message
-        :param data: Wizard data
+    @classmethod
+    def __setup__(cls):
         """
-        return {}
+        Setup the class before adding to pool
+        """
+        super(MagentoTier, cls).__setup__()
+        cls._sql_constraints += [
+            (
+                'channel_quantity_unique', 'UNIQUE(channel, quantity)',
+                'Quantity in price tiers must be unique for a channel'
+            )
+        ]
 
 
-class TestConnectionStart(ModelView):
-    "Test Connection"
-    __name__ = 'magento.wizard_test_connection.start'
+class MagentoException(ModelSQL, ModelView):
+    """
+    Magento Exception model
+    """
+    __name__ = 'magento.exception'
+
+    origin = fields.Reference(
+        "Origin", selection='models_get', select=True,
+    )
+    log = fields.Text('Exception Log')
+
+    @classmethod
+    def models_get(cls):
+        '''
+        Return valid models allowed for origin
+        '''
+        return [
+            ('sale.sale', 'Sale'),
+            ('sale.line', 'Sale Line'),
+        ]
