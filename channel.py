@@ -400,7 +400,7 @@ class Channel:
         channels = cls.search([('source', '=', 'magento')])
 
         for channel in channels:
-            channel.import_orders_from_magento()
+            channel.import_order_from_magento()
 
     @classmethod
     def export_shipment_status_to_magento_using_cron(cls):

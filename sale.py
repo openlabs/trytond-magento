@@ -659,7 +659,7 @@ class StockShipmentOut:
         'Is Tracking Info Exported To Magento'
     )
     #: The magento increment id for this shipment. This is filled when a
-    #: shipment is created corresponding to the shipment to openerp
+    #: shipment is created corresponding to the shipment to tryton
     #: in magento.
     magento_increment_id = fields.Char(
         "Magento Increment ID", readonly=True
