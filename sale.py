@@ -23,6 +23,10 @@ __all__ = [
 ]
 __metaclass__ = PoolMeta
 
+INVISIBLE_IF_NOT_MAGENTO = {
+    'invisible': ~(Eval('channel_type') == 'magento'),
+}
+
 
 class MagentoOrderState(ModelSQL, ModelView):
     """
@@ -162,11 +166,19 @@ class Sale:
     "Sale"
     __name__ = 'sale.sale'
 
-    magento_id = fields.Integer('Magento ID', readonly=True)
-    has_magento_exception = fields.Boolean('Has Magento import exception')
+    magento_id = fields.Integer(
+        'Magento ID', readonly=True, states=INVISIBLE_IF_NOT_MAGENTO,
+        depends=['channel_type']
+    )
+    has_magento_exception = fields.Boolean(
+        'Has Magento import exception', states=INVISIBLE_IF_NOT_MAGENTO,
+        depends=['channel_type']
+    )
     magento_exceptions = fields.Function(
-        fields.One2Many('magento.exception', None, 'Magento Exceptions'),
-        'get_magento_exceptions'
+        fields.One2Many(
+            'magento.exception', None, 'Magento Exceptions',
+            states=INVISIBLE_IF_NOT_MAGENTO, depends=['channel_type']
+        ), 'get_magento_exceptions',
     )
 
     @staticmethod
