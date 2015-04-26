@@ -142,12 +142,17 @@ class MagentoOrderState(ModelSQL, ModelView):
         :param magento_data: Magento data in form of dict
         :return: List of active records of records created
         """
+        Channel = Pool().get('sale.channel')
+
         order_states_to_create = []
+
+        channel = Channel(Transaction().context['current_channel'])
+        channel.validate_magento_channel()
 
         for code, name in magento_data.iteritems():
             if cls.search([
                 ('code', '=', code),
-                ('channel', '=', Transaction().context.get('current_channel'))
+                ('channel', '=', channel.id)
             ]):
                 continue
 
@@ -155,7 +160,7 @@ class MagentoOrderState(ModelSQL, ModelView):
             data_map.update({
                 'name': name,
                 'code': code,
-                'channel': Transaction().context.get('current_channel'),
+                'channel': channel.id,
             })
             order_states_to_create.append(data_map)
 
@@ -268,6 +273,8 @@ class Sale:
         Channel = Pool().get('sale.channel')
 
         channel = Channel(Transaction().context['current_channel'])
+        channel.validate_magento_channel()
+
         currency = Currency.search_using_magento_code(
             order_data['order_currency_code']
         )
@@ -460,11 +467,12 @@ class Sale:
         """
         Channel = Pool().get('sale.channel')
 
+        channel = Channel(Transaction().context['current_channel'])
+        channel.validate_magento_channel()
+
         sale = cls.find_using_magento_increment_id(order_increment_id)
 
         if not sale:
-            channel = Channel(Transaction().context.get('current_channel'))
-
             with magento.Order(
                 channel.magento_url, channel.magento_api_user,
                 channel.magento_api_key
@@ -512,7 +520,7 @@ class Sale:
                 'reference', '=', channel.magento_order_prefix +
                 order_increment_id
             ),
-            ('channel', '=', Transaction().context.get('current_channel'))
+            ('channel', '=', channel.id)
         ])
 
         return sales and sales[0] or None
@@ -613,6 +621,9 @@ class Sale:
             return self
 
         channel = self.channel
+
+        channel.validate_magento_channel()
+
         increment_id = self.reference.split(channel.magento_order_prefix)[1]
         # This try except is placed because magento might not accept this
         # order status change due to its workflow constraints.
@@ -681,6 +692,7 @@ class StockShipmentOut:
         Shipment = Pool().get('stock.shipment.out')
 
         channel = Channel(Transaction().context['current_channel'])
+        channel.validate_magento_channel()
 
         carriers = MagentoCarrier.search([
             ('channel', '=', channel.id),

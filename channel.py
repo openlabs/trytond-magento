@@ -198,19 +198,16 @@ class Channel:
         OrderState = Pool().get('magento.order_state')
 
         for channel in channels:
-
-            Transaction().context.update({
-                'current_channel': channel.id
-            })
-
-            # Import order states
-            with OrderConfig(
-                channel.magento_url, channel.magento_api_user,
-                channel.magento_api_key
-            ) as order_config_api:
-                OrderState.create_all_using_magento_data(
-                    order_config_api.get_states()
-                )
+            channel.validate_magento_channel()
+            with Transaction().set_context({'current_channel': channel.id}):
+                # Import order states
+                with OrderConfig(
+                    channel.magento_url, channel.magento_api_user,
+                    channel.magento_api_key
+                ) as order_config_api:
+                    OrderState.create_all_using_magento_data(
+                        order_config_api.get_states()
+                    )
 
     @classmethod
     @ModelView.button_action('magento.wizard_configure_magento')
@@ -252,10 +249,8 @@ class Channel:
         InstanceCarrier = Pool().get('magento.instance.carrier')
 
         for channel in channels:
-
-            with Transaction().set_context({
-                'current_channel': channel.id
-            }):
+            channel.validate_magento_channel()
+            with Transaction().set_context({'current_channel': channel.id}):
                 with OrderConfig(
                     channel.magento_url, channel.magento_api_user,
                     channel.magento_api_key
@@ -277,20 +272,23 @@ class Channel:
         "Import products for this magento channel"
         Product = Pool().get('product.template')
 
-        Transaction().set_context({
-            'current_channel': self.id,
-        })
-        with magento.Product(
-            self.magento_url, self.magento_api_user, self.magento_api_key
-        ) as product_api:
-            # TODO: Implement pagination and import each product as async task
-            magento_products = product_api.list()
+        self.validate_magento_channel()
 
-            products = []
-            for magento_product in magento_products:
-                products.append(
-                    Product.find_or_create_using_magento_data(magento_product)
-                )
+        with Transaction().set_context({'current_channel': self.id}):
+            with magento.Product(
+                self.magento_url, self.magento_api_user, self.magento_api_key
+            ) as product_api:
+                # TODO: Implement pagination and import each product as async
+                # task
+                magento_products = product_api.list()
+
+                products = []
+                for magento_product in magento_products:
+                    products.append(
+                        Product.find_or_create_using_magento_data(
+                            magento_product
+                        )
+                    )
 
         return map(int, products)
 
@@ -303,11 +301,10 @@ class Channel:
         Sale = Pool().get('sale.sale')
         MagentoOrderState = Pool().get('magento.order_state')
 
-        new_sales = []
-        with Transaction().set_context({
-            'current_channel': self.id,
-        }):
+        self.validate_magento_channel()
 
+        new_sales = []
+        with Transaction().set_context({'current_channel': self.id}):
             order_states = MagentoOrderState.search([
                 ('channel', '=', self.id),
                 ('use_for_import', '=', True)
@@ -374,6 +371,8 @@ class Channel:
         """
         Sale = Pool().get('sale.sale')
 
+        self.validate_magento_channel()
+
         exported_sales = []
         domain = [('channel', '=', self.id)]
 
@@ -421,6 +420,8 @@ class Channel:
         Shipment = Pool().get('stock.shipment.out')
         Sale = Pool().get('sale.sale')
         SaleLine = Pool().get('sale.line')
+
+        self.validate_magento_channel()
 
         sale_domain = [
             ('channel', '=', self.id),
@@ -511,6 +512,8 @@ class Channel:
         """
         Location = Pool().get('stock.location')
 
+        self.validate_magento_channel()
+
         products = []
         locations = Location.search([('type', '=', 'storage')])
 
@@ -549,6 +552,7 @@ class MagentoTier(ModelSQL, ModelView):
 
     channel = fields.Many2One(
         'sale.channel', 'Magento Store', required=True, readonly=True,
+        domain=[('source', '=', 'magento')]
     )
     quantity = fields.Float('Quantity', required=True)
 

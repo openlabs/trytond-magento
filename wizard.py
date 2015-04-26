@@ -69,6 +69,10 @@ class ImportMagentoOrders(Wizard):
 
         :param data: Wizard data
         """
+        Channel = Pool().get('sale.channel')
+
+        channel = Channel(Transaction().context.get('active_id'))
+        channel.validate_magento_channel()
         return {
             'message':
                 "This wizard will import all sale orders placed on " +
@@ -85,6 +89,7 @@ class ImportMagentoOrders(Wizard):
         Channel = Pool().get('sale.channel')
 
         channel = Channel(Transaction().context.get('active_id'))
+        channel.validate_magento_channel()
 
         sales = channel.import_order_from_magento()
 
@@ -127,6 +132,10 @@ class ExportMagentoOrderStatus(Wizard):
 
         :param data: Wizard data
         """
+        Channel = Pool().get('sale.channel')
+
+        channel = Channel(Transaction().context.get('active_id'))
+        channel.validate_magento_channel()
         return {
             'message':
                 "This wizard will export orders status to magento " +
@@ -141,6 +150,7 @@ class ExportMagentoOrderStatus(Wizard):
         Channel = Pool().get('sale.channel')
 
         channel = Channel(Transaction().context.get('active_id'))
+        channel.validate_magento_channel()
 
         sales = channel.export_order_status_to_magento()
 
@@ -198,6 +208,10 @@ class ImportMagentoCarriers(Wizard):
 
         :param data: Wizard data
         """
+        Channel = Pool().get('sale.channel')
+
+        channel = Channel(Transaction().context.get('active_id'))
+        channel.validate_magento_channel()
         return {
             'message':
                 "This wizard has imported all the carriers / " +
@@ -240,6 +254,7 @@ class ExportMagentoInventory(Wizard):
         Channel = Pool().get('sale.channel')
 
         channel = Channel(Transaction().context.get('current_channel'))
+        channel.validate_magento_channel()
 
         product_templates = channel.export_inventory_to_magento()
 
@@ -292,7 +307,8 @@ class ExportMagentoTierPrices(Wizard):
         """Export price tiers and return count of products"""
         Channel = Pool().get('sale.channel')
 
-        Channel(Transaction().context.get('active_id'))
+        channel = Channel(Transaction().context.get('active_id'))
+        channel.validate_magento_channel()
 
         return {
             # TODO: Need to be implemented first
@@ -332,6 +348,10 @@ class ExportMagentoShipmentStatus(Wizard):
 
         :param data: Wizard data
         """
+        Channel = Pool().get('sale.channel')
+
+        channel = Channel(Transaction().context.get('active_id'))
+        channel.validate_magento_channel()
         return {
             'message':
                 "This wizard will export shipment status for all the " +
@@ -346,6 +366,7 @@ class ExportMagentoShipmentStatus(Wizard):
         Channel = Pool().get('sale.channel')
 
         channel = Channel(Transaction().context.get('active_id'))
+        channel.validate_magento_channel()
 
         sales = channel.export_shipment_status_to_magento()
 
@@ -416,6 +437,7 @@ class ConfigureMagento(Wizard):
         Channel = Pool().get('sale.channel')
 
         magento_channel = Channel(Transaction().context.get('active_id'))
+        magento_channel.validate_magento_channel()
 
         # Test Connection
         magento_channel.test_magento_connection()
@@ -614,6 +636,7 @@ class UpdateMagentoCatalog(Wizard):
         Channel = Pool().get('sale.channel')
 
         channel = Channel(Transaction().context.get('active_id'))
+        channel.validate_magento_channel()
 
         product_template_ids = self.update_products(channel)
 
@@ -670,6 +693,7 @@ class ImportMagentoCatalog(Wizard):
         Channel = Pool().get('sale.channel')
 
         channel = Channel(Transaction().context.get('active_id'))
+        channel.validate_magento_channel()
 
         self.import_category_tree(channel)
         product_ids = self.import_products(channel)
@@ -689,14 +713,17 @@ class ImportMagentoCatalog(Wizard):
         """
         Category = Pool().get('product.category')
 
-        Transaction().set_context({'current_channel': channel.id})
+        channel.validate_magento_channel()
 
-        with magento.Category(
-            channel.magento_url, channel.magento_api_user,
-            channel.magento_api_key
-        ) as category_api:
-            category_tree = category_api.tree(channel.magento_root_category_id)
-            Category.create_tree_using_magento_data(category_tree)
+        with Transaction().set_context({'current_channel': channel.id}):
+            with magento.Category(
+                channel.magento_url, channel.magento_api_user,
+                channel.magento_api_key
+            ) as category_api:
+                category_tree = category_api.tree(
+                    channel.magento_root_category_id
+                )
+                Category.create_tree_using_magento_data(category_tree)
 
     def import_products(self, channel):
         """
@@ -706,20 +733,22 @@ class ImportMagentoCatalog(Wizard):
         """
         Product = Pool().get('product.product')
 
-        Transaction().set_context({
-            'current_channel': channel.id,
-        })
-        with magento.Product(
-            channel.magento_url, channel.magento_api_user,
-            channel.magento_api_key
-        ) as product_api:
-            magento_products = product_api.list()
+        channel.validate_magento_channel()
 
-            products = []
-            for magento_product in magento_products:
-                products.append(
-                    Product.find_or_create_using_magento_data(magento_product)
-                )
+        with Transaction().set_context({'current_channel': channel.id}):
+            with magento.Product(
+                channel.magento_url, channel.magento_api_user,
+                channel.magento_api_key
+            ) as product_api:
+                magento_products = product_api.list()
+
+                products = []
+                for magento_product in magento_products:
+                    products.append(
+                        Product.find_or_create_using_magento_data(
+                            magento_product
+                        )
+                    )
 
         return map(int, products)
 
@@ -752,6 +781,7 @@ class ExportMagentoCatalogStart(ModelView):
             return []
 
         channel = Channel(Transaction().context['active_id'])
+        channel.validate_magento_channel()
 
         with magento.ProductAttributeSet(
             channel.magento_url, channel.magento_api_user,
@@ -801,6 +831,7 @@ class ExportMagentoCatalog(Wizard):
         Channel = Pool().get('sale.channel')
 
         channel = Channel(Transaction().context['active_id'])
+        channel.validate_magento_channel()
 
         with Transaction().set_context({
             'current_channel': channel.id,

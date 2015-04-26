@@ -83,9 +83,8 @@ class Category:
 
         category = cls.find_using_magento_id(magento_id)
         if not category:
-            channel = Channel(
-                Transaction().context.get('current_channel')
-            )
+            channel = Channel(Transaction().context['current_channel'])
+            channel.validate_magento_channel()
 
             with magento.Category(
                 channel.magento_url, channel.magento_api_user,
@@ -239,6 +238,9 @@ class Product:
         """
         Channel = Pool().get('sale.channel')
 
+        channel = Channel(Transaction().context['current_channel'])
+        channel.validate_magento_channel()
+
         # TODO: handle case when same product (SKU matched)
         # from different store, then add channel to product listing
         product = cls.find_using_magento_id(magento_id)
@@ -246,8 +248,6 @@ class Product:
         if not product:
             # if product is not found get the info from magento and
             # delegate to create_using_magento_data
-            channel = Channel(Transaction().context.get('current_channel'))
-
             with magento.Product(
                 channel.magento_url, channel.magento_api_user,
                 channel.magento_api_key
@@ -317,7 +317,8 @@ class Product:
         """
         Channel = Pool().get('sale.channel')
 
-        channel = Channel(Transaction().context.get('current_channel'))
+        channel = Channel(Transaction().context['current_channel'])
+        channel.validate_magento_channel()
         return {
             'name': product_data.get('name') or
                 ('SKU: ' + product_data.get('sku')),
@@ -349,6 +350,10 @@ class Product:
         """
         Template = Pool().get('product.template')
         Category = Pool().get('product.category')
+        Channel = Pool().get('sale.channel')
+
+        channel = Channel(Transaction().context['current_channel'])
+        channel.validate_magento_channel()
 
         # Get only the first category from the list of categories
         # If no category is found, put product under unclassified category
@@ -372,7 +377,7 @@ class Product:
                 'code': product_data['sku'],
                 'channel_listings': [('create', [{
                     'product_identifier': product_data['product_id'],
-                    'channel': Transaction().context.get('current_channel'),
+                    'channel': channel.id,
                     'magento_product_type': product_data['type'],
                 }])],
             }])],
@@ -391,7 +396,8 @@ class Product:
         Channel = Pool().get('sale.channel')
         SaleChannelListing = Pool().get('product.product.channel_listing')
 
-        channel = Channel(Transaction().context.get('current_channel'))
+        channel = Channel(Transaction().context['current_channel'])
+        channel.validate_magento_channel()
 
         with magento.Product(
             channel.magento_url, channel.magento_api_user,
@@ -463,6 +469,7 @@ class Product:
         SaleChannelListing = Pool().get('product.product.channel_listing')
 
         channel = Channel(Transaction().context['current_channel'])
+        channel.validate_magento_channel()
 
         if not category.magento_ids:
             self.raise_user_error(
@@ -554,6 +561,7 @@ class ProductPriceTier(ModelSQL, ModelView):
             return 0
 
         channel = Channel(Transaction().context['current_channel'])
+        channel.validate_magento_channel()
         return channel.price_list.compute(
             None, self.template, self.template.list_price, self.quantity,
             channel.default_uom
