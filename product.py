@@ -2,23 +2,20 @@
 '''
     product
 
-    :copyright: (c) 2013-2014 by Openlabs Technologies & Consulting (P) Limited
+    :copyright: (c) 2013-2015 by Openlabs Technologies & Consulting (P) Limited
     :license: BSD, see LICENSE for more details.
 '''
 import magento
 from trytond.model import ModelSQL, ModelView, fields
 from trytond.transaction import Transaction
-from trytond.wizard import Wizard, StateView, StateAction, Button
-from trytond.pyson import PYSONEncoder
 from trytond.pool import PoolMeta, Pool
 from decimal import Decimal
 
 
 __all__ = [
-    'Category', 'MagentoInstanceCategory', 'Template',
-    'MagentoWebsiteTemplate', 'ProductPriceTier', 'UpdateCatalogStart',
-    'UpdateCatalog', 'ImportCatalogStart', 'ImportCatalog',
-    'ExportCatalogStart', 'ExportCatalog'
+    'Category', 'MagentoInstanceCategory', 'Product',
+    'ProductSaleChannelListing',
+    'ProductPriceTier',
 ]
 __metaclass__ = PoolMeta
 
@@ -82,16 +79,16 @@ class Category:
         :param parent: Browse record of Parent if present, else None
         :returns: Active record of category found/created
         """
-        Instance = Pool().get('magento.instance')
+        Channel = Pool().get('sale.channel')
 
         category = cls.find_using_magento_id(magento_id)
         if not category:
-            instance = Instance(
-                Transaction().context.get('magento_instance')
-            )
+            channel = Channel(Transaction().context['current_channel'])
+            channel.validate_magento_channel()
 
             with magento.Category(
-                instance.url, instance.api_user, instance.api_key
+                channel.magento_url, channel.magento_api_user,
+                channel.magento_api_key
             ) as category_api:
                 category_data = category_api.info(magento_id)
 
@@ -113,7 +110,7 @@ class Category:
 
         records = MagentoCategory.search([
             ('magento_id', '=', int(category_data['category_id'])),
-            ('instance', '=', Transaction().context.get('magento_instance'))
+            ('channel', '=', Transaction().context.get('current_channel'))
         ])
         return records and records[0].category or None
 
@@ -130,7 +127,7 @@ class Category:
 
         records = MagentoCategory.search([
             ('magento_id', '=', magento_id),
-            ('instance', '=', Transaction().context.get('magento_instance'))
+            ('channel', '=', Transaction().context.get('current_channel'))
         ])
 
         return records and records[0].category or None
@@ -149,7 +146,7 @@ class Category:
             'parent': parent,
             'magento_ids': [('create', [{
                 'magento_id': int(category_data['category_id']),
-                'instance': Transaction().context.get('magento_instance'),
+                'channel': Transaction().context.get('current_channel'),
             }])],
         }])
 
@@ -161,15 +158,15 @@ class MagentoInstanceCategory(ModelSQL, ModelView):
     Magento Instance - Product Category Store
 
     This model keeps a record of a category's association with an Instance
-    and the ID of the category on that instance
+    and the ID of the category on that channel
     """
     __name__ = "magento.instance.product_category"
 
     magento_id = fields.Integer(
         'Magento ID', readonly=True, required=True, select=True
     )
-    instance = fields.Many2One(
-        'magento.instance', 'Magento Instance', readonly=True,
+    channel = fields.Many2One(
+        'sale.channel', 'Magento Instance', readonly=True,
         required=True, select=True
     )
     category = fields.Many2One(
@@ -186,19 +183,21 @@ class MagentoInstanceCategory(ModelSQL, ModelView):
         cls._sql_constraints += [
             (
                 'magento_id_instance_unique',
-                'UNIQUE(magento_id, instance)',
-                'Each category in an instance must be unique!'
+                'UNIQUE(magento_id, channel)',
+                'Each category in an channel must be unique!'
             )
         ]
 
 
-class Template:
-    "Product Template"
+class ProductSaleChannelListing:
+    "Product Sale Channel"
+    __name__ = 'product.product.channel_listing'
 
-    __name__ = "product.template"
-
+    price_tiers = fields.One2Many(
+        'product.price_tier', 'template', 'Price Tiers'
+    )
     magento_product_type = fields.Selection([
-        ('', ''),
+        (None, ''),
         ('simple', 'Simple'),
         ('configurable', 'Configurable'),
         ('grouped', 'Grouped'),
@@ -206,20 +205,19 @@ class Template:
         ('virtual', 'Virtual'),
         ('downloadable', 'Downloadable'),
     ], 'Magento Product Type', readonly=True)
-    magento_ids = fields.One2Many(
-        'magento.website.template', 'template',
-        'Magento IDs', readonly=True
-    )
-    price_tiers = fields.One2Many(
-        'product.price_tier', 'template', 'Price Tiers'
-    )
+
+
+class Product:
+    "Product"
+
+    __name__ = "product.product"
 
     @classmethod
     def __setup__(cls):
         """
         Setup the class before adding to pool
         """
-        super(Template, cls).__setup__()
+        super(Product, cls).__setup__()
         cls._error_messages.update({
             "invalid_category": 'Category "%s" must have a magento category '
                 'associated',
@@ -231,31 +229,34 @@ class Template:
     @classmethod
     def find_or_create_using_magento_id(cls, magento_id):
         """
-        Find or create a product template using magento ID. This method looks
-        for an existing template using the magento ID provided. If found, it
+        Find or create a product using magento ID. This method looks
+        for an existing product using the magento ID provided. If found, it
         returns the template found, else creates a new one and returns that
 
         :param magento_id: Product ID from Magento
         :returns: Active record of Product Created
         """
-        Website = Pool().get('magento.instance.website')
+        Channel = Pool().get('sale.channel')
 
-        product_template = cls.find_using_magento_id(magento_id)
+        channel = Channel(Transaction().context['current_channel'])
+        channel.validate_magento_channel()
 
-        if not product_template:
+        # TODO: handle case when same product (SKU matched)
+        # from different store, then add channel to product listing
+        product = cls.find_using_magento_id(magento_id)
+
+        if not product:
             # if product is not found get the info from magento and
             # delegate to create_using_magento_data
-            website = Website(Transaction().context.get('magento_website'))
-
-            instance = website.instance
             with magento.Product(
-                    instance.url, instance.api_user, instance.api_key
+                channel.magento_url, channel.magento_api_user,
+                channel.magento_api_key
             ) as product_api:
                 product_data = product_api.info(magento_id)
 
-            product_template = cls.create_using_magento_data(product_data)
+            product = cls.create_using_magento_data(product_data)
 
-        return product_template
+        return product
 
     @classmethod
     def find_using_magento_id(cls, magento_id):
@@ -266,14 +267,14 @@ class Template:
         :param magento_id: Product ID from Magento
         :returns: Product created for the Record
         """
-        MagentoTemplate = Pool().get('magento.website.template')
+        SaleChannelListing = Pool().get('product.product.channel_listing')
 
-        records = MagentoTemplate.search([
-            ('magento_id', '=', magento_id),
-            ('website', '=', Transaction().context.get('magento_website'))
+        records = SaleChannelListing.search([
+            ('channel', '=', Transaction().context.get('current_channel')),
+            ('product_identifier', '=', str(magento_id)),
         ])
 
-        return records and records[0].template or None
+        return records and records[0].product or None
 
     @classmethod
     def find_or_create_using_magento_data(cls, product_data):
@@ -300,15 +301,9 @@ class Template:
         If found return that else None
 
         :param product_data: Category Data from Magento
-        :returns: Browse record of product found or None
+        :returns: Active record of product found or None
         """
-        MagentoTemplate = Pool().get('magento.website.template')
-
-        records = MagentoTemplate.search([
-            ('magento_id', '=', int(product_data['product_id'])),
-            ('website', '=', Transaction().context.get('magento_website'))
-        ])
-        return records and records[0].template or None
+        return cls.find_using_magento_id(product_data['product_id'])
 
     @classmethod
     def extract_product_values_from_data(cls, product_data):
@@ -320,9 +315,10 @@ class Template:
         :param: product_data
         :returns: Dictionary of values
         """
-        Website = Pool().get('magento.instance.website')
+        Channel = Pool().get('sale.channel')
 
-        website = Website(Transaction().context.get('magento_website'))
+        channel = Channel(Transaction().context['current_channel'])
+        channel.validate_magento_channel()
         return {
             'name': product_data.get('name') or
                 ('SKU: ' + product_data.get('sku')),
@@ -332,11 +328,13 @@ class Template:
                 0.00
             ),
             'cost_price': Decimal(product_data.get('cost') or 0.00),
-            'default_uom': website.default_uom.id,
+            'default_uom': channel.default_uom.id,
             'salable': True,
-            'sale_uom': website.default_uom.id,
-            'account_expense': website.instance.default_account_expense.id,
-            'account_revenue': website.instance.default_account_revenue.id,
+            'sale_uom': channel.default_uom.id,
+            'account_expense':
+                channel.default_account_expense.id,
+            'account_revenue':
+                channel.default_account_revenue.id,
         }
 
     @classmethod
@@ -350,7 +348,12 @@ class Template:
         :param product_data: Product Data from Magento
         :returns: Browse record of product created
         """
+        Template = Pool().get('product.template')
         Category = Pool().get('product.category')
+        Channel = Pool().get('sale.channel')
+
+        channel = Channel(Transaction().context['current_channel'])
+        channel.validate_magento_channel()
 
         # Get only the first category from the list of categories
         # If no category is found, put product under unclassified category
@@ -370,20 +373,19 @@ class Template:
         )
         product_template_values.update({
             'products': [('create', [{
-                'description': product_data['description'],
+                'description': product_data.get('description'),
                 'code': product_data['sku'],
+                'channel_listings': [('create', [{
+                    'product_identifier': product_data['product_id'],
+                    'channel': channel.id,
+                    'magento_product_type': product_data['type'],
+                }])],
             }])],
             'category': category.id,
-            'magento_product_type': product_data['type'],
-            'magento_ids': [('create', [{
-                'magento_id': int(product_data['product_id']),
-                'website': Transaction().context.get('magento_website'),
-            }])],
         })
+        product_template, = Template.create([product_template_values])
 
-        product_template, = cls.create([product_template_values])
-
-        return product_template
+        return product_template.products[0]
 
     def update_from_magento(self):
         """
@@ -391,21 +393,22 @@ class Template:
 
         :returns: Active record of product updated
         """
-        Website = Pool().get('magento.instance.website')
-        MagentoProductTemplate = Pool().get('magento.website.template')
+        Channel = Pool().get('sale.channel')
+        SaleChannelListing = Pool().get('product.product.channel_listing')
 
-        website = Website(Transaction().context.get('magento_website'))
-        instance = website.instance
+        channel = Channel(Transaction().context['current_channel'])
+        channel.validate_magento_channel()
 
         with magento.Product(
-            instance.url, instance.api_user, instance.api_key
+            channel.magento_url, channel.magento_api_user,
+            channel.magento_api_key
         ) as product_api:
-            magento_product_template, = MagentoProductTemplate.search([
-                ('template', '=', self.id),
-                ('website', '=', website.id),
+            channel_listing, = SaleChannelListing.search([
+                ('product', '=', self.id),
+                ('channel', '=', channel.id),
             ])
             product_data = product_api.info(
-                magento_product_template.magento_id
+                channel_listing.product_identifier
             )
 
         return self.update_from_magento_using_data(product_data)
@@ -417,35 +420,37 @@ class Template:
         :param product_data: Product Data from magento
         :returns: Active record of product updated
         """
+        Template = Pool().get('product.template')
+
         product_template_values = self.extract_product_values_from_data(
             product_data
         )
         product_template_values.update({
             'products': [('write', map(int, self.products), {
-                'description': product_data['description'],
+                'description': product_data.get('description'),
                 'code': product_data['sku'],
             })]
         })
-        self.write([self], product_template_values)
+        Template.write([self], product_template_values)
 
         return self
 
-    def get_product_values_for_export_to_magento(self, categories, websites):
+    def get_product_values_for_export_to_magento(self, categories, channels):
         """Creates a dictionary of values which have to exported to magento for
         creating a product
 
         :param categories: List of Browse record of categories
-        :param websites: List of Browse record of websites
+        :param channels: List of Browse record of channels
         """
         return {
             'categories': map(
                 lambda mag_categ: mag_categ.magento_id,
                 categories[0].magento_ids
             ),
-            'websites': map(lambda website: website.magento_id, websites),
+            'websites': map(lambda c: c.magento_website_id, channels),
             'name': self.name,
-            'description': self.products[0].description or self.name,
-            'short_description': self.products[0].description or self.name,
+            'description': self.description or self.name,
+            'short_description': self.description or self.name,
             'status': '1',
             'visibility': '4',
             'price': float(str(self.list_price)),
@@ -454,21 +459,29 @@ class Template:
 
     def export_to_magento(self, category):
         """Export the current product to the magento category corresponding to
-        the given `category` under the current website in context
+        the given `category` under the current magento_channel in context
 
         :param category: Active record of category to which the product has
                          to be exported
         :return: Active record of product
         """
-        Website = Pool().get('magento.instance.website')
-        WebsiteProductTemplate = Pool().get('magento.website.template')
+        Channel = Pool().get('sale.channel')
+        SaleChannelListing = Pool().get('product.product.channel_listing')
+
+        channel = Channel(Transaction().context['current_channel'])
+        channel.validate_magento_channel()
 
         if not category.magento_ids:
             self.raise_user_error(
                 'invalid_category', (category.complete_name,)
             )
 
-        if self.magento_ids:
+        listing = SaleChannelListing.search([
+            ('channel', '=', channel.id),
+            ('product', '=', self.id),
+        ])
+
+        if listing:
             self.raise_user_error(
                 'invalid_product', (self.name,)
             )
@@ -478,11 +491,9 @@ class Template:
                 'missing_product_code', (self.name,)
             )
 
-        website = Website(Transaction().context['magento_website'])
-        instance = website.instance
-
         with magento.Product(
-            instance.url, instance.api_user, instance.api_key
+            channel.magento_url, channel.magento_api_user,
+            channel.magento_api_key
         ) as product_api:
             # We create only simple products on magento with the default
             # attribute set
@@ -496,101 +507,27 @@ class Template:
                     int(Transaction().context['magento_attribute_set']),
                     self.products[0].code,
                     self.get_product_values_for_export_to_magento(
-                        [category], [website]
+                        [category], [channel]
                     )
                 ]
             )
-            WebsiteProductTemplate.create([{
-                'magento_id': magento_id,
-                'website': website.id,
-                'template': self.id,
+            SaleChannelListing.create([{
+                'product_identifier': str(magento_id),
+                'channel': channel.id,
+                'product': self.id,
+                'magento_product_type': 'simple',
             }])
-            self.write([self], {
-                'magento_product_type': 'simple'
-            })
         return self
-
-
-class MagentoWebsiteTemplate(ModelSQL, ModelView):
-    """
-    Magento Website ---  Product Template Store
-
-    This model keeps a record of a product's association with a website and
-    the ID of product on that website
-    """
-    __name__ = 'magento.website.template'
-
-    magento_id = fields.Integer(
-        'Magento ID', readonly=True, required=True, select=True
-    )
-    website = fields.Many2One(
-        'magento.instance.website', 'Magento Website', readonly=True,
-        select=True, required=True
-    )
-    template = fields.Many2One(
-        'product.template', 'Template', readonly=True,
-        required=True, select=True
-    )
-
-    @classmethod
-    def __setup__(cls):
-        '''
-        Setup the class and define constraints
-        '''
-        super(MagentoWebsiteTemplate, cls).__setup__()
-        cls._sql_constraints += [
-            (
-                'magento_id_website_unique',
-                'UNIQUE(magento_id, website)',
-                'Each product in an instance must be unique!'
-            )
-        ]
-
-        cls._buttons.update({
-            'update_product_from_magento': {},
-        })
-
-    @classmethod
-    def update_product_from_magento(cls, magento_product_templates):
-        """
-        Update the product from magento with the details from magento
-        for the current website
-
-        :param magento_product_templates: List of active record of magento
-                                          product templates
-        """
-        for magento_product_template in magento_product_templates:
-            with Transaction().set_context({
-                    'magento_website': magento_product_template.website.id}):
-                magento_product_template.template.update_from_magento()
-
-        return {}
 
 
 class ProductPriceTier(ModelSQL, ModelView):
     """Price Tiers for product
 
     This model stores the price tiers to be used while sending
-    tier prices for a product from OpenERP to Magento.
+    tier prices for a product from Tryton to Magento.
     """
     __name__ = 'product.price_tier'
     _rec_name = 'quantity'
-
-    def get_price(self, name):
-        """Calculate the price of the product for quantity set in record
-
-        :param name: Name of field
-        """
-        Store = Pool().get('magento.website.store')
-
-        if not Transaction().context.get('magento_store'):
-            return 0
-
-        store = Store(Transaction().context['magento_store'])
-        return store.price_list.compute(
-            None, self.template, self.template.list_price, self.quantity,
-            store.website.default_uom
-        )
 
     template = fields.Many2One(
         'product.template', 'Product Template', required=True, readonly=True,
@@ -598,9 +535,7 @@ class ProductPriceTier(ModelSQL, ModelView):
     quantity = fields.Float(
         'Quantity', required=True
     )
-    price = fields.Function(
-        fields.Numeric('Price'), 'get_price'
-    )
+    price = fields.Function(fields.Numeric('Price'), 'get_price')
 
     @classmethod
     def __setup__(cls):
@@ -615,235 +550,19 @@ class ProductPriceTier(ModelSQL, ModelView):
             )
         ]
 
+    def get_price(self, name):
+        """Calculate the price of the product for quantity set in record
 
-class UpdateCatalogStart(ModelView):
-    'Update Catalog View'
-    __name__ = 'magento.instance.update_catalog.start'
-
-
-class UpdateCatalog(Wizard):
-    '''
-    Update Catalog
-
-    This is a wizard to update already imported products
-    '''
-    __name__ = 'magento.instance.update_catalog'
-
-    start = StateView(
-        'magento.instance.update_catalog.start',
-        'magento.update_catalog_start', [
-            Button('Cancel', 'end', 'tryton-cancel'),
-            Button('Continue', 'update_', 'tryton-ok', default=True),
-        ]
-    )
-    update_ = StateAction('product.act_template_form')
-
-    def do_update_(self, action):
-        """Handles the transition"""
-
-        Website = Pool().get('magento.instance.website')
-
-        website = Website(Transaction().context.get('active_id'))
-
-        product_template_ids = self.update_products(website)
-
-        action['pyson_domain'] = PYSONEncoder().encode(
-            [('id', 'in', product_template_ids)])
-        return action, {}
-
-    def transition_import_(self):
-        return 'end'
-
-    def update_products(self, website):
+        :param name: Name of field
         """
-        Updates products for current website
+        Channel = Pool().get('sale.channel')
 
-        :param website: Browse record of website
-        :return: List of product templates IDs
-        """
-        product_templates = []
-        with Transaction().set_context({'magento_website': website.id}):
-            for mag_product_template in website.magento_product_templates:
-                product_templates.append(
-                    mag_product_template.template.update_from_magento()
-                )
+        if not Transaction().context.get('current_channel'):
+            return 0
 
-        return map(int, product_templates)
-
-
-class ImportCatalogStart(ModelView):
-    'Import Catalog View'
-    __name__ = 'magento.instance.import_catalog.start'
-
-
-class ImportCatalog(Wizard):
-    '''
-    Import Catalog
-
-    This is a wizard to import Products from a Magento Website. It opens up
-    the list of products after the import has been completed.
-    '''
-    __name__ = 'magento.instance.import_catalog'
-
-    start = StateView(
-        'magento.instance.import_catalog.start',
-        'magento.instance_import_catalog_start', [
-            Button('Cancel', 'end', 'tryton-cancel'),
-            Button('Continue', 'import_', 'tryton-ok', default=True),
-        ]
-    )
-    import_ = StateAction('product.act_template_form')
-
-    def do_import_(self, action):
-        """Handles the transition"""
-
-        Website = Pool().get('magento.instance.website')
-
-        website = Website(Transaction().context.get('active_id'))
-
-        self.import_category_tree(website)
-        product_ids = self.import_products(website)
-        action['pyson_domain'] = PYSONEncoder().encode(
-            [('id', 'in', product_ids)])
-        return action, {}
-
-    def transition_import_(self):
-        return 'end'
-
-    def import_category_tree(self, website):
-        """
-        Imports the category tree and creates categories in a hierarchy same as
-        that on Magento
-
-        :param website: Active record of website
-        """
-        Category = Pool().get('product.category')
-
-        instance = website.instance
-        Transaction().set_context({'magento_instance': instance.id})
-
-        with magento.Category(
-            instance.url, instance.api_user, instance.api_key
-        ) as category_api:
-            category_tree = category_api.tree(website.magento_root_category_id)
-            Category.create_tree_using_magento_data(category_tree)
-
-    def import_products(self, website):
-        """
-        Imports products for the current instance
-
-        :param website: Active record of website
-        """
-        Product = Pool().get('product.template')
-
-        instance = website.instance
-        Transaction().set_context({
-            'magento_instance': instance.id,
-            'magento_website': website.id
-        })
-        with magento.Product(
-            instance.url, instance.api_user, instance.api_key
-        ) as product_api:
-            magento_products = product_api.list()
-
-            products = []
-            for magento_product in magento_products:
-                products.append(
-                    Product.find_or_create_using_magento_id(
-                        magento_product['product_id']
-                    )
-                )
-
-        return map(int, products)
-
-
-class ExportCatalogStart(ModelView):
-    'Export Catalog View'
-    __name__ = 'magento.website.export_catalog.start'
-
-    @classmethod
-    def get_attribute_sets(cls):
-        """Get the list of attribute sets from magento for the current website
-
-        :return: Tuple of attribute sets where each tuple consists of (ID,Name)
-        """
-        Website = Pool().get('magento.instance.website')
-
-        if not Transaction().context.get('active_id'):
-            return []
-
-        website = Website(Transaction().context['active_id'])
-        instance = website.instance
-
-        with magento.ProductAttributeSet(
-            instance.url, instance.api_user, instance.api_key
-        ) as attribute_set_api:
-            attribute_sets = attribute_set_api.list()
-
-        return [(
-            attribute_set['set_id'], attribute_set['name']
-        ) for attribute_set in attribute_sets]
-
-    category = fields.Many2One(
-        'product.category', 'Magento Category', required=True,
-        domain=[('magento_ids', 'not in', [])],
-    )
-    products = fields.Many2Many(
-        'product.template', None, None, 'Products', required=True,
-        domain=[('magento_ids', '=', None)],
-    )
-    attribute_set = fields.Selection(
-        [], 'Attribute Set', required=True,
-    )
-
-    @classmethod
-    def fields_view_get(cls, view_id=None, view_type='form'):
-        """This method is overridden to populate the selection field for
-        attribute_set with the attribute sets from the current website's
-        counterpart on magento.
-        This overridding has to be done because `active_id` is not available
-        if the meth:get_attribute_sets is called directly from the field.
-        """
-        rv = super(ExportCatalogStart, cls).fields_view_get(view_id, view_type)
-        rv['fields']['attribute_set']['selection'] = cls.get_attribute_sets()
-        return rv
-
-
-class ExportCatalog(Wizard):
-    '''Export catalog
-
-    Export the products selected to the selected category for this website
-    '''
-    __name__ = 'magento.website.export_catalog'
-
-    start = StateView(
-        'magento.website.export_catalog.start',
-        'magento.website_export_catalog_start', [
-            Button('Cancel', 'end', 'tryton-cancel'),
-            Button('Continue', 'export_', 'tryton-ok', default=True),
-        ]
-    )
-    export_ = StateAction('product.act_template_form')
-
-    def do_export_(self, action):
-        """
-        Export the products selected to the selected category for this website
-        """
-        Website = Pool().get('magento.instance.website')
-
-        website = Website(Transaction().context['active_id'])
-
-        with Transaction().set_context({
-            'magento_website': website.id,
-            'magento_attribute_set': self.start.attribute_set,
-        }):
-            for product in self.start.products:
-                product.export_to_magento(self.start.category)
-
-        action['pyson_domain'] = PYSONEncoder().encode(
-            [('id', 'in', map(int, self.start.products))])
-
-        return action, {}
-
-    def transition_export_(self):
-        return 'end'
+        channel = Channel(Transaction().context['current_channel'])
+        channel.validate_magento_channel()
+        return channel.price_list.compute(
+            None, self.template, self.template.list_price, self.quantity,
+            channel.default_uom
+        )

@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+
+<form string="Import Stores">
+    <label name="magento_stores"/>
+    <field name="magento_stores"/>
+</form>

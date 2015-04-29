@@ -4,7 +4,7 @@
 
     Party
 
-    :copyright: (c) 2013 by Openlabs Technologies & Consulting (P) Limited
+    :copyright: (c) 2013-2015 by Openlabs Technologies & Consulting (P) Limited
     :license: BSD, see LICENSE for more details.
 """
 import magento
@@ -23,7 +23,7 @@ class Party:
     __name__ = 'party.party'
 
     magento_ids = fields.One2Many(
-        "magento.website.party", "party", "Magento IDs", readonly=True
+        "sale.channel.magento.party", "party", "Magento IDs", readonly=True
     )
 
     @classmethod
@@ -33,7 +33,7 @@ class Party:
         """
         super(Party, cls).__setup__()
         cls._error_messages.update({
-            'website_not_found': 'Website does not exist in context'
+            'channel_not_found': 'Website does not exist in context'
         })
 
     @classmethod
@@ -46,14 +46,16 @@ class Party:
         :param magento_id: Party ID sent by magento
         :return: Active record of record created/found
         """
-        Instance = Pool().get('magento.instance')
+        Channel = Pool().get('sale.channel')
+
+        channel = Channel(Transaction().context['current_channel'])
+        channel.validate_magento_channel()
 
         party = cls.find_using_magento_id(magento_id)
         if not party:
-            instance = Instance(Transaction().context.get('magento_instance'))
-
             with magento.Customer(
-                instance.url, instance.api_user, instance.api_key
+                channel.magento_url, channel.magento_api_user,
+                channel.magento_api_key
             ) as customer_api:
                 customer_data = customer_api.info(magento_id)
 
@@ -68,12 +70,12 @@ class Party:
         :param magento_id: Party ID sent by magento
         :return: Active record of record found
         """
-        MagentoParty = Pool().get('magento.website.party')
+        MagentoParty = Pool().get('sale.channel.magento.party')
 
         try:
             magento_party, = MagentoParty.search([
                 ('magento_id', '=', magento_id),
-                ('website', '=', Transaction().context.get('magento_website'))
+                ('channel', '=', Transaction().context.get('current_channel'))
             ])
         except ValueError:
             return None
@@ -84,15 +86,15 @@ class Party:
     def find_or_create_using_magento_data(cls, magento_data):
         """
         Looks for the customer whose magento_data is sent by magento against
-        the magento_website in context.
+        the magento_channel in context.
         If a record exists for this, return that else create a new one and
         return
 
         :param magento_data: Dictionary of values for customer sent by magento
         :return: Active record of record created/found
         """
-        if Transaction().context.get('magento_website') is None:
-            cls.raise_user_error('website_not_found')
+        if Transaction().context.get('current_channel') is None:
+            cls.raise_user_error('channel_not_found')
 
         party = cls.find_using_magento_data(magento_data)
 
@@ -116,7 +118,7 @@ class Party:
             'magento_ids': [
                 ('create', [{
                     'magento_id': magento_data['customer_id'],
-                    'website': Transaction().context['magento_website'],
+                    'channel': Transaction().context['current_channel'],
                 }])
             ],
             'contact_mechanisms': [
@@ -133,18 +135,18 @@ class Party:
     def find_using_magento_data(cls, magento_data):
         """
         Looks for the customer whose magento_data is sent by magento against
-        the magento_website_id in context.
+        the magento_channel_id in context.
         If record exists returns that else None
 
         :param magento_data: Dictionary of values for customer sent by magento
         :return: Active record of record found or None
         """
-        MagentoParty = Pool().get('magento.website.party')
+        MagentoParty = Pool().get('sale.channel.magento.party')
 
         try:
             magento_party, = MagentoParty.search([
                 ('magento_id', '=', magento_data['customer_id']),
-                ('website', '=', Transaction().context['magento_website'])
+                ('channel', '=', Transaction().context['current_channel'])
             ])
         except ValueError:
             return None
@@ -154,11 +156,11 @@ class Party:
 
 class MagentoWebsiteParty(ModelSQL, ModelView):
     "Magento Website Party"
-    __name__ = 'magento.website.party'
+    __name__ = 'sale.channel.magento.party'
 
     magento_id = fields.Integer('Magento ID', readonly=True)
-    website = fields.Many2One(
-        'magento.instance.website', 'Website', required=True, readonly=True
+    channel = fields.Many2One(
+        'sale.channel', 'Channel', required=True, readonly=True
     )
     party = fields.Many2One(
         'party.party', 'Party', required=True, readonly=True
@@ -176,12 +178,12 @@ class MagentoWebsiteParty(ModelSQL, ModelView):
         """
         super(MagentoWebsiteParty, cls).__setup__()
         cls._error_messages.update({
-            'party_exists': 'A party must be unique in a website'
+            'party_exists': 'A party must be unique in a channel'
         })
 
     @classmethod
     def check_unique_party(cls, records):
-        """Checks thats each party should be unique in a website if it
+        """Checks thats each party should be unique in a channel if it
         does not have a magento ID of 0. magento_id of 0 means its a guest
         customer.
 
@@ -190,7 +192,7 @@ class MagentoWebsiteParty(ModelSQL, ModelView):
         for magento_partner in records:
             if magento_partner.magento_id != 0 and cls.search([
                 ('magento_id', '=', magento_partner.magento_id),
-                ('website', '=', magento_partner.website.id),
+                ('channel', '=', magento_partner.channel.id),
                 ('id', '!=', magento_partner.id),
             ], count=True) > 0:
                 cls.raise_user_error('party_exists')

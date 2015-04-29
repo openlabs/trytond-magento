@@ -1,0 +1,113 @@
+<?xml version="1.0"?>
+<tryton>
+    <data>
+        <record model="ir.ui.view" id="sale_channel_view_form">
+            <field name="model">sale.channel</field>
+            <field name="type">form</field>
+            <field name="name">sale_channel_form</field>
+            <field name="inherit" ref="sale_channel.sale_channel_view_form"/>
+        </record>
+
+        <!-- Price Tiers -->
+        <record model="ir.ui.view" id="price_tier_view_form">
+            <field name="model">sale.channel.magento.price_tier</field>
+            <field name="type">form</field>
+            <field name="name">price_tier_form</field>
+        </record>
+        <record model="ir.ui.view" id="price_tier_view_tree">
+            <field name="model">sale.channel.magento.price_tier</field>
+            <field name="type">tree</field>
+            <field name="name">price_tier_tree</field>
+        </record>
+
+        <!--Carriers-->
+        <record model="ir.ui.view" id="carrier_view_form">
+            <field name="model">magento.instance.carrier</field>
+            <field name="type">form</field>
+            <field name="name">magento_carrier_form</field>
+        </record>
+        <record model="ir.ui.view" id="carrier_view_tree">
+            <field name="model">magento.instance.carrier</field>
+            <field name="type">tree</field>
+            <field name="name">magento_carrier_tree</field>
+        </record>
+
+        <!--Magento Exception-->
+        <record model="ir.ui.view" id="magento_exception_form_view">
+            <field name="model">magento.exception</field>
+            <field name="type">form</field>
+            <field name="name">magento_exception_form</field>
+        </record>
+        <record model="ir.ui.view" id="magento_exception_tree_view">
+            <field name="model">magento.exception</field>
+            <field name="type">tree</field>
+            <field name="name">magento_exception_tree</field>
+        </record>
+
+        <record model="res.user" id="user_magento">
+            <field name="login">user_cron_magento</field>
+            <field name="name">User Cron Magento</field>
+            <field name="signature"></field>
+            <field name="active" eval="False"/>
+        </record>
+
+        <record model="res.user-res.group"
+                id="user_magento_group_sale_admin">
+            <field name="user" ref="user_magento"/>
+            <field name="group" ref="sale.group_sale_admin"/>
+        </record>
+
+        <!--Cron To Export Inventory-->
+        <record model="ir.cron" id="ir_cron_export_inventory_magento">
+            <field name="name">Export Inventory To Magento</field>
+            <field name="request_user" ref="res.user_admin"/>
+            <field name="user" ref="res.user_trigger"/>
+            <field name="active" eval="True"/>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="number_calls">-1</field>
+            <field name="model">sale.channel</field>
+            <field name="function">export_inventory_to_magento_using_cron</field>
+        </record>
+
+        <!--Cron To Export Order Status To Magento-->
+        <record model="ir.cron" id="ir_cron_export_order_status_magento">
+            <field name="name">Export Order Status To Magento</field>
+            <field name="request_user" ref="res.user_admin"/>
+            <field name="user" ref="res.user_trigger"/>
+            <field name="active" eval="True"/>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="number_calls">-1</field>
+            <field name="model">sale.channel</field>
+            <field name="function">export_order_status_to_magento_using_cron</field>
+        </record>
+
+        <!--Cron To Export Shipment Status To Magento-->
+        <record model="ir.cron" id="ir_cron_export_shipment_status_magento">
+            <field name="name">Export Shipment Status To Magento</field>
+            <field name="request_user" ref="res.user_admin"/>
+            <field name="user" ref="res.user_trigger"/>
+            <field name="active" eval="True"/>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="number_calls">-1</field>
+            <field name="model">sale.channel</field>
+            <field name="function">export_shipment_status_to_magento_using_cron</field>
+        </record>
+
+        <!-- Cron To Import Sale Orders-->
+        <record model="ir.cron" id="ir_cron_import_magento_orders">
+            <field name="name">Import Orders from Magento</field>
+            <field name="request_user" ref="res.user_admin"/>
+            <field name="user" ref="res.user_trigger"/>
+            <field name="active" eval="True"/>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="number_calls">-1</field>
+            <field name="model">sale.channel</field>
+            <field name="function">import_magento_orders</field>
+        </record>
+
+    </data>
+</tryton>

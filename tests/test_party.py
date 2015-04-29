@@ -37,14 +37,14 @@ class TestParty(TestBase):
         Tests if customers imported from magento is created as party
         in tryton
         """
-        MagentoParty = POOL.get('magento.website.party')
+        MagentoParty = POOL.get('sale.channel.magento.party')
 
         with Transaction().start(DB_NAME, USER, CONTEXT):
 
             self.setup_defaults()
 
             Transaction().context.update({
-                'magento_website': self.website1.id
+                'current_channel': self.channel1.id
             })
             magento_data = load_json('customers', '1')
 
@@ -76,18 +76,18 @@ class TestParty(TestBase):
 
             self.assertEqual(len(parties), 1)
 
-    def test0020_create_party_for_same_website(self):
+    def test0020_create_party_for_same_channel(self):
         """
-        Tests that party should be unique in a website
+        Tests that party should be unique in a channel
         """
-        MagentoParty = POOL.get('magento.website.party')
+        MagentoParty = POOL.get('sale.channel.magento.party')
 
         with Transaction().start(DB_NAME, USER, CONTEXT):
 
             self.setup_defaults()
 
             Transaction().context.update({
-                'magento_website': self.website1.id
+                'current_channel': self.channel1.id
             })
 
             magento_data = load_json('customers', '1')
@@ -115,15 +115,15 @@ class TestParty(TestBase):
 
             magento_data = load_json('customers', '1')
 
-            # Create party with same magento_id and website_id it will not
+            # Create party with same magento_id and channel_id it will not
             # create new one
             self.Party.find_or_create_using_magento_data(magento_data)
             parties = MagentoParty.search([])
             self.assertEqual(len(parties), 1)
 
-            # Create party with different website
+            # Create party with different channel
             Transaction().context.update({
-                'magento_website': self.website2.id
+                'current_channel': self.channel2.id
             })
             magento_data = load_json('customers', '1')
 
@@ -146,7 +146,7 @@ class TestParty(TestBase):
 
             # Create party with different magento_id
             Transaction().context.update({
-                'magento_website': self.website1.id
+                'current_channel': self.channel1.id
             })
 
             magento_data = load_json('customers', '2')
@@ -244,9 +244,9 @@ class TestParty(TestBase):
 
             self.setup_defaults()
 
-            # Set magento website in context
+            # Set magento channel in context
             Transaction().context.update({
-                'magento_website': self.website1.id
+                'current_channel': self.channel1.id
             })
 
             party_data = load_json('customers', '1')

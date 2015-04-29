@@ -4,33 +4,38 @@
 
     Initialize Module
 
-    :copyright: (c) 2013 by Openlabs Technologies & Consulting (P) Limited
+    :copyright: (c) 2013-2015 by Openlabs Technologies & Consulting (P) Limited
     :license: BSD, see LICENSE for more details.
 """
 from trytond.pool import Pool
-from magento_ import (
-    Instance, InstanceWebsite, WebsiteStore, WebsiteStoreView,
-    TestConnectionStart, TestConnection, ImportWebsitesStart, ImportWebsites,
-    ExportInventoryStart, ExportInventory, StorePriceTier,
-    ExportTierPricesStart, ExportTierPrices, ExportTierPricesStatus,
-    ExportShipmentStatusStart, ExportShipmentStatus, ImportOrderStatesStart,
-    ImportOrderStates, ImportCarriersStart, ImportCarriers, MagentoException
+from wizard import (
+    TestMagentoConnectionStart, ImportWebsitesStart,
+    ExportMagentoInventoryStart, ExportMagentoInventory,
+    ExportMagentoTierPricesStart, ExportMagentoTierPrices,
+    ExportMagentoTierPricesStatus, ExportMagentoShipmentStatusStart,
+    ExportMagentoShipmentStatus, ImportMagentoOrderStatesStart,
+    ImportMagentoOrderStates, ImportMagentoCarriersStart,
+    ImportMagentoCarriers, ConfigureMagento, ImportStoresStart, FailureStart,
+    SuccessStart, ImportMagentoOrdersStart, ImportMagentoOrders,
+    ExportMagentoOrderStatusStart, ExportMagentoOrderStatus,
+    UpdateMagentoCatalogStart, UpdateMagentoCatalog,
+    ImportMagentoCatalogStart, ImportMagentoCatalog,
+    ExportMagentoCatalogStart, ExportMagentoCatalog,
 )
+from channel import Channel, MagentoTier, MagentoException
 from party import Party, MagentoWebsiteParty, Address
 from product import (
-    Category, MagentoInstanceCategory, Template, MagentoWebsiteTemplate,
-    ImportCatalogStart, ImportCatalog, UpdateCatalogStart, UpdateCatalog,
-    ProductPriceTier, ExportCatalogStart, ExportCatalog
+    Category, MagentoInstanceCategory, Product,
+    ProductPriceTier, ProductSaleChannelListing
 )
 from country import Country, Subdivision
 from currency import Currency
 from carrier import MagentoInstanceCarrier
 from sale import (
-    MagentoOrderState, Sale, ImportOrdersStart, ImportOrders,
-    ExportOrderStatusStart, ExportOrderStatus, StockShipmentOut, SaleLine
+    MagentoOrderState, Sale, StockShipmentOut, SaleLine
 )
 from bom import BOM
-from tax import StoreViewTax, StoreViewTaxRelation
+from tax import MagentoTax, MagentoTaxRelation
 
 
 def register():
@@ -38,18 +43,18 @@ def register():
     Register classes
     """
     Pool.register(
-        Instance,
-        InstanceWebsite,
-        WebsiteStore,
-        StorePriceTier,
-        WebsiteStoreView,
+        Channel,
+        MagentoTier,
         MagentoInstanceCarrier,
-        TestConnectionStart,
+        TestMagentoConnectionStart,
+        ImportStoresStart,
+        FailureStart,
+        SuccessStart,
         ImportWebsitesStart,
-        ExportInventoryStart,
-        ExportTierPricesStart,
-        ExportTierPricesStatus,
-        ExportShipmentStatusStart,
+        ExportMagentoInventoryStart,
+        ExportMagentoTierPricesStart,
+        ExportMagentoTierPricesStatus,
+        ExportMagentoShipmentStatusStart,
         Country,
         Subdivision,
         Party,
@@ -57,39 +62,38 @@ def register():
         Category,
         MagentoException,
         MagentoInstanceCategory,
-        Template,
-        MagentoWebsiteTemplate,
+        Product,
         ProductPriceTier,
-        ImportCatalogStart,
-        ExportCatalogStart,
+        ImportMagentoCatalogStart,
+        ExportMagentoCatalogStart,
         MagentoOrderState,
         StockShipmentOut,
         Address,
-        UpdateCatalogStart,
+        UpdateMagentoCatalogStart,
         Currency,
         Sale,
-        ImportOrdersStart,
-        ImportOrderStatesStart,
-        ImportCarriersStart,
-        ExportOrderStatusStart,
+        ImportMagentoOrdersStart,
+        ImportMagentoOrderStatesStart,
+        ImportMagentoCarriersStart,
+        ExportMagentoOrderStatusStart,
         SaleLine,
         BOM,
-        StoreViewTax,
-        StoreViewTaxRelation,
+        MagentoTax,
+        MagentoTaxRelation,
+        ProductSaleChannelListing,
         module='magento', type_='model'
     )
     Pool.register(
-        TestConnection,
-        ImportWebsites,
-        ImportOrderStates,
-        ExportInventory,
-        ExportTierPrices,
-        ExportShipmentStatus,
-        ImportCatalog,
-        UpdateCatalog,
-        ExportCatalog,
-        ImportOrders,
-        ExportOrderStatus,
-        ImportCarriers,
+        ImportMagentoOrderStates,
+        ExportMagentoInventory,
+        ExportMagentoTierPrices,
+        ExportMagentoShipmentStatus,
+        ImportMagentoCatalog,
+        UpdateMagentoCatalog,
+        ExportMagentoCatalog,
+        ImportMagentoOrders,
+        ExportMagentoOrderStatus,
+        ImportMagentoCarriers,
+        ConfigureMagento,
         module='magento', type_='wizard'
     )

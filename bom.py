@@ -63,7 +63,7 @@ class BOM:
         :return: Found or created BoM's active record
         """
         Uom = Pool().get('product.uom')
-        ProductTemplate = Pool().get('product.template')
+        Product = Pool().get('product.product')
         ProductBom = Pool().get('product.product-production.bom')
 
         identified_boms = cls.identify_boms_from_magento_data(order_data)
@@ -72,18 +72,17 @@ class BOM:
             return
 
         for item_id, data in identified_boms.iteritems():
-            bundle_product_template = \
-                ProductTemplate.find_or_create_using_magento_id(
+            bundle_product = \
+                Product.find_or_create_using_magento_id(
                     data['bundle']['product_id']
                 )
-            bundle_product = bundle_product_template.products[0]
 
             # It contains a list of tuples, in which the first element is the
             # product's active record and second is its quantity in the BoM
             child_products = [(
-                ProductTemplate.find_or_create_using_magento_id(
+                Product.find_or_create_using_magento_id(
                     each['product_id']
-                ).products[0], (
+                ), (
                     float(each['qty_ordered']) /
                     float(data['bundle']['qty_ordered'])
                 )
