@@ -2,10 +2,11 @@
 """
     test_base
 
-    :copyright: (c) 2013 by Openlabs Technologies & Consulting (P) Limited
+    :copyright: (c) 2013-2015 by Openlabs Technologies & Consulting (P) Limited
     :license: BSD, see LICENSE for more details.
 """
 import os
+from decimal import Decimal
 import json
 import unittest
 from datetime import datetime
@@ -18,7 +19,7 @@ from trytond.pyson import Eval
 
 
 ROOT_JSON_FOLDER = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), 'json'
+    os.path.dirname(os.path.abspath(__file__)), 'json_mock'
 )
 
 
@@ -27,7 +28,7 @@ def load_json(resource, filename):
     python objects
 
     On filesystem, the files are kept in this format:
-        json----
+        json_data----
               |
             resource----
                        |
@@ -63,10 +64,7 @@ class TestBase(unittest.TestCase):
         """
         Setup default data
         """
-        self.Instance = POOL.get('magento.instance')
-        self.Website = POOL.get('magento.instance.website')
-        self.Store = POOL.get('magento.website.store')
-        self.StoreView = POOL.get('magento.store.store_view')
+        self.Channel = POOL.get('sale.channel')
         self.Uom = POOL.get('product.uom')
         self.Currency = POOL.get('currency.currency')
         self.Company = POOL.get('company.company')
@@ -79,12 +77,14 @@ class TestBase(unittest.TestCase):
             'account.create_chart', type="wizard"
         )
         self.User = POOL.get('res.user')
+        self.Location = POOL.get('stock.location')
         self.PaymentTerm = POOL.get('account.invoice.payment_term')
         self.FiscalYear = POOL.get('account.fiscalyear')
         self.Sequence = POOL.get('ir.sequence')
         self.SequenceStrict = POOL.get('ir.sequence.strict')
         self.AccountConfiguration = POOL.get('account.configuration')
         self.Property = POOL.get('ir.property')
+        self.PriceList = POOL.get('product.price_list')
         self.ModelField = POOL.get('ir.model.field')
 
         self.country1, = self.Country.create([{
@@ -226,63 +226,79 @@ class TestBase(unittest.TestCase):
         )
 
         # Create payment term
-        self.PaymentTerm.create([{
+        self.payment_term, = self.PaymentTerm.create([{
             'name': 'Direct',
             'lines': [('create', [{'type': 'remainder'}])]
         }])
-
-        # Create two instances
-        with Transaction().set_context({'company': self.company.id}):
-            self.instance1, = self.Instance.create([{
-                'name': 'Test Instance 1',
-                'url': 'some test url 1',
-                'api_user': 'admin',
-                'api_key': 'testkey',
-                'company': self.company,
-                'default_account_expense': self.get_account_by_kind('expense'),
-                'default_account_revenue': self.get_account_by_kind('revenue'),
-            }])
-            self.instance2, = self.Instance.create([{
-                'name': 'Test Instance 2',
-                'url': 'some test url 2',
-                'api_user': 'admin',
-                'api_key': 'testkey',
-                'company': self.company,
-                'default_account_expense': self.get_account_by_kind('expense'),
-                'default_account_revenue': self.get_account_by_kind('revenue'),
-            }])
+        self.price_list, = self.PriceList.create([{
+            'name': 'PL 1',
+            'company': self.company.id,
+            'lines': [
+                ('create', [{
+                    'formula': 'unit_price * %s' % Decimal('1.10')
+                }])
+            ],
+        }])
+        self.warehouse, = self.Location.search([
+            ('type', '=', 'warehouse')
+        ], limit=1)
 
         # Search product uom
         self.uom, = self.Uom.search([
             ('name', '=', 'Unit'),
         ])
 
-        # Create one website under each instance
-        self.website1, = self.Website.create([{
-            'name': 'A test website 1',
-            'magento_id': 1,
-            'code': 'test_code',
-            'instance': self.instance1,
-        }])
-        self.website2, = self.Website.create([{
-            'name': 'A test website 2',
-            'magento_id': 1,
-            'code': 'test_code',
-            'instance': self.instance2,
-        }])
+        # Create two channels
+        with Transaction().set_context({'company': self.company.id}):
+            self.channel1, = self.Channel.create([{
+                'name': 'Test Channel 1',
+                'price_list': self.price_list,
+                'invoice_method': 'order',
+                'shipment_method': 'order',
+                'source': 'magento',
+                'create_users': [('add', [USER])],
+                'warehouse': self.warehouse,
+                'payment_term': self.payment_term,
+                'company': self.company.id,
+                'magento_url': 'some test url 1',
+                'magento_api_user': 'admin',
+                'magento_api_key': 'testkey',
+                'default_account_expense':
+                    self.get_account_by_kind('expense'),
+                'default_account_revenue':
+                    self.get_account_by_kind('revenue'),
+                'default_uom': self.uom,
+                'magento_website_name': 'A test website 1',
+                'magento_website_id': 1,
+                'magento_website_code': 'test_code',
+                'magento_store_name': 'Store1',
+                'magento_store_id': 1,
+            }])
+            self.channel2, = self.Channel.create([{
+                'name': 'Test channel 2',
+                'price_list': self.price_list,
+                'invoice_method': 'order',
+                'shipment_method': 'order',
+                'source': 'magento',
+                'create_users': [('add', [USER])],
+                'warehouse': self.warehouse,
+                'payment_term': self.payment_term,
+                'company': self.company.id,
 
-        self.store, = self.Store.create([{
-            'name': 'Store1',
-            'magento_id': 1,
-            'website': self.website1,
-        }])
-
-        self.store_view, = self.StoreView.create([{
-            'name': 'Store view1',
-            'magento_id': 1,
-            'store': self.store,
-            'code': '123',
-        }])
+                'magento_url': 'some test url 2',
+                'magento_api_user': 'admin',
+                'magento_api_key': 'testkey',
+                'default_account_expense':
+                    self.get_account_by_kind('expense'),
+                'default_account_revenue':
+                    self.get_account_by_kind('revenue'),
+                'default_uom': self.uom,
+                'magento_website_name': 'A test website 1',
+                'magento_website_id': 1,
+                'magento_website_code': 'test_code',
+                'magento_store_name': 'Store1',
+                'magento_store_id': 1,
+            }])
 
         model_field, = self.ModelField.search([
             ('name', '=', 'account_revenue'),
@@ -292,7 +308,7 @@ class TestBase(unittest.TestCase):
         # TODO: This should work without creating new properties
         self.Property.create([{
             'value': 'account.account' + ',' +
-                str(self.website1.instance.default_account_revenue.id),
+                str(self.channel1.default_account_revenue.id),
             'res': None,
             'field': model_field.id,
         }])

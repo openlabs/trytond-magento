@@ -3,5 +3,5 @@
 this repository contains the full copyright notices and license terms. -->
 <tree string="Product Category Instance">
     <field name="magento_id" />
-    <field name="instance" />
+    <field name="channel" />
 </tree>

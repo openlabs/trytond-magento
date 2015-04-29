@@ -1,9 +1,0 @@
-<?xml version="1.0"?>
-
-<tree string="Website Store View">
-    <field name="name"/>
-    <field name="code"/>
-    <field name="website"/>
-    <field name="company"/>
-    <field name="instance"/>
-</tree>

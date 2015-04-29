@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
 <form string="Import Websites">
-    <image name="tryton-dialog-information" xexpand="0" xfill="0"/>
-    <field name="message"/>
+    <label name="magento_websites"/>
+    <field name="magento_websites"/>
 </form>
