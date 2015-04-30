@@ -431,7 +431,7 @@ class Product:
                 'code': product_data['sku'],
             })]
         })
-        Template.write([self], product_template_values)
+        Template.write([self.template], product_template_values)
 
         return self
 
