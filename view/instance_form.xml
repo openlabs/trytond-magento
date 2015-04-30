@@ -34,6 +34,9 @@
             <label name="default_account_revenue"/>
             <field name="default_account_revenue"/>
         </page>
+        <page string="Magento Product Templates" id="magento_product_templates">
+            <field name="magento_product_templates"/>
+        </page>
     </notebook>
     <button string="Test Connection" name="test_connection" colspan="2"/>
     <button string="Import Websites" name="import_websites" colspan="2"/>

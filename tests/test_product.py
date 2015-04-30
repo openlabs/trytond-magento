@@ -2,7 +2,7 @@
 """
     test_product
 
-    :copyright: (c) 2013-2014 by Openlabs Technologies & Consulting (P) Limited
+    :copyright: (c) 2013-2015 by Openlabs Technologies & Consulting (P) Limited
     :license: BSD, see LICENSE for more details.
 """
 import sys
@@ -149,11 +149,11 @@ class TestProduct(TestBase):
                 # Make sure the categs are created only in website1 and not
                 # not in website2
                 self.assertTrue(MagentoTemplate.search(
-                    [('website', '=', self.website1)],
+                    [('instance', '=', self.instance1)],
                     count=True) > 0
                 )
                 self.assertTrue(MagentoTemplate.search(
-                    [('website', '=', self.website2)],
+                    [('instance', '=', self.instance2)],
                     count=True) == 0
                 )
 
