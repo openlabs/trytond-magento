@@ -2,7 +2,7 @@
 '''
     product
 
-    :copyright: (c) 2013-2014 by Openlabs Technologies & Consulting (P) Limited
+    :copyright: (c) 2013-2015 by Openlabs Technologies & Consulting (P) Limited
     :license: BSD, see LICENSE for more details.
 '''
 import magento
@@ -11,6 +11,7 @@ from trytond.transaction import Transaction
 from trytond.wizard import Wizard, StateView, StateAction, Button
 from trytond.pyson import PYSONEncoder
 from trytond.pool import PoolMeta, Pool
+from trytond import backend
 from decimal import Decimal
 
 
@@ -267,10 +268,13 @@ class Template:
         :returns: Product created for the Record
         """
         MagentoTemplate = Pool().get('magento.website.template')
+        Website = Pool().get('magento.instance.website')
+
+        website = Website(Transaction().context.get('magento_website'))
 
         records = MagentoTemplate.search([
             ('magento_id', '=', magento_id),
-            ('website', '=', Transaction().context.get('magento_website'))
+            ('instance', '=', website.instance.id)
         ])
 
         return records and records[0].template or None
@@ -303,10 +307,13 @@ class Template:
         :returns: Browse record of product found or None
         """
         MagentoTemplate = Pool().get('magento.website.template')
+        Website = Pool().get('magento.instance.website')
+
+        website = Website(Transaction().context.get('magento_website'))
 
         records = MagentoTemplate.search([
             ('magento_id', '=', int(product_data['product_id'])),
-            ('website', '=', Transaction().context.get('magento_website'))
+            ('instance', '=', website.instance.id)
         ])
         return records and records[0].template or None
 
@@ -351,6 +358,7 @@ class Template:
         :returns: Browse record of product created
         """
         Category = Pool().get('product.category')
+        Website = Pool().get('magento.instance.website')
 
         # Get only the first category from the list of categories
         # If no category is found, put product under unclassified category
@@ -365,6 +373,7 @@ class Template:
             ])
             category = categories[0]
 
+        website = Website(Transaction().context.get('magento_website'))
         product_template_values = cls.extract_product_values_from_data(
             product_data
         )
@@ -377,7 +386,7 @@ class Template:
             'magento_product_type': product_data['type'],
             'magento_ids': [('create', [{
                 'magento_id': int(product_data['product_id']),
-                'website': Transaction().context.get('magento_website'),
+                'instance': website.instance.id,
             }])],
         })
 
@@ -402,7 +411,7 @@ class Template:
         ) as product_api:
             magento_product_template, = MagentoProductTemplate.search([
                 ('template', '=', self.id),
-                ('website', '=', website.id),
+                ('instance', '=', website.instance.id),
             ])
             product_data = product_api.info(
                 magento_product_template.magento_id
@@ -502,7 +511,7 @@ class Template:
             )
             WebsiteProductTemplate.create([{
                 'magento_id': magento_id,
-                'website': website.id,
+                'instance': instance.id,
                 'template': self.id,
             }])
             self.write([self], {
@@ -515,16 +524,16 @@ class MagentoWebsiteTemplate(ModelSQL, ModelView):
     """
     Magento Website ---  Product Template Store
 
-    This model keeps a record of a product's association with a website and
-    the ID of product on that website
+    This model keeps a record of a product's association with a website
+    instance and the ID of product on that instance
     """
     __name__ = 'magento.website.template'
 
     magento_id = fields.Integer(
         'Magento ID', readonly=True, required=True, select=True
     )
-    website = fields.Many2One(
-        'magento.instance.website', 'Magento Website', readonly=True,
+    instance = fields.Many2One(
+        'magento.instance', 'Magento Instance', readonly=True,
         select=True, required=True
     )
     template = fields.Many2One(
@@ -540,8 +549,8 @@ class MagentoWebsiteTemplate(ModelSQL, ModelView):
         super(MagentoWebsiteTemplate, cls).__setup__()
         cls._sql_constraints += [
             (
-                'magento_id_website_unique',
-                'UNIQUE(magento_id, website)',
+                'magento_id_instance_unique',
+                'UNIQUE(magento_id, instance)',
                 'Each product in an instance must be unique!'
             )
         ]
@@ -549,6 +558,31 @@ class MagentoWebsiteTemplate(ModelSQL, ModelView):
         cls._buttons.update({
             'update_product_from_magento': {},
         })
+
+    @classmethod
+    def __register__(cls, module_name):
+        super(MagentoWebsiteTemplate, cls).__register__(module_name)
+
+        Website = Pool().get('magento.instance.website')
+
+        TableHandler = backend.get('TableHandler')
+        cursor = Transaction().cursor
+        table = TableHandler(cursor, cls, module_name)
+        magento_template = cls.__table__()
+        website = Website.__table__()
+
+        # Drop contraint for Unique URI on database
+        table.drop_constraint('magento_id_website_unique')
+
+        if table.column_exist('website'):
+            query = magento_template.update(
+                columns=[magento_template.instance],
+                values=[website.instance],
+                from_=[website],
+                where=(magento_template.website == website.id)
+            )
+            cursor.execute(*query)
+            table.drop_column('website')
 
     @classmethod
     def update_product_from_magento(cls, magento_product_templates):

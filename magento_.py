@@ -4,7 +4,7 @@
 
     Magento
 
-    :copyright: (c) 2013 by Openlabs Technologies & Consulting (P) Limited
+    :copyright: (c) 2013-2015 by Openlabs Technologies & Consulting (P) Limited
     :license: BSD, see LICENSE for more details.
 """
 import xmlrpclib
@@ -76,6 +76,11 @@ class Instance(ModelSQL, ModelView):
             ('company', '=', Eval('company')),
         ], depends=['company'], required=True
     ))
+
+    magento_product_templates = fields.One2Many(
+        'magento.website.template', 'instance', 'Magento Product Templates',
+        readonly=True
+    )
 
     @staticmethod
     def default_order_prefix():
@@ -285,10 +290,6 @@ class InstanceWebsite(ModelSQL, ModelView):
     magento_root_category_id = fields.Integer(
         'Magento Root Category ID', required=True
     )
-    magento_product_templates = fields.One2Many(
-        'magento.website.template', 'website', 'Magento Product Templates',
-        readonly=True
-    )
 
     def get_company(self, name):
         """
@@ -378,7 +379,7 @@ class InstanceWebsite(ModelSQL, ModelView):
 
         locations = Location.search([('type', '=', 'storage')])
 
-        for magento_product_template in self.magento_product_templates:
+        for magento_product_template in self.instance.magento_product_templates:
             product_template = magento_product_template.template
             product_templates.append(product_template)
 
