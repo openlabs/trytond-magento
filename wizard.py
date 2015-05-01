@@ -745,8 +745,8 @@ class ImportMagentoCatalog(Wizard):
                 products = []
                 for magento_product in magento_products:
                     products.append(
-                        Product.find_or_create_using_magento_data(
-                            magento_product
+                        Product.find_or_create_using_magento_id(
+                            magento_product['product_id']
                         )
                     )
 
