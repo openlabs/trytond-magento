@@ -311,8 +311,7 @@ class ExportMagentoTierPrices(Wizard):
         channel.validate_magento_channel()
 
         return {
-            # TODO: Need to be implemented first
-            # 'products_count': channel.export_tier_prices_to_magento()
+            'products_count': channel.export_tier_prices_to_magento()
         }
 
 

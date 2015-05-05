@@ -194,7 +194,7 @@ class ProductSaleChannelListing:
     __name__ = 'product.product.channel_listing'
 
     price_tiers = fields.One2Many(
-        'product.price_tier', 'template', 'Price Tiers'
+        'product.price_tier', 'product_listing', 'Price Tiers'
     )
     magento_product_type = fields.Selection([
         (None, ''),
@@ -529,8 +529,9 @@ class ProductPriceTier(ModelSQL, ModelView):
     __name__ = 'product.price_tier'
     _rec_name = 'quantity'
 
-    template = fields.Many2One(
-        'product.template', 'Product Template', required=True, readonly=True,
+    product_listing = fields.Many2One(
+        'product.product.channel_listing', 'Product Listing', required=True,
+        readonly=True,
     )
     quantity = fields.Float(
         'Quantity', required=True
