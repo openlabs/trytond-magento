@@ -4,7 +4,7 @@
 
     Test Sale
 
-    :copyright: (c) 2013-2014 by Openlabs Technologies & Consulting (P) Limited
+    :copyright: (c) 2013-2015 by Openlabs Technologies & Consulting (P) Limited
     :license: BSD, see LICENSE for more details.
 """
 import sys
@@ -37,7 +37,7 @@ def mock_product_api(mock=None, data=None):
         mock = MagicMock(spec=magento.Product)
 
     handle = MagicMock(spec=magento.Product)
-    handle.info.side_effect = lambda id: load_json('products', str(id))
+    handle.info.side_effect = lambda sku: load_json('products', sku)
     if data is None:
         handle.__enter__.return_value = handle
     else:
@@ -696,7 +696,10 @@ class TestSale(TestBase):
                 )
 
                 # There should be a BoM for the bundle product
-                product = Product.find_or_create_using_magento_id(158)
+                product = Product.find_or_create_using_magento_sku(
+                    'VGN-TXN27N-BW'
+                )
+
                 self.assertEqual(len(product.boms), 1)
                 self.assertEqual(
                     len(product.boms[0].bom.inputs), 2
@@ -741,7 +744,9 @@ class TestSale(TestBase):
                         Sale.find_or_create_using_magento_data(order_data)
 
                 # There should be a BoM for the bundle product
-                product = Product.find_or_create_using_magento_id(158)
+                product = Product.find_or_create_using_magento_sku(
+                    'VGN-TXN27N-BW'
+                )
                 self.assertTrue(len(product.boms), 1)
                 self.assertTrue(len(product.boms[0].bom.inputs), 2)
 
@@ -752,8 +757,8 @@ class TestSale(TestBase):
                     Sale.find_or_create_using_magento_data(order_data)
 
                 # There should be a BoM for the bundle product
-                product = Product.find_or_create_using_magento_id(
-                    158
+                product = Product.find_or_create_using_magento_sku(
+                    'VGN-TXN27N-BW'
                 )
                 self.assertEqual(len(product.boms), 1)
                 self.assertEqual(len(product.boms[0].bom.inputs), 2)

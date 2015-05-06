@@ -419,9 +419,7 @@ class Sale:
         if not item['parent_item_id']:
             # If its a top level product, create it
             try:
-                product = Product.find_or_create_using_magento_id(
-                    item['product_id'],
-                )
+                product = Product.find_or_create_using_magento_sku(item['sku'])
             except xmlrpclib.Fault, exception:
                 if exception.faultCode == 101:
                     # Case when product doesnot exist on magento

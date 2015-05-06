@@ -4,7 +4,7 @@
 
     BOM
 
-    :copyright: (c) 2013 by Openlabs Technologies & Consulting (P) Limited
+    :copyright: (c) 2013-2015 by Openlabs Technologies & Consulting (P) Limited
     :license: BSD, see LICENSE for more details.
 """
 from trytond.pool import Pool, PoolMeta
@@ -73,15 +73,15 @@ class BOM:
 
         for item_id, data in identified_boms.iteritems():
             bundle_product = \
-                Product.find_or_create_using_magento_id(
-                    data['bundle']['product_id']
+                Product.find_or_create_using_magento_sku(
+                    data['bundle']['sku']
                 )
 
             # It contains a list of tuples, in which the first element is the
             # product's active record and second is its quantity in the BoM
             child_products = [(
-                Product.find_or_create_using_magento_id(
-                    each['product_id']
+                Product.find_or_create_using_magento_sku(
+                    each['sku']
                 ), (
                     float(each['qty_ordered']) /
                     float(data['bundle']['qty_ordered'])
