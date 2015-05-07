@@ -3,6 +3,6 @@
 this repository contains the full copyright notices and license terms. -->
 <form string="Export Tier Prices" col="2">
     <image name="tryton-dialog-information" xexpand="0" xfill="0"/>
-    <label string="This wizard will export product tier prices to magento for this store."
+    <label string="This wizard will export product tier prices to magento for current magento channel."
         id="choose" yalign="0.0" xalign="0.0" xexpand="1"/>
 </form>

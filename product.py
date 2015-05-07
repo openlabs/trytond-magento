@@ -194,7 +194,7 @@ class ProductSaleChannelListing:
     __name__ = 'product.product.channel_listing'
 
     price_tiers = fields.One2Many(
-        'product.price_tier', 'template', 'Price Tiers'
+        'product.price_tier', 'product_listing', 'Price Tiers'
     )
     magento_product_type = fields.Selection([
         (None, ''),
@@ -529,8 +529,9 @@ class ProductPriceTier(ModelSQL, ModelView):
     __name__ = 'product.price_tier'
     _rec_name = 'quantity'
 
-    template = fields.Many2One(
-        'product.template', 'Product Template', required=True, readonly=True,
+    product_listing = fields.Many2One(
+        'product.product.channel_listing', 'Product Listing', required=True,
+        readonly=True,
     )
     quantity = fields.Float(
         'Quantity', required=True
@@ -545,8 +546,9 @@ class ProductPriceTier(ModelSQL, ModelView):
         super(ProductPriceTier, cls).__setup__()
         cls._sql_constraints += [
             (
-                'template_quantity_unique', 'UNIQUE(template, quantity)',
-                'Quantity in price tiers must be unique for a product'
+                'product_listing_quantity_unique',
+                'UNIQUE(product_listing, quantity)',
+                'Quantity in price tiers must be unique for a product listing'
             )
         ]
 
@@ -562,7 +564,8 @@ class ProductPriceTier(ModelSQL, ModelView):
 
         channel = Channel(Transaction().context['current_channel'])
         channel.validate_magento_channel()
+        product = self.product_listing.product
         return channel.price_list.compute(
-            None, self.template, self.template.list_price, self.quantity,
+            None, product, product.list_price, self.quantity,
             channel.default_uom
         )

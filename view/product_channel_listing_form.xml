@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<data>
+    <xpath expr="//field[@name='product_identifier']" position="after">
+        <label name="magento_product_type"/>
+        <field name="magento_product_type"/>
+    </xpath>
+
+    <xpath expr="//field[@name='product']" position="after">
+        <notebook>
+            <page id="price_tiers" string="Price Tiers">
+                <field name="price_tiers"/>
+            </page>
+        </notebook>
+    </xpath>
+</data>

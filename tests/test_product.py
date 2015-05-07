@@ -424,10 +424,9 @@ class TestProduct(TestBase):
                 Category.create_using_magento_data(category_data)
 
                 product_data = load_json('products', '135')
-                product = \
-                    Product.find_or_create_using_magento_data(
-                        product_data
-                    )
+                product = Product.find_or_create_using_magento_data(
+                    product_data
+                )
 
                 price_list, = PriceList.create([{
                     'name': 'Test Pricelist',
@@ -439,13 +438,17 @@ class TestProduct(TestBase):
                 self.channel1.price_list = price_list
                 self.channel1.save()
 
+                self.assertEqual(len(product.channel_listings), 1)
+
+                listing = product.channel_listings[0]
+
                 tier, = ProductPriceTier.create([{
-                    'template': product.id,
+                    'product_listing': listing.id,
                     'quantity': 10,
                 }])
 
                 self.assertEqual(
-                    product.list_price * Decimal('0.9'), tier.price
+                    listing.product.list_price * Decimal('0.9'), tier.price
                 )
 
     def test_0110_export_catalog(self):
