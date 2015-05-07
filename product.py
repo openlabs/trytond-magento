@@ -227,13 +227,13 @@ class Product:
         })
 
     @classmethod
-    def find_or_create_using_magento_id(cls, magento_id):
+    def find_or_create_using_magento_sku(cls, magento_sku):
         """
         Find or create a product using magento ID. This method looks
         for an existing product using the magento ID provided. If found, it
         returns the template found, else creates a new one and returns that
 
-        :param magento_id: Product ID from Magento
+        :param magento_sku: Product SKU from Magento
         :returns: Active record of Product Created
         """
         Channel = Pool().get('sale.channel')
@@ -243,7 +243,7 @@ class Product:
 
         # TODO: handle case when same product (SKU matched)
         # from different store, then add channel to product listing
-        product = cls.find_using_magento_id(magento_id)
+        product = cls.find_using_magento_sku(magento_sku)
 
         if not product:
             # if product is not found get the info from magento and
@@ -252,29 +252,24 @@ class Product:
                 channel.magento_url, channel.magento_api_user,
                 channel.magento_api_key
             ) as product_api:
-                product_data = product_api.info(magento_id)
+                product_data = product_api.info(magento_sku)
 
             product = cls.create_using_magento_data(product_data)
 
         return product
 
     @classmethod
-    def find_using_magento_id(cls, magento_id):
+    def find_using_magento_sku(cls, magento_sku):
         """
         Find a product template corresponding to the magento ID provided. If
         found return that else None
 
-        :param magento_id: Product ID from Magento
+        :param magento_sku: Product SKU from Magento
         :returns: Product created for the Record
         """
-        SaleChannelListing = Pool().get('product.product.channel_listing')
+        products = cls.search([('code', '=', magento_sku)])
 
-        records = SaleChannelListing.search([
-            ('channel', '=', Transaction().context.get('current_channel')),
-            ('product_identifier', '=', str(magento_id)),
-        ])
-
-        return records and records[0].product or None
+        return products and products[0] or None
 
     @classmethod
     def find_or_create_using_magento_data(cls, product_data):
@@ -303,7 +298,7 @@ class Product:
         :param product_data: Category Data from Magento
         :returns: Active record of product found or None
         """
-        return cls.find_using_magento_id(product_data['product_id'])
+        return cls.find_using_magento_sku(product_data['sku'])
 
     @classmethod
     def extract_product_values_from_data(cls, product_data):
