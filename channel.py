@@ -539,6 +539,61 @@ class Channel:
 
         return products
 
+    @classmethod
+    def export_tier_prices_to_magento_using_cron(cls):
+        """
+        Export tier prices to magento using cron
+        """
+        channels = cls.search([('source', '=', 'magento')])
+
+        for channel in channels:
+            channel.export_tier_prices_to_magento()
+
+    def export_tier_prices_to_magento(self):
+        """
+        Exports tier prices of products from tryton to magento for this channel
+        :return: List of products
+        """
+        self.validate_magento_channel()
+
+        for listing in self.product_listings:
+
+            # Get the price tiers from the product listing if the list has
+            # price tiers else get the default price tiers from current
+            # channel
+            price_tiers = listing.price_tiers or self.magento_price_tiers
+
+            price_data = []
+            for tier in price_tiers:
+                if hasattr(tier, 'product_listing'):
+                    # The price tier comes from a product listing, then it has a
+                    # function field for price, we use it directly
+                    price = tier.price
+                else:
+                    # The price tier comes from the default tiers on
+                    # channel,
+                    # we dont have a product on tier, so we use the current
+                    # product in loop for computing the price for this tier
+                    price = self.price_list.compute(
+                        None, listing.product, listing.product.list_price,
+                        tier.quantity, self.default_uom
+                    )
+
+                price_data.append({
+                    'qty': tier.quantity,
+                    'price': float(price),
+                })
+
+            # Update stock information to magento
+            with magento.ProductTierPrice(
+                self.magento_url, self.magento_api_user, self.magento_api_key
+            ) as tier_price_api:
+                tier_price_api.update(
+                    listing.product_identifier, price_data
+                )
+
+        return len(self.product_listings)
+
 
 class MagentoTier(ModelSQL, ModelView):
     """Price Tiers for store

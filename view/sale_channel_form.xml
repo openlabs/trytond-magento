@@ -7,7 +7,7 @@
             <label name="magento_api_user"/>
             <field name="magento_api_user"/>
             <label name="magento_api_key"/>
-            <field name="magento_api_key"/>
+            <field name="magento_api_key" widget="password"/>
             <notebook>
                 <page string="General" id="general">
                     <separator string="Website Info" id="website_info" colspan="4"/>

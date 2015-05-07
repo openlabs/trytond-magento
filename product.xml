@@ -4,9 +4,15 @@ this repository contains the full copyright notices and license terms. -->
 <tryton>
     <data>
 
+        <record model="ir.ui.view" id="product_sale_channel_listing_form">
+            <field name="model">product.product.channel_listing</field>
+            <field name="inherit" ref="sale_channel.product_sale_channel_listing_form"/>
+            <field name="name">product_channel_listing_form</field>
+        </record>
+
         <record id="product_category_magento_unclassified" model="product.category">
             <field name="name">Unclassified Magento Products</field>
         </record>
 
-  </data>
+    </data>
 </tryton>
