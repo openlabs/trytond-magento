@@ -97,6 +97,10 @@ class Channel:
         'Last shipment export time', states=INVISIBLE_IF_NOT_MAGENTO,
         depends=['source']
     )
+    magento_last_tier_price_export_time = fields.DateTime(
+        'Last Tier Price Export Time', states=INVISIBLE_IF_NOT_MAGENTO,
+        depends=['source']
+    )
 
     #: Checking this will make sure that only the done shipments which have a
     #: carrier and tracking reference are exported.
@@ -556,9 +560,31 @@ class Channel:
         Exports tier prices of products from tryton to magento for this channel
         :return: List of products
         """
+        ChannelListing = Pool().get('product.product.channel_listing')
+
         self.validate_magento_channel()
 
-        for listing in self.product_listings:
+        price_domain = [
+            ('channel', '=', self.id),
+        ]
+
+        if self.magento_last_tier_price_export_time:
+            price_domain.append([
+                'OR', [(
+                    'product.write_date', '>=',
+                    self.magento_last_tier_price_export_time
+                )], [(
+                    'product.template.write_date', '>=',
+                    self.magento_last_tier_price_export_time
+                )]
+            ])
+
+        product_listings = ChannelListing.search(price_domain)
+
+        self.magento_last_tier_price_export_time = datetime.utcnow()
+        self.save()
+
+        for listing in product_listings:
 
             # Get the price tiers from the product listing if the list has
             # price tiers else get the default price tiers from current
@@ -594,7 +620,7 @@ class Channel:
                     listing.product_identifier, price_data
                 )
 
-        return len(self.product_listings)
+        return len(product_listings)
 
 
 class MagentoTier(ModelSQL, ModelView):

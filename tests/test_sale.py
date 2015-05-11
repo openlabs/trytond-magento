@@ -89,6 +89,20 @@ def mock_shipment_api(mock=None, data=None):
     return mock
 
 
+def mock_tier_price_api(mock=None, data=None):
+    if mock is None:
+        mock = MagicMock(spec=magento.ProductTierPrice)
+
+    handle = MagicMock(spec=magento.ProductTierPrice)
+    handle.update.side_effect = lambda *args, **kwargs: 'Prices Exported'
+    if data is None:
+        handle.__enter__.return_value = handle
+    else:
+        handle.__enter__.return_value = data
+    mock.return_value = handle
+    return mock
+
+
 class TestSale(TestBase):
     """
     Tests import of sale order
@@ -809,6 +823,250 @@ class TestSale(TestBase):
 
                 # Item lines + shipping line should be equal to lines on tryton
                 self.assertEqual(len(order.lines), 3)
+
+    def test_0110_export_product_tier_prices_to_magento(self):
+        """
+        Tests if tier prices from product listing is exported to magento
+        """
+        Sale = POOL.get('sale.sale')
+        Category = POOL.get('product.category')
+        ChannelListing = POOL.get('product.product.channel_listing')
+        ProductPriceTier = POOL.get('product.price_tier')
+        Product = POOL.get('product.product')
+
+        with Transaction().start(DB_NAME, USER, CONTEXT):
+            self.setup_defaults()
+
+            with Transaction().set_context({
+                'current_channel': self.channel1.id,
+            }):
+
+                category_tree = load_json('categories', 'category_tree')
+                Category.create_tree_using_magento_data(category_tree)
+
+                orders = Sale.search([])
+                self.assertEqual(len(orders), 0)
+
+                self.assertEqual(ChannelListing.search([], count=True), 0)
+                self.assertEqual(Product.search([], count=True), 0)
+
+                order_data = load_json('orders', '100000001-draft')
+
+                with patch(
+                        'magento.Customer', mock_customer_api(), create=True):
+                    self.Party.find_or_create_using_magento_id(
+                        order_data['customer_id']
+                    )
+
+                with Transaction().set_context(company=self.company):
+                    # Create sale order using magento data
+                    with patch(
+                            'magento.Product', mock_product_api(), create=True):
+                        order = Sale.find_or_create_using_magento_data(
+                            order_data
+                        )
+
+                self.assertEqual(Product.search([], count=True), 2)
+
+                product1, product2 = Product.search([])
+                self.assertEqual(ChannelListing.search([], count=True), 2)
+
+                product_listing1, = ChannelListing.search([
+                    ('product', '=', product1.id)
+                ])
+                product_listing2, = ChannelListing.search([
+                    ('product', '=', product2.id)
+                ])
+
+                self.assertFalse(product_listing1.price_tiers)
+                self.assertFalse(product_listing2.price_tiers)
+
+                # Create price tiers for listing
+                ProductPriceTier.create([{
+                    'product_listing': product_listing1.id,
+                    'quantity': 10,
+                }])
+                ProductPriceTier.create([{
+                    'product_listing': product_listing2.id,
+                    'quantity': 10,
+                }])
+
+                self.assertEqual(order.state, 'cancel')
+
+                self.assertEqual(len(Sale.search([])), 1)
+
+                # Export tier prices to magento
+                with patch(
+                    'magento.ProductTierPrice', mock_tier_price_api(),
+                    create=True
+                ):
+                    product_listings = \
+                        self.channel1.export_tier_prices_to_magento()
+
+                    self.assertEqual(product_listings, 2)
+                self.assertEqual(
+                    self.channel1.magento_last_tier_price_export_time.date(),
+                    datetime.utcnow().date()
+                )
+
+    def test_0120_export_channel_tier_prices_to_magento(self):
+        """
+        Tests if tier prices from product listing is exported to magento
+        """
+        Sale = POOL.get('sale.sale')
+        Category = POOL.get('product.category')
+        MagentoPriceTier = POOL.get('sale.channel.magento.price_tier')
+
+        with Transaction().start(DB_NAME, USER, CONTEXT):
+            self.setup_defaults()
+
+            with Transaction().set_context({
+                'current_channel': self.channel1.id,
+            }):
+
+                category_tree = load_json('categories', 'category_tree')
+                Category.create_tree_using_magento_data(category_tree)
+
+                orders = Sale.search([])
+                self.assertEqual(len(orders), 0)
+
+                order_data = load_json('orders', '100000001-draft')
+
+                with patch(
+                        'magento.Customer', mock_customer_api(), create=True):
+                    self.Party.find_or_create_using_magento_id(
+                        order_data['customer_id']
+                    )
+
+                with Transaction().set_context(company=self.company):
+                    # Create sale order using magento data
+                    with patch(
+                            'magento.Product', mock_product_api(), create=True):
+                        order = Sale.find_or_create_using_magento_data(
+                            order_data
+                        )
+
+                self.assertFalse(self.channel1.magento_price_tiers)
+
+                # Add price tiers to channel
+                MagentoPriceTier.create([{
+                    'channel': self.channel1.id,
+                    'quantity': 10,
+                }])
+
+                self.assertEqual(order.state, 'cancel')
+
+                self.assertEqual(len(Sale.search([])), 1)
+
+                # Export tier prices to magento
+                with patch(
+                    'magento.ProductTierPrice', mock_tier_price_api(),
+                    create=True
+                ):
+                    product_listings = \
+                        self.channel1.export_tier_prices_to_magento()
+
+                    self.assertEqual(product_listings, 2)
+                self.assertEqual(
+                    self.channel1.magento_last_tier_price_export_time.date(),
+                    datetime.utcnow().date()
+                )
+
+    def test_0110_export_tier_prices_to_magento_using_last_import_time(self):
+        """
+        Tests if tier prices is exported for the product only which has changed
+        after last tier price export time
+        """
+        Sale = POOL.get('sale.sale')
+        Category = POOL.get('product.category')
+        ChannelListing = POOL.get('product.product.channel_listing')
+        ProductPriceTier = POOL.get('product.price_tier')
+        Product = POOL.get('product.product')
+
+        with Transaction().start(DB_NAME, USER, CONTEXT):
+            self.setup_defaults()
+
+            with Transaction().set_context({
+                'current_channel': self.channel1.id,
+            }):
+
+                category_tree = load_json('categories', 'category_tree')
+                Category.create_tree_using_magento_data(category_tree)
+
+                orders = Sale.search([])
+                self.assertEqual(len(orders), 0)
+
+                self.assertEqual(ChannelListing.search([], count=True), 0)
+                self.assertEqual(Product.search([], count=True), 0)
+
+                order_data = load_json('orders', '100000001-draft')
+
+                with patch(
+                        'magento.Customer', mock_customer_api(), create=True):
+                    self.Party.find_or_create_using_magento_id(
+                        order_data['customer_id']
+                    )
+
+                with Transaction().set_context(company=self.company):
+                    # Create sale order using magento data
+                    with patch(
+                            'magento.Product', mock_product_api(), create=True):
+                        order = Sale.find_or_create_using_magento_data(
+                            order_data
+                        )
+
+                self.assertEqual(order.state, 'cancel')
+
+                self.assertEqual(len(Sale.search([])), 1)
+
+                self.assertEqual(Product.search([], count=True), 2)
+
+                product1, product2 = Product.search([])
+                self.assertEqual(ChannelListing.search([], count=True), 2)
+
+                product_listing1, = ChannelListing.search([
+                    ('product', '=', product1.id)
+                ])
+                product_listing2, = ChannelListing.search([
+                    ('product', '=', product2.id)
+                ])
+
+                self.assertFalse(product_listing1.price_tiers)
+                self.assertFalse(product_listing2.price_tiers)
+
+                # Create price tiers for listing
+                ProductPriceTier.create([{
+                    'product_listing': product_listing1.id,
+                    'quantity': 10,
+                }])
+                ProductPriceTier.create([{
+                    'product_listing': product_listing2.id,
+                    'quantity': 10,
+                }])
+
+                self.channel1.magento_last_tier_price_export_time = \
+                    datetime.utcnow()
+                self.channel1.save()
+
+                # Change product1's values and prices will get exported
+                # only for this updated product only
+                product1.template.cost_price = 20
+                product1.template.save()
+
+                self.assertTrue(
+                    product1.template.write_date >
+                    self.channel1.magento_last_tier_price_export_time
+                )
+
+                # Export tier prices to magento
+                with patch(
+                    'magento.ProductTierPrice', mock_tier_price_api(),
+                    create=True
+                ):
+                    product_listings = \
+                        self.channel1.export_tier_prices_to_magento()
+
+                    self.assertEqual(product_listings, 1)
 
 
 def suite():
