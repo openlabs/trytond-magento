@@ -1,61 +1,66 @@
 <?xml version="1.0"?>
 <data>
-    <xpath expr="/form/notebook/page[@id='order']" position="after">
-        <page string="Magento" id="magento" states="{'invisible': Not(Eval('source') == 'magento')}" >
+    <xpath expr="/form/notebook/page[@id='configuration']/notebook/page[@id='connection']" position="inside">
+        <group id="magento_settings" states="{'invisible': Not(Eval('source') == 'magento')}">    
             <label name="magento_url"/>
             <field name="magento_url" colspan="3"/>
             <label name="magento_api_user"/>
             <field name="magento_api_user"/>
             <label name="magento_api_key"/>
-            <field name="magento_api_key" widget="password"/>
-            <notebook>
-                <page string="General" id="general">
-                    <separator string="Website Info" id="website_info" colspan="4"/>
-                    <label name="magento_website_id"/>
-                    <field name="magento_website_id"/>
-                    <label name="magento_website_code"/>
-                    <field name="magento_website_code"/>
-                    <label name="magento_website_name"/>
-                    <field name="magento_website_name"/>
-                    <separator string="Store Info" id="store_info" colspan="4"/>
-                    <label name="magento_store_id"/>
-                    <field name="magento_store_id"/>
-                    <label name="magento_store_name"/>
-                    <field name="magento_store_name"/>
-                    <separator string="Others" id="others" colspan="4"/>
-                    <label name="magento_export_tracking_information"/>
-                    <field name="magento_export_tracking_information"/>
-                    <label name="magento_root_category_id"/>
-                    <field name="magento_root_category_id"/>
-                </page>
-                <page string="Order States" id="order_states" col="6">
-                    <label name="magento_order_prefix"/>
-                    <field name="magento_order_prefix"/>
-                    <field name="magento_order_states" colspan="8"/>
-                </page>
-                <page string="Carrier / Shipping Methods" id="carriers">
-                    <field name="magento_carriers" colspan="4"/>
-                </page>
-                <page string="Price Tiers" id="price_tiers">
-                     <field name="magento_price_tiers" colspan="8"/>
-                </page>
-                <page string="Import / Export Time" id="import_export_time">
-                    <label name="magento_last_order_import_time"/>
-                    <field name="magento_last_order_import_time"/>
-                    <label name="magento_last_order_export_time"/>
-                    <field name="magento_last_order_export_time"/>
-                    <label name="magento_last_shipment_export_time"/>
-                    <field name="magento_last_shipment_export_time"/>
-                    <label name="magento_last_tier_price_export_time"/>
-                    <field name="magento_last_tier_price_export_time"/>
-                </page>
-                <page string="Taxes" id="taxes">
-                    <field name="magento_taxes" colspan="8"/>
-                </page>   
-              </notebook>
-        </page> 
+            <field name="magento_api_key" widget="password"/>             
+        </group>
     </xpath>
-    <xpath expr="/form[@string='Sale Channel']" position="inside">
+    <xpath expr="/form/notebook/page[@id='configuration']/notebook/page[@id='general']" position="inside">
+        <group id="general_settings" states="{'invisible': Not(Eval('source') == 'magento')}">
+            <separator string="Website Info" id="website_info" colspan="4"/>
+            <label name="magento_website_id"/>
+            <field name="magento_website_id"/>
+            <label name="magento_website_code"/>
+            <field name="magento_website_code"/>
+            <label name="magento_website_name"/>
+            <field name="magento_website_name"/>
+            <separator string="Store Info" id="store_info" colspan="4"/>
+            <label name="magento_store_id"/>
+            <field name="magento_store_id"/>
+            <label name="magento_store_name"/>
+            <field name="magento_store_name"/>
+            <separator string="Others" id="others" colspan="4"/>
+            <label name="magento_export_tracking_information"/>
+            <field name="magento_export_tracking_information"/>
+            <label name="magento_root_category_id"/>
+            <field name="magento_root_category_id"/> 
+        </group>
+    </xpath>
+    <xpath expr="/form/notebook/page[@id='configuration']/notebook/page[@id='import_export']/group[@id='channel_common_buttons']" position="before" >
+        <group id="magento_order" states="{'invisible': Not(Eval('source') == 'magento')}" >
+            <newline/>
+            <label name="magento_last_order_import_time"/>
+            <field name="magento_last_order_import_time"/>
+            <label name="magento_last_order_export_time"/>
+            <field name="magento_last_order_export_time"/>
+            <label name="magento_last_shipment_export_time"/>
+            <field name="magento_last_shipment_export_time"/>
+        </group>
+    </xpath>   
+    <xpath expr="/form/notebook/page[@id='configuration']/notebook/page[@id='taxes']" position="after">
+        <page string="Order States" id="order_states" col="6" states="{'invisible': Not(Eval('source') == 'magento')}">
+            <label name="magento_order_prefix"/>
+            <field name="magento_order_prefix"/>
+            <field name="magento_order_states" colspan="8"/>
+        </page>
+        <page string="Carrier / Shipping Methods" id="carriers" states="{'invisible': Not(Eval('source') == 'magento')}">
+            <field name="magento_carriers" colspan="4"/>
+        </page>
+        <page string="Price Tiers" id="price_tiers" states="{'invisible': Not(Eval('source') == 'magento')}">
+            <field name="magento_price_tiers" colspan="8"/>
+        </page>
+    </xpath>
+    <xpath expr="/form/notebook/page[@id='configuration']/notebook/page[@id='taxes']" position="inside">
+        <group id="taxes" states="{'invisible': Not(Eval('source') == 'magento')}">
+            <field name="magento_taxes" colspan="8"/>
+        </group>
+    </xpath>
+    <xpath expr="/form/notebook/page[@id='configuration']" position="inside">
         <group id="magento_buttons" col="3" colspan="6" states="{'invisible': Not(Eval('source') == 'magento')}">
             <button string="Configure Magento Connection" name="configure_magento_connection"/>
             <button string="Import Magento Order States" name="import_magento_order_states"/>
@@ -63,4 +68,3 @@
         </group>
     </xpath>
 </data>
-
