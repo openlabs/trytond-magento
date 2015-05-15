@@ -19,8 +19,7 @@ from trytond.wizard import (
 
 __all__ = [
     'ExportMagentoInventoryStart', 'ExportMagentoInventory',
-    'ImportMagentoOrdersStart', 'ExportMagentoTierPricesStart',
-    'ExportMagentoTierPrices', 'ImportMagentoOrders',
+    'ExportMagentoTierPricesStart', 'ExportMagentoTierPrices',
     'ExportMagentoTierPricesStatus', 'ExportMagentoShipmentStatusStart',
     'ExportMagentoShipmentStatus', 'ImportMagentoOrderStatesStart',
     'ImportMagentoOrderStates', 'ImportMagentoCarriersStart',
@@ -33,69 +32,6 @@ __all__ = [
     'ExportMagentoCatalogStart', 'ExportMagentoCatalog'
 ]
 __metaclass__ = PoolMeta
-
-
-class ImportMagentoOrdersStart(ModelView):
-    "Import Sale Order Start View"
-    __name__ = 'magento.wizard_import_orders.start'
-
-    message = fields.Text("Message", readonly=True)
-
-
-class ImportMagentoOrders(Wizard):
-    """
-    Import Orders Wizard
-
-    Import sale orders from magento for the current channel
-    """
-    __name__ = 'magento.wizard_import_orders'
-
-    start = StateView(
-        'magento.wizard_import_orders.start',
-        'magento.wizard_import_magento_orders_view_start_form',
-        [
-            Button('Cancel', 'end', 'tryton-cancel'),
-            Button('Continue', 'import_', 'tryton-ok', default=True),
-        ]
-    )
-
-    import_ = StateAction('magento.act_sale_form_all')
-
-    def default_start(self, data):
-        """
-        Sets default data for wizard
-
-        :param data: Wizard data
-        """
-        Channel = Pool().get('sale.channel')
-
-        channel = Channel(Transaction().context.get('active_id'))
-        channel.validate_magento_channel()
-        return {
-            'message':
-                "This wizard will import all sale orders placed on " +
-                "this channel on after the Last Order Import " +
-                "Time. If Last Order Import Time is missing, then it will " +
-                "import all the orders from beginning of time. [This might " +
-                "be slow depending on number of orders]."
-        }
-
-    def do_import_(self, action):
-        """
-        Import Orders from mganto
-        """
-        Channel = Pool().get('sale.channel')
-
-        channel = Channel(Transaction().context.get('active_id'))
-        channel.validate_magento_channel()
-
-        sales = channel.import_order_from_magento()
-
-        data = {'res_id': [sale.id for sale in sales]}
-        return action, data
-
-    def transition_import_(self):
-        return 'end'
 
 
 class ExportMagentoOrderStatusStart(ModelView):
