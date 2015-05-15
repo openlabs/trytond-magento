@@ -1068,6 +1068,62 @@ class TestSale(TestBase):
 
                     self.assertEqual(product_listings, 1)
 
+    def test_0090_find_or_create_order_using_magento_id(self):
+        """
+        Tests if magento_id is not copied in duplicate sales
+        """
+        Sale = POOL.get('sale.sale')
+        Party = POOL.get('party.party')
+        Category = POOL.get('product.category')
+
+        with Transaction().start(DB_NAME, USER, CONTEXT):
+            self.setup_defaults()
+            with Transaction().set_context({
+                'current_channel': self.channel1.id,
+            }):
+
+                category_tree = load_json('categories', 'category_tree')
+                Category.create_tree_using_magento_data(category_tree)
+
+                orders = Sale.search([])
+                self.assertEqual(len(orders), 0)
+
+                order_data = load_json('orders', '100000001')
+
+                with patch(
+                        'magento.Customer', mock_customer_api(), create=True):
+                    Party.find_or_create_using_magento_id(
+                        order_data['customer_id']
+                    )
+
+                with Transaction().set_context(company=self.company):
+                    # Create sale order using magento increment_id
+                    with patch('magento.Order', mock_order_api(), create=True):
+                        with patch(
+                            'magento.Product', mock_product_api(),
+                            create=True
+                        ):
+                            order = \
+                                Sale.find_or_create_using_magento_increment_id(
+                                    order_data['increment_id']
+                                )
+                self.assertEqual(order.state, 'confirmed')
+
+                orders = Sale.search([])
+                self.assertIsNotNone(order.magento_id)
+
+                self.assertEqual(len(orders), 1)
+
+                # Item lines + shipping line should be equal to lines on tryton
+                self.assertEqual(
+                    len(order.lines), len(order_data['items']) + 1
+                )
+
+                new_sales = Sale.copy(orders)
+                self.assertTrue(new_sales)
+                self.assertEqual(len(new_sales), 1)
+                self.assertIsNone(new_sales[0].magento_id)
+
 
 def suite():
     """
