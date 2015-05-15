@@ -339,14 +339,16 @@ class Channel:
                 self.write([self], {
                     'magento_last_order_import_time': datetime.utcnow()
                 })
-                orders = order_api.list(filter)
-                for order in orders:
+                orders_summaries = order_api.list(filter)
+                for order_summary in orders_summaries:
+                    if Sale.find_using_magento_data(order_summary):
+                        continue
+                    # No sale found, fetch full order_data and create
+                    # sale from the same.
+                    order_data = order_api.info(order_summary['increment_id'])
                     new_sales.append(
-                        Sale.find_or_create_using_magento_data(
-                            order_api.info(order['increment_id'])
-                        )
+                        Sale.create_using_magento_data(order_data)
                     )
-
         return new_sales
 
     @classmethod
