@@ -111,23 +111,6 @@
             <field name="name">export_tier_prices_status_form</field>
           </record>
 
-        <!--Import Orders Wizard-->
-        <record model="ir.action.wizard" id="wizard_import_magento_orders">
-            <field name="name">Import Magento Orders</field>
-            <field name="wiz_name">magento.wizard_import_orders</field>
-            <field name="model">sale.channel</field>
-        </record>
-        <record model="ir.action.keyword" id="wizard_import_magento_orders_keyword">
-            <field name="keyword">form_action</field>
-            <field name="model">sale.channel,-1</field>
-            <field name="action" ref="wizard_import_magento_orders"/>
-        </record>
-        <record model="ir.ui.view" id="wizard_import_magento_orders_view_start_form">
-            <field name="model">magento.wizard_import_orders.start</field>
-            <field name="type">form</field>
-            <field name="name">import_orders_start_form</field>
-        </record>
-
         <!--Export Order Status-->
         <record model="ir.action.wizard" id="wizard_export_magento_order_status">
             <field name="name">Export Order Status To Magento</field>

@@ -296,16 +296,16 @@ class Channel:
 
         return map(int, products)
 
-    def import_order_from_magento(self):
+    def import_orders(self):
         """
-        Imports sale from magento
+        Downstream implementation of channel.import_orders
 
         :return: List of active record of sale imported
         """
-        Sale = Pool().get('sale.sale')
-        MagentoOrderState = Pool().get('magento.order_state')
+        if self.source != 'magento':
+            return super(Channel, self).import_orders()
 
-        self.validate_magento_channel()
+        MagentoOrderState = Pool().get('magento.order_state')
 
         new_sales = []
         with Transaction().set_context({'current_channel': self.id}):
@@ -345,15 +345,26 @@ class Channel:
                 })
                 orders_summaries = order_api.list(filter)
                 for order_summary in orders_summaries:
-                    if Sale.find_using_magento_data(order_summary):
-                        continue
-                    # No sale found, fetch full order_data and create
-                    # sale from the same.
-                    order_data = order_api.info(order_summary['increment_id'])
-                    new_sales.append(
-                        Sale.create_using_magento_data(order_data)
-                    )
+                    new_sales.append(self.import_order(order_summary))
         return new_sales
+
+    def import_order(self, order_info):
+        "Downstream implementation to import sale order from magento"
+        if self.source != 'magento':
+            return super(Channel, self).import_order(order_info)
+
+        Sale = Pool().get('sale.sale')
+
+        sale = Sale.find_using_magento_data(order_info)
+        if sale:
+            return sale
+
+        with Transaction().set_context({'current_channel': self.id}):
+            with magento.Order(
+                self.magento_url, self.magento_api_user, self.magento_api_key
+            ) as order_api:
+                order_data = order_api.info(order_info['increment_id'])
+                return Sale.create_using_magento_data(order_data)
 
     @classmethod
     def export_order_status_to_magento_using_cron(cls):
@@ -405,7 +416,7 @@ class Channel:
         channels = cls.search([('source', '=', 'magento')])
 
         for channel in channels:
-            channel.import_order_from_magento()
+            channel.import_orders()
 
     @classmethod
     def export_shipment_status_to_magento_using_cron(cls):
