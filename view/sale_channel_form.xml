@@ -46,6 +46,8 @@
                     <field name="magento_last_order_export_time"/>
                     <label name="magento_last_shipment_export_time"/>
                     <field name="magento_last_shipment_export_time"/>
+                    <label name="magento_last_tier_price_export_time"/>
+                    <field name="magento_last_tier_price_export_time"/>
                 </page>
                 <page string="Taxes" id="taxes">
                     <field name="magento_taxes" colspan="8"/>
