@@ -97,6 +97,10 @@ class Channel:
         'Last shipment export time', states=INVISIBLE_IF_NOT_MAGENTO,
         depends=['source']
     )
+    magento_last_tier_price_export_time = fields.DateTime(
+        'Last Tier Price Export Time', states=INVISIBLE_IF_NOT_MAGENTO,
+        depends=['source']
+    )
 
     #: Checking this will make sure that only the done shipments which have a
     #: carrier and tracking reference are exported.
@@ -292,16 +296,16 @@ class Channel:
 
         return map(int, products)
 
-    def import_order_from_magento(self):
+    def import_orders(self):
         """
-        Imports sale from magento
+        Downstream implementation of channel.import_orders
 
         :return: List of active record of sale imported
         """
-        Sale = Pool().get('sale.sale')
-        MagentoOrderState = Pool().get('magento.order_state')
+        if self.source != 'magento':
+            return super(Channel, self).import_orders()
 
-        self.validate_magento_channel()
+        MagentoOrderState = Pool().get('magento.order_state')
 
         new_sales = []
         with Transaction().set_context({'current_channel': self.id}):
@@ -339,15 +343,28 @@ class Channel:
                 self.write([self], {
                     'magento_last_order_import_time': datetime.utcnow()
                 })
-                orders = order_api.list(filter)
-                for order in orders:
-                    new_sales.append(
-                        Sale.find_or_create_using_magento_data(
-                            order_api.info(order['increment_id'])
-                        )
-                    )
-
+                orders_summaries = order_api.list(filter)
+                for order_summary in orders_summaries:
+                    new_sales.append(self.import_order(order_summary))
         return new_sales
+
+    def import_order(self, order_info):
+        "Downstream implementation to import sale order from magento"
+        if self.source != 'magento':
+            return super(Channel, self).import_order(order_info)
+
+        Sale = Pool().get('sale.sale')
+
+        sale = Sale.find_using_magento_data(order_info)
+        if sale:
+            return sale
+
+        with Transaction().set_context({'current_channel': self.id}):
+            with magento.Order(
+                self.magento_url, self.magento_api_user, self.magento_api_key
+            ) as order_api:
+                order_data = order_api.info(order_info['increment_id'])
+                return Sale.create_using_magento_data(order_data)
 
     @classmethod
     def export_order_status_to_magento_using_cron(cls):
@@ -399,7 +416,7 @@ class Channel:
         channels = cls.search([('source', '=', 'magento')])
 
         for channel in channels:
-            channel.import_order_from_magento()
+            channel.import_orders()
 
     @classmethod
     def export_shipment_status_to_magento_using_cron(cls):
@@ -554,9 +571,31 @@ class Channel:
         Exports tier prices of products from tryton to magento for this channel
         :return: List of products
         """
+        ChannelListing = Pool().get('product.product.channel_listing')
+
         self.validate_magento_channel()
 
-        for listing in self.product_listings:
+        price_domain = [
+            ('channel', '=', self.id),
+        ]
+
+        if self.magento_last_tier_price_export_time:
+            price_domain.append([
+                'OR', [(
+                    'product.write_date', '>=',
+                    self.magento_last_tier_price_export_time
+                )], [(
+                    'product.template.write_date', '>=',
+                    self.magento_last_tier_price_export_time
+                )]
+            ])
+
+        product_listings = ChannelListing.search(price_domain)
+
+        self.magento_last_tier_price_export_time = datetime.utcnow()
+        self.save()
+
+        for listing in product_listings:
 
             # Get the price tiers from the product listing if the list has
             # price tiers else get the default price tiers from current
@@ -592,7 +631,7 @@ class Channel:
                     listing.product_identifier, price_data
                 )
 
-        return len(self.product_listings)
+        return len(product_listings)
 
 
 class MagentoTier(ModelSQL, ModelView):
