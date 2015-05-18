@@ -343,7 +343,19 @@ class Channel:
                 self.write([self], {
                     'magento_last_order_import_time': datetime.utcnow()
                 })
-                orders_summaries = order_api.list(filter)
+                page = 1
+                has_next = True
+                orders_summaries = []
+                while has_next:
+                    # XXX: Pagination is only available in
+                    # magento extension >= 1.6.1
+                    api_res = order_api.search(
+                        filters=filter, limit=3000, page=page
+                    )
+                    has_next = api_res['hasNext']
+                    page += 1
+                    orders_summaries.extend(api_res['items'])
+
                 for order_summary in orders_summaries:
                     new_sales.append(self.import_order(order_summary))
         return new_sales
