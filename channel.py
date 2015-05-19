@@ -17,7 +17,7 @@ from trytond.model import ModelView, ModelSQL, fields
 from .api import OrderConfig
 
 __metaclass__ = PoolMeta
-__all__ = ['Channel', 'MagentoTier', 'MagentoException']
+__all__ = ['Channel', 'MagentoTier']
 
 MAGENTO_STATES = {
     'invisible': ~(Eval('source') == 'magento'),
@@ -673,26 +673,4 @@ class MagentoTier(ModelSQL, ModelView):
                 'channel_quantity_unique', 'UNIQUE(channel, quantity)',
                 'Quantity in price tiers must be unique for a channel'
             )
-        ]
-
-
-class MagentoException(ModelSQL, ModelView):
-    """
-    Magento Exception model
-    """
-    __name__ = 'magento.exception'
-
-    origin = fields.Reference(
-        "Origin", selection='models_get', select=True,
-    )
-    log = fields.Text('Exception Log')
-
-    @classmethod
-    def models_get(cls):
-        '''
-        Return valid models allowed for origin
-        '''
-        return [
-            ('sale.sale', 'Sale'),
-            ('sale.line', 'Sale Line'),
         ]

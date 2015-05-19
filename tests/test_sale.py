@@ -273,7 +273,7 @@ class TestSale(TestBase):
                         )
 
                 self.assertEqual(order.state, 'confirmed')
-                self.assertFalse(order.has_magento_exception)
+                self.assertFalse(order.has_channel_exception)
 
                 orders = Sale.search([])
                 self.assertEqual(len(orders), 1)

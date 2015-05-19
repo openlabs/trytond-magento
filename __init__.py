@@ -21,7 +21,7 @@ from wizard import (
     ImportMagentoCatalogStart, ImportMagentoCatalog,
     ExportMagentoCatalogStart, ExportMagentoCatalog,
 )
-from channel import Channel, MagentoTier, MagentoException
+from channel import Channel, MagentoTier
 from party import Party, MagentoWebsiteParty, Address
 from product import (
     Category, MagentoInstanceCategory, Product,
@@ -59,7 +59,6 @@ def register():
         Party,
         MagentoWebsiteParty,
         Category,
-        MagentoException,
         MagentoInstanceCategory,
         Product,
         ProductPriceTier,

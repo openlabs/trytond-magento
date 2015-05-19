@@ -32,18 +32,6 @@
             <field name="name">magento_carrier_tree</field>
         </record>
 
-        <!--Magento Exception-->
-        <record model="ir.ui.view" id="magento_exception_form_view">
-            <field name="model">magento.exception</field>
-            <field name="type">form</field>
-            <field name="name">magento_exception_form</field>
-        </record>
-        <record model="ir.ui.view" id="magento_exception_tree_view">
-            <field name="model">magento.exception</field>
-            <field name="type">tree</field>
-            <field name="name">magento_exception_tree</field>
-        </record>
-
         <record model="res.user" id="user_magento">
             <field name="login">user_cron_magento</field>
             <field name="name">User Cron Magento</field>
