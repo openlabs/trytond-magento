@@ -84,19 +84,6 @@
             <field name="function">export_shipment_status_to_magento_using_cron</field>
         </record>
 
-        <!-- Cron To Import Sale Orders-->
-        <record model="ir.cron" id="ir_cron_import_magento_orders">
-            <field name="name">Import Orders from Magento</field>
-            <field name="request_user" ref="res.user_admin"/>
-            <field name="user" ref="res.user_trigger"/>
-            <field name="active" eval="True"/>
-            <field name="interval_number">1</field>
-            <field name="interval_type">days</field>
-            <field name="number_calls">-1</field>
-            <field name="model">sale.channel</field>
-            <field name="function">import_magento_orders</field>
-        </record>
-
         <!-- Cron To Export Tier Prices To Magento-->
         <record model="ir.cron" id="ir_cron_export_tier_prices_to_magento">
             <field name="name">Export Tier Prices To Magento</field>
