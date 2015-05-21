@@ -4,11 +4,6 @@
         <page string="Magento" id="magento_sale_tab" states="{'invisible': Eval('channel_type') != 'magento'}" >
             <label name="magento_id"/>
             <field name="magento_id"/>
-            <label name="has_magento_exception"/>
-            <field name="has_magento_exception"/>
-        </page>
-        <page string="Magento Exceptions" id="magento_exceptions_tab" states="{'invisible': Eval('channel_type') != 'magento'}">
-            <field name="magento_exceptions"/>
         </page>
     </xpath>
 </data>

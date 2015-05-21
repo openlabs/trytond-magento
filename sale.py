@@ -175,20 +175,6 @@ class Sale:
         'Magento ID', readonly=True, states=INVISIBLE_IF_NOT_MAGENTO,
         depends=['channel_type']
     )
-    has_magento_exception = fields.Boolean(
-        'Has Magento import exception', states=INVISIBLE_IF_NOT_MAGENTO,
-        depends=['channel_type']
-    )
-    magento_exceptions = fields.Function(
-        fields.One2Many(
-            'magento.exception', None, 'Magento Exceptions',
-            states=INVISIBLE_IF_NOT_MAGENTO, depends=['channel_type']
-        ), 'get_magento_exceptions',
-    )
-
-    @staticmethod
-    def default_has_magento_exception():
-        return False
 
     @classmethod
     def __setup__(cls):
@@ -209,21 +195,11 @@ class Sale:
             'magento_exception': 'Magento exception in sale %s.'
         })
 
-    def get_magento_exceptions(self, name):
-        """
-        Return magento exceptions related to sale
-        """
-        MagentoException = Pool().get('magento.exception')
-
-        return map(int, MagentoException.search([
-            ('origin', '=', '%s,%s' % (self.__name__, self.id)),
-        ]))
-
     @classmethod
     def confirm(cls, sales):
         "Validate sale before confirming"
         for sale in sales:
-            if sale.has_magento_exception:
+            if sale.has_channel_exception:
                 cls.raise_user_error('magento_exception', sale.reference)
         super(Sale, cls).confirm(sales)
 
@@ -342,11 +318,13 @@ class Sale:
         :param order_data: Order data from magento
         :return: Active record of record created
         """
-        MagentoException = Pool().get('magento.exception')
+        ChannelException = Pool().get('channel.exception')
         MagentoOrderState = Pool().get('magento.order_state')
 
         sale = cls.get_sale_using_magento_data(order_data)
+        sale.save()
 
+        sale.lines = list(sale.lines)
         sale.add_lines_using_magento_data(order_data)
         sale.save()
 
@@ -356,13 +334,14 @@ class Sale:
             sale.process_sale_using_magento_state(order_data['state'])
         except UserError, e:
             # Expecting UserError will only come when sale order has
-            # magento exception.
+            # channel exception.
             # Just ignore the error and leave this order in draft state
             # and let the user fix this manually.
-            MagentoException.create([{
+            ChannelException.create([{
                 'origin': '%s,%s' % (sale.__name__, sale.id),
                 'log': "Error occurred on transitioning to state %s.\nError "
                     "Message: %s" % (tryton_state['tryton_state'], e.message),
+                'channel': sale.channel.id,
             }])
 
         return sale
@@ -410,7 +389,7 @@ class Sale:
         """
         SaleLine = Pool().get('sale.line')
         Product = Pool().get('product.product')
-        MagentoException = Pool().get('magento.exception')
+        ChannelException = Pool().get('channel.exception')
         Channel = Pool().get('sale.channel')
         Uom = Pool().get('product.uom')
 
@@ -424,13 +403,13 @@ class Sale:
                 if exception.faultCode == 101:
                     # Case when product doesnot exist on magento
                     # create magento exception
-                    MagentoException.create([{
+                    ChannelException.create([{
                         'origin': '%s,%s' % (self.__name__, self.id),
                         'log': "Product #%s does not exist" %
-                            item['product_id']
+                            item['product_id'],
+                        'channel': self.channel.id
                     }])
                     product = None
-                    self.has_magento_exception = True
                 else:
                     raise
             sale_line = SaleLine(**{
