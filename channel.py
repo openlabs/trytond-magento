@@ -281,6 +281,8 @@ class Channel:
         if self.source != 'magento':
             return super(Channel, self).import_products()
 
+        self.import_category_tree()
+
         with Transaction().set_context({'current_channel': self.id}):
             with magento.Product(
                 self.magento_url, self.magento_api_user, self.magento_api_key
@@ -291,11 +293,11 @@ class Channel:
 
                 products = []
                 for magento_product in magento_products:
-                    products.append(self.import_product(magento_product))
+                    products.append(self.import_product(magento_product['sku']))
 
         return map(int, products)
 
-    def import_product(self, product_data):
+    def import_product(self, magento_sku):
         """
         Import specific product for this magento channel
 
@@ -306,14 +308,41 @@ class Channel:
         if self.source != 'magento':
             return super(Channel, self).import_products()
 
-        # TODO: handle case when same product (SKU matched)
-        # from different store, then add channel to product listing
-        product = Product.find_using_magento_sku(product_data['sku'])
+        product = Product.find_using_magento_sku(magento_sku)
 
         if not product:
+            # if product is not found get the info from magento and
+            # delegate to create_using_magento_data
+            with magento.Product(
+                self.magento_url, self.magento_api_user,
+                self.magento_api_key
+            ) as product_api:
+                product_data = product_api.info(magento_sku)
+
             product = Product.create_using_magento_data(product_data)
 
         return product
+
+    def import_category_tree(self):
+        """
+        Imports the category tree and creates categories in a hierarchy same as
+        that on Magento
+
+        :param website: Active record of website
+        """
+        Category = Pool().get('product.category')
+
+        self.validate_magento_channel()
+
+        with Transaction().set_context({'current_channel': self.id}):
+            with magento.Category(
+                self.magento_url, self.magento_api_user,
+                self.magento_api_key
+            ) as category_api:
+                category_tree = category_api.tree(
+                    self.magento_root_category_id
+                )
+                Category.create_tree_using_magento_data(category_tree)
 
     def import_orders(self):
         """

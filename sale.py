@@ -388,17 +388,18 @@ class Sale:
         Get sale.line data from magento data.
         """
         SaleLine = Pool().get('sale.line')
-        Product = Pool().get('product.product')
         ChannelException = Pool().get('channel.exception')
         Channel = Pool().get('sale.channel')
         Uom = Pool().get('product.uom')
+
+        channel = Channel.get_current_magento_channel()
 
         sale_line = None
         unit, = Uom.search([('name', '=', 'Unit')])
         if not item['parent_item_id']:
             # If its a top level product, create it
             try:
-                product = Product.find_or_create_using_magento_sku(item['sku'])
+                product = channel.import_product(item['sku'])
             except xmlrpclib.Fault, exception:
                 if exception.faultCode == 101:
                     # Case when product doesnot exist on magento
@@ -423,7 +424,6 @@ class Sale:
                 'product': product,
             })
             if item.get('tax_percent') and Decimal(item.get('tax_percent')):
-                channel = Channel.get_current_magento_channel()
                 taxes = channel.get_taxes(
                     Decimal(item['tax_percent']) / 100
                 )

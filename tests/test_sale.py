@@ -659,7 +659,6 @@ class TestSale(TestBase):
         Tests import of sale order with bundle product using magento data
         """
         Sale = POOL.get('sale.sale')
-        Product = POOL.get('product.product')
         Category = POOL.get('product.category')
         MagentoOrderState = POOL.get('magento.order_state')
 
@@ -710,9 +709,7 @@ class TestSale(TestBase):
                 )
 
                 # There should be a BoM for the bundle product
-                product = Product.find_or_create_using_magento_sku(
-                    'VGN-TXN27N-BW'
-                )
+                product = self.channel1.import_product('VGN-TXN27N-BW')
 
                 self.assertEqual(len(product.boms), 1)
                 self.assertEqual(
@@ -725,7 +722,6 @@ class TestSale(TestBase):
         This tests that the duplication of BoMs doesnot happen
         """
         Sale = POOL.get('sale.sale')
-        Product = POOL.get('product.product')
         Category = POOL.get('product.category')
         MagentoOrderState = POOL.get('magento.order_state')
 
@@ -758,7 +754,7 @@ class TestSale(TestBase):
                         Sale.find_or_create_using_magento_data(order_data)
 
                 # There should be a BoM for the bundle product
-                product = Product.find_or_create_using_magento_sku(
+                product = self.channel1.import_product(
                     'VGN-TXN27N-BW'
                 )
                 self.assertTrue(len(product.boms), 1)
@@ -771,7 +767,7 @@ class TestSale(TestBase):
                     Sale.find_or_create_using_magento_data(order_data)
 
                 # There should be a BoM for the bundle product
-                product = Product.find_or_create_using_magento_sku(
+                product = self.channel1.import_product(
                     'VGN-TXN27N-BW'
                 )
                 self.assertEqual(len(product.boms), 1)

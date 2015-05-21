@@ -227,38 +227,6 @@ class Product:
         })
 
     @classmethod
-    def find_or_create_using_magento_sku(cls, magento_sku):
-        """
-        Find or create a product using magento ID. This method looks
-        for an existing product using the magento ID provided. If found, it
-        returns the template found, else creates a new one and returns that
-
-        :param magento_sku: Product SKU from Magento
-        :returns: Active record of Product Created
-        """
-        Channel = Pool().get('sale.channel')
-
-        channel = Channel(Transaction().context['current_channel'])
-        channel.validate_magento_channel()
-
-        # TODO: handle case when same product (SKU matched)
-        # from different store, then add channel to product listing
-        product = cls.find_using_magento_sku(magento_sku)
-
-        if not product:
-            # if product is not found get the info from magento and
-            # delegate to create_using_magento_data
-            with magento.Product(
-                channel.magento_url, channel.magento_api_user,
-                channel.magento_api_key
-            ) as product_api:
-                product_data = product_api.info(magento_sku)
-
-            product = cls.create_using_magento_data(product_data)
-
-        return product
-
-    @classmethod
     def find_using_magento_sku(cls, magento_sku):
         """
         Find a product template corresponding to the magento ID provided. If

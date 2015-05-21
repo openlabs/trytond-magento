@@ -18,7 +18,6 @@ from wizard import (
     ImportMagentoCarriers, ConfigureMagento, ImportStoresStart, FailureStart,
     SuccessStart, ExportMagentoOrderStatusStart, ExportMagentoOrderStatus,
     UpdateMagentoCatalogStart, UpdateMagentoCatalog,
-    ImportMagentoCatalogStart, ImportMagentoCatalog,
     ExportMagentoCatalogStart, ExportMagentoCatalog,
 )
 from channel import Channel, MagentoTier
@@ -62,7 +61,6 @@ def register():
         MagentoInstanceCategory,
         Product,
         ProductPriceTier,
-        ImportMagentoCatalogStart,
         ExportMagentoCatalogStart,
         MagentoOrderState,
         StockShipmentOut,
@@ -85,7 +83,6 @@ def register():
         ExportMagentoInventory,
         ExportMagentoTierPrices,
         ExportMagentoShipmentStatus,
-        ImportMagentoCatalog,
         UpdateMagentoCatalog,
         ExportMagentoCatalog,
         ExportMagentoOrderStatus,
