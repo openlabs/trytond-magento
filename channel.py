@@ -421,16 +421,6 @@ class Channel:
         return exported_sales
 
     @classmethod
-    def import_magento_orders(cls):
-        """
-        Import orders from magento for magento channels
-        """
-        channels = cls.search([('source', '=', 'magento')])
-
-        for channel in channels:
-            channel.import_orders()
-
-    @classmethod
     def export_shipment_status_to_magento_using_cron(cls):
         """
         Export Shipment status for shipments using cron
