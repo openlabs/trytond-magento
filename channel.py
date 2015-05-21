@@ -272,11 +272,14 @@ class Channel:
             cls.raise_user_error('missing_magento_channel')
         return cls(channel_id)
 
-    def import_magento_products(self):
-        "Import products for this magento channel"
-        Product = Pool().get('product.template')
+    def import_products(self):
+        """
+        Import products for this magento channel
 
-        self.validate_magento_channel()
+        Downstream implementation for channel.import_products
+        """
+        if self.source != 'magento':
+            return super(Channel, self).import_products()
 
         with Transaction().set_context({'current_channel': self.id}):
             with magento.Product(
@@ -288,13 +291,29 @@ class Channel:
 
                 products = []
                 for magento_product in magento_products:
-                    products.append(
-                        Product.find_or_create_using_magento_data(
-                            magento_product
-                        )
-                    )
+                    products.append(self.import_product(magento_product))
 
         return map(int, products)
+
+    def import_product(self, product_data):
+        """
+        Import specific product for this magento channel
+
+        Downstream implementation for channel.import_product
+        """
+        Product = Pool().get('product.product')
+
+        if self.source != 'magento':
+            return super(Channel, self).import_products()
+
+        # TODO: handle case when same product (SKU matched)
+        # from different store, then add channel to product listing
+        product = Product.find_using_magento_sku(product_data['sku'])
+
+        if not product:
+            product = Product.create_using_magento_data(product_data)
+
+        return product
 
     def import_orders(self):
         """
