@@ -642,6 +642,14 @@ class Sale:
 
         return self
 
+    @classmethod
+    def copy(cls, sales, default=None):
+        if default is None:
+            default = {}
+        default = default.copy()
+        default['magento_id'] = None
+        return super(Sale, cls).copy(sales, default=default)
+
 
 class SaleLine:
     "Sale Line"
