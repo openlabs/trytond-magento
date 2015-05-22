@@ -60,7 +60,7 @@ minor_version = int(minor_version)
 module_name = 'magento'
 
 requires = [
-    'magento==0.4',
+    'magento',
 ]
 MODULE2PREFIX = {
     'sale_channel': 'openlabs',
