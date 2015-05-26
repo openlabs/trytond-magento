@@ -186,8 +186,7 @@ class ExportMagentoInventory(Wizard):
 
         Channel = Pool().get('sale.channel')
 
-        channel = Channel(Transaction().context.get('current_channel'))
-        channel.validate_magento_channel()
+        channel = Channel.get_current_magento_channel()
 
         product_templates = channel.export_inventory_to_magento()
 

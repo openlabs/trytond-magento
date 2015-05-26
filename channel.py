@@ -270,7 +270,12 @@ class Channel:
         channel_id = Transaction().context.get('current_channel')
         if not channel_id:
             cls.raise_user_error('missing_magento_channel')
-        return cls(channel_id)
+        channel = cls(channel_id)
+
+        # Make sure channel belongs to magento
+        channel.validate_magento_channel()
+
+        return channel
 
     def import_products(self):
         """

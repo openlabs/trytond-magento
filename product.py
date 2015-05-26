@@ -83,8 +83,7 @@ class Category:
 
         category = cls.find_using_magento_id(magento_id)
         if not category:
-            channel = Channel(Transaction().context['current_channel'])
-            channel.validate_magento_channel()
+            channel = Channel.get_current_magento_channel()
 
             with magento.Category(
                 channel.magento_url, channel.magento_api_user,
@@ -110,7 +109,7 @@ class Category:
 
         records = MagentoCategory.search([
             ('magento_id', '=', int(category_data['category_id'])),
-            ('channel', '=', Transaction().context.get('current_channel'))
+            ('channel', '=', Transaction().context['current_channel'])
         ])
         return records and records[0].category or None
 
@@ -127,7 +126,7 @@ class Category:
 
         records = MagentoCategory.search([
             ('magento_id', '=', magento_id),
-            ('channel', '=', Transaction().context.get('current_channel'))
+            ('channel', '=', Transaction().context['current_channel'])
         ])
 
         return records and records[0].category or None
@@ -146,7 +145,7 @@ class Category:
             'parent': parent,
             'magento_ids': [('create', [{
                 'magento_id': int(category_data['category_id']),
-                'channel': Transaction().context.get('current_channel'),
+                'channel': Transaction().context['current_channel'],
             }])],
         }])
 
@@ -280,8 +279,7 @@ class Product:
         """
         Channel = Pool().get('sale.channel')
 
-        channel = Channel(Transaction().context['current_channel'])
-        channel.validate_magento_channel()
+        channel = Channel.get_current_magento_channel()
         return {
             'name': product_data.get('name') or
                 ('SKU: ' + product_data.get('sku')),
@@ -315,8 +313,7 @@ class Product:
         Category = Pool().get('product.category')
         Channel = Pool().get('sale.channel')
 
-        channel = Channel(Transaction().context['current_channel'])
-        channel.validate_magento_channel()
+        channel = Channel.get_current_magento_channel()
 
         # Get only the first category from the list of categories
         # If no category is found, put product under unclassified category
@@ -359,8 +356,7 @@ class Product:
         Channel = Pool().get('sale.channel')
         SaleChannelListing = Pool().get('product.product.channel_listing')
 
-        channel = Channel(Transaction().context['current_channel'])
-        channel.validate_magento_channel()
+        channel = Channel.get_current_magento_channel()
 
         with magento.Product(
             channel.magento_url, channel.magento_api_user,
@@ -431,8 +427,7 @@ class Product:
         Channel = Pool().get('sale.channel')
         SaleChannelListing = Pool().get('product.product.channel_listing')
 
-        channel = Channel(Transaction().context['current_channel'])
-        channel.validate_magento_channel()
+        channel = Channel.get_current_magento_channel()
 
         if not category.magento_ids:
             self.raise_user_error(
@@ -525,8 +520,7 @@ class ProductPriceTier(ModelSQL, ModelView):
         if not Transaction().context.get('current_channel'):
             return 0
 
-        channel = Channel(Transaction().context['current_channel'])
-        channel.validate_magento_channel()
+        channel = Channel.get_current_magento_channel()
         product = self.product_listing.product
         return channel.price_list.compute(
             None, product, product.list_price, self.quantity,
