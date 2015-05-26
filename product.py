@@ -292,10 +292,6 @@ class Product:
             'default_uom': channel.default_uom.id,
             'salable': True,
             'sale_uom': channel.default_uom.id,
-            'account_expense':
-                channel.default_account_expense.id,
-            'account_revenue':
-                channel.default_account_revenue.id,
         }
 
     @classmethod

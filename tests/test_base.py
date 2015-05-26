@@ -263,10 +263,6 @@ class TestBase(unittest.TestCase):
                 'magento_url': 'some test url 1',
                 'magento_api_user': 'admin',
                 'magento_api_key': 'testkey',
-                'default_account_expense':
-                    self.get_account_by_kind('expense'),
-                'default_account_revenue':
-                    self.get_account_by_kind('revenue'),
                 'default_uom': self.uom,
                 'magento_website_name': 'A test website 1',
                 'magento_website_id': 1,
@@ -288,10 +284,6 @@ class TestBase(unittest.TestCase):
                 'magento_url': 'some test url 2',
                 'magento_api_user': 'admin',
                 'magento_api_key': 'testkey',
-                'default_account_expense':
-                    self.get_account_by_kind('expense'),
-                'default_account_revenue':
-                    self.get_account_by_kind('revenue'),
                 'default_uom': self.uom,
                 'magento_website_name': 'A test website 1',
                 'magento_website_id': 1,
@@ -307,8 +299,9 @@ class TestBase(unittest.TestCase):
 
         # TODO: This should work without creating new properties
         self.Property.create([{
-            'value': 'account.account' + ',' +
-                str(self.channel1.default_account_revenue.id),
+            'value': '%s,%s' % (
+                'account.account', self.get_account_by_kind('revenue')
+            ),
             'res': None,
             'field': model_field.id,
         }])
