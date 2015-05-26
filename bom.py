@@ -63,24 +63,24 @@ class BOM:
         :return: Found or created BoM's active record
         """
         Uom = Pool().get('product.uom')
-        Product = Pool().get('product.product')
         ProductBom = Pool().get('product.product-production.bom')
+        Channel = Pool().get('sale.channel')
 
         identified_boms = cls.identify_boms_from_magento_data(order_data)
 
         if not identified_boms:
             return
 
+        channel = Channel.get_current_magento_channel()
+
         for item_id, data in identified_boms.iteritems():
             bundle_product = \
-                Product.find_or_create_using_magento_sku(
-                    data['bundle']['sku']
-                )
+                channel.import_product(data['bundle']['sku'])
 
             # It contains a list of tuples, in which the first element is the
             # product's active record and second is its quantity in the BoM
             child_products = [(
-                Product.find_or_create_using_magento_sku(
+                channel.import_product(
                     each['sku']
                 ), (
                     float(each['qty_ordered']) /

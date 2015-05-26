@@ -83,8 +83,7 @@ class Category:
 
         category = cls.find_using_magento_id(magento_id)
         if not category:
-            channel = Channel(Transaction().context['current_channel'])
-            channel.validate_magento_channel()
+            channel = Channel.get_current_magento_channel()
 
             with magento.Category(
                 channel.magento_url, channel.magento_api_user,
@@ -110,7 +109,7 @@ class Category:
 
         records = MagentoCategory.search([
             ('magento_id', '=', int(category_data['category_id'])),
-            ('channel', '=', Transaction().context.get('current_channel'))
+            ('channel', '=', Transaction().context['current_channel'])
         ])
         return records and records[0].category or None
 
@@ -127,7 +126,7 @@ class Category:
 
         records = MagentoCategory.search([
             ('magento_id', '=', magento_id),
-            ('channel', '=', Transaction().context.get('current_channel'))
+            ('channel', '=', Transaction().context['current_channel'])
         ])
 
         return records and records[0].category or None
@@ -146,7 +145,7 @@ class Category:
             'parent': parent,
             'magento_ids': [('create', [{
                 'magento_id': int(category_data['category_id']),
-                'channel': Transaction().context.get('current_channel'),
+                'channel': Transaction().context['current_channel'],
             }])],
         }])
 
@@ -227,38 +226,6 @@ class Product:
         })
 
     @classmethod
-    def find_or_create_using_magento_sku(cls, magento_sku):
-        """
-        Find or create a product using magento ID. This method looks
-        for an existing product using the magento ID provided. If found, it
-        returns the template found, else creates a new one and returns that
-
-        :param magento_sku: Product SKU from Magento
-        :returns: Active record of Product Created
-        """
-        Channel = Pool().get('sale.channel')
-
-        channel = Channel(Transaction().context['current_channel'])
-        channel.validate_magento_channel()
-
-        # TODO: handle case when same product (SKU matched)
-        # from different store, then add channel to product listing
-        product = cls.find_using_magento_sku(magento_sku)
-
-        if not product:
-            # if product is not found get the info from magento and
-            # delegate to create_using_magento_data
-            with magento.Product(
-                channel.magento_url, channel.magento_api_user,
-                channel.magento_api_key
-            ) as product_api:
-                product_data = product_api.info(magento_sku)
-
-            product = cls.create_using_magento_data(product_data)
-
-        return product
-
-    @classmethod
     def find_using_magento_sku(cls, magento_sku):
         """
         Find a product template corresponding to the magento ID provided. If
@@ -312,8 +279,7 @@ class Product:
         """
         Channel = Pool().get('sale.channel')
 
-        channel = Channel(Transaction().context['current_channel'])
-        channel.validate_magento_channel()
+        channel = Channel.get_current_magento_channel()
         return {
             'name': product_data.get('name') or
                 ('SKU: ' + product_data.get('sku')),
@@ -326,10 +292,6 @@ class Product:
             'default_uom': channel.default_uom.id,
             'salable': True,
             'sale_uom': channel.default_uom.id,
-            'account_expense':
-                channel.default_account_expense.id,
-            'account_revenue':
-                channel.default_account_revenue.id,
         }
 
     @classmethod
@@ -347,8 +309,7 @@ class Product:
         Category = Pool().get('product.category')
         Channel = Pool().get('sale.channel')
 
-        channel = Channel(Transaction().context['current_channel'])
-        channel.validate_magento_channel()
+        channel = Channel.get_current_magento_channel()
 
         # Get only the first category from the list of categories
         # If no category is found, put product under unclassified category
@@ -391,8 +352,7 @@ class Product:
         Channel = Pool().get('sale.channel')
         SaleChannelListing = Pool().get('product.product.channel_listing')
 
-        channel = Channel(Transaction().context['current_channel'])
-        channel.validate_magento_channel()
+        channel = Channel.get_current_magento_channel()
 
         with magento.Product(
             channel.magento_url, channel.magento_api_user,
@@ -463,8 +423,7 @@ class Product:
         Channel = Pool().get('sale.channel')
         SaleChannelListing = Pool().get('product.product.channel_listing')
 
-        channel = Channel(Transaction().context['current_channel'])
-        channel.validate_magento_channel()
+        channel = Channel.get_current_magento_channel()
 
         if not category.magento_ids:
             self.raise_user_error(
@@ -557,8 +516,7 @@ class ProductPriceTier(ModelSQL, ModelView):
         if not Transaction().context.get('current_channel'):
             return 0
 
-        channel = Channel(Transaction().context['current_channel'])
-        channel.validate_magento_channel()
+        channel = Channel.get_current_magento_channel()
         product = self.product_listing.product
         return channel.price_list.compute(
             None, product, product.list_price, self.quantity,

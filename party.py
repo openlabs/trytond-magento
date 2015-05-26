@@ -48,8 +48,7 @@ class Party:
         """
         Channel = Pool().get('sale.channel')
 
-        channel = Channel(Transaction().context['current_channel'])
-        channel.validate_magento_channel()
+        channel = Channel.get_current_magento_channel()
 
         party = cls.find_using_magento_id(magento_id)
         if not party:
@@ -75,7 +74,7 @@ class Party:
         try:
             magento_party, = MagentoParty.search([
                 ('magento_id', '=', magento_id),
-                ('channel', '=', Transaction().context.get('current_channel'))
+                ('channel', '=', Transaction().context['current_channel'])
             ])
         except ValueError:
             return None

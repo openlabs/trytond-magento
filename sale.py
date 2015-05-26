@@ -146,8 +146,7 @@ class MagentoOrderState(ModelSQL, ModelView):
 
         order_states_to_create = []
 
-        channel = Channel(Transaction().context['current_channel'])
-        channel.validate_magento_channel()
+        channel = Channel.get_current_magento_channel()
 
         for code, name in magento_data.iteritems():
             if cls.search([
@@ -230,7 +229,7 @@ class Sale:
         sales = cls.search([
             ('magento_id', '=', int(order_data['order_id'])),
             ('channel', '=',
-                Transaction().context.get('current_channel')),
+                Transaction().context['current_channel']),
         ])
 
         return sales and sales[0] or None
@@ -248,8 +247,7 @@ class Sale:
         MagentoOrderState = Pool().get('magento.order_state')
         Channel = Pool().get('sale.channel')
 
-        channel = Channel(Transaction().context['current_channel'])
-        channel.validate_magento_channel()
+        channel = Channel.get_current_magento_channel()
 
         currency = Currency.search_using_magento_code(
             order_data['order_currency_code']
@@ -388,17 +386,18 @@ class Sale:
         Get sale.line data from magento data.
         """
         SaleLine = Pool().get('sale.line')
-        Product = Pool().get('product.product')
         ChannelException = Pool().get('channel.exception')
         Channel = Pool().get('sale.channel')
         Uom = Pool().get('product.uom')
+
+        channel = Channel.get_current_magento_channel()
 
         sale_line = None
         unit, = Uom.search([('name', '=', 'Unit')])
         if not item['parent_item_id']:
             # If its a top level product, create it
             try:
-                product = Product.find_or_create_using_magento_sku(item['sku'])
+                product = channel.import_product(item['sku'])
             except xmlrpclib.Fault, exception:
                 if exception.faultCode == 101:
                     # Case when product doesnot exist on magento
@@ -423,7 +422,6 @@ class Sale:
                 'product': product,
             })
             if item.get('tax_percent') and Decimal(item.get('tax_percent')):
-                channel = Channel.get_current_magento_channel()
                 taxes = channel.get_taxes(
                     Decimal(item['tax_percent']) / 100
                 )
@@ -444,8 +442,7 @@ class Sale:
         """
         Channel = Pool().get('sale.channel')
 
-        channel = Channel(Transaction().context['current_channel'])
-        channel.validate_magento_channel()
+        channel = Channel.get_current_magento_channel()
 
         sale = cls.find_using_magento_increment_id(order_increment_id)
 
@@ -474,7 +471,7 @@ class Sale:
         sales = cls.search([
             ('magento_id', '=', order_id),
             ('channel', '=',
-                Transaction().context.get('current_channel'))
+                Transaction().context['current_channel'])
         ])
         return sales and sales[0] or None
 
@@ -490,7 +487,7 @@ class Sale:
         """
         Channel = Pool().get('sale.channel')
 
-        channel = Channel(Transaction().context.get('current_channel'))
+        channel = Channel.get_current_magento_channel()
 
         sales = cls.search([
             (
@@ -676,8 +673,7 @@ class StockShipmentOut:
         Channel = Pool().get('sale.channel')
         Shipment = Pool().get('stock.shipment.out')
 
-        channel = Channel(Transaction().context['current_channel'])
-        channel.validate_magento_channel()
+        channel = Channel.get_current_magento_channel()
 
         carriers = MagentoCarrier.search([
             ('channel', '=', channel.id),

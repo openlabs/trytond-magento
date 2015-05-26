@@ -28,7 +28,6 @@ __all__ = [
     'ImportStoresStart', 'FailureStart', 'SuccessStart',
     'ExportMagentoOrderStatusStart', 'ExportMagentoOrderStatus',
     'UpdateMagentoCatalogStart', 'UpdateMagentoCatalog',
-    'ImportMagentoCatalogStart', 'ImportMagentoCatalog',
     'ExportMagentoCatalogStart', 'ExportMagentoCatalog'
 ]
 __metaclass__ = PoolMeta
@@ -187,8 +186,7 @@ class ExportMagentoInventory(Wizard):
 
         Channel = Pool().get('sale.channel')
 
-        channel = Channel(Transaction().context.get('current_channel'))
-        channel.validate_magento_channel()
+        channel = Channel.get_current_magento_channel()
 
         product_templates = channel.export_inventory_to_magento()
 
@@ -593,95 +591,6 @@ class UpdateMagentoCatalog(Wizard):
                 products.append(
                     listing.product.update_from_magento()
                 )
-
-        return map(int, products)
-
-
-class ImportMagentoCatalogStart(ModelView):
-    'Import Catalog View'
-    __name__ = 'magento.import_catalog.start'
-
-
-class ImportMagentoCatalog(Wizard):
-    '''
-    Import Catalog
-
-    This is a wizard to import Products from a Magento Website. It opens up
-    the list of products after the import has been completed.
-    '''
-    __name__ = 'magento.import_catalog'
-
-    start = StateView(
-        'magento.import_catalog.start',
-        'magento.magento_import_catalog_start_view_form', [
-            Button('Cancel', 'end', 'tryton-cancel'),
-            Button('Continue', 'import_', 'tryton-ok', default=True),
-        ]
-    )
-    import_ = StateAction('product.act_template_form')
-
-    def do_import_(self, action):
-        """Handles the transition"""
-
-        Channel = Pool().get('sale.channel')
-
-        channel = Channel(Transaction().context.get('active_id'))
-        channel.validate_magento_channel()
-
-        self.import_category_tree(channel)
-        product_ids = self.import_products(channel)
-        action['pyson_domain'] = PYSONEncoder().encode(
-            [('id', 'in', product_ids)])
-        return action, {}
-
-    def transition_import_(self):
-        return 'end'
-
-    def import_category_tree(self, channel):
-        """
-        Imports the category tree and creates categories in a hierarchy same as
-        that on Magento
-
-        :param website: Active record of website
-        """
-        Category = Pool().get('product.category')
-
-        channel.validate_magento_channel()
-
-        with Transaction().set_context({'current_channel': channel.id}):
-            with magento.Category(
-                channel.magento_url, channel.magento_api_user,
-                channel.magento_api_key
-            ) as category_api:
-                category_tree = category_api.tree(
-                    channel.magento_root_category_id
-                )
-                Category.create_tree_using_magento_data(category_tree)
-
-    def import_products(self, channel):
-        """
-        Imports products for the current channel
-
-        :param website: Active record of website
-        """
-        Product = Pool().get('product.product')
-
-        channel.validate_magento_channel()
-
-        with Transaction().set_context({'current_channel': channel.id}):
-            with magento.Product(
-                channel.magento_url, channel.magento_api_user,
-                channel.magento_api_key
-            ) as product_api:
-                magento_products = product_api.list()
-
-                products = []
-                for magento_product in magento_products:
-                    products.append(
-                        Product.find_or_create_using_magento_sku(
-                            magento_product['sku']
-                        )
-                    )
 
         return map(int, products)
 
