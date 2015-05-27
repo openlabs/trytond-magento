@@ -302,7 +302,7 @@ class Channel:
 
         return map(int, products)
 
-    def import_product(self, magento_sku):
+    def import_product(self, sku):
         """
         Import specific product for this magento channel
 
@@ -311,9 +311,9 @@ class Channel:
         Product = Pool().get('product.product')
 
         if self.source != 'magento':
-            return super(Channel, self).import_products()
+            return super(Channel, self).import_product(sku)
 
-        product = Product.find_using_magento_sku(magento_sku)
+        product = Product.find_using_magento_sku(sku)
 
         if not product:
             # if product is not found get the info from magento and
@@ -322,7 +322,7 @@ class Channel:
                 self.magento_url, self.magento_api_user,
                 self.magento_api_key
             ) as product_api:
-                product_data = product_api.info(magento_sku)
+                product_data = product_api.info(sku)
 
             product = Product.create_using_magento_data(product_data)
 
