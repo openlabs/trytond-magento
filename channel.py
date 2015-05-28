@@ -270,13 +270,23 @@ class Channel:
         channel_id = Transaction().context.get('current_channel')
         if not channel_id:
             cls.raise_user_error('missing_magento_channel')
-        return cls(channel_id)
+        channel = cls(channel_id)
 
-    def import_magento_products(self):
-        "Import products for this magento channel"
-        Product = Pool().get('product.template')
+        # Make sure channel belongs to magento
+        channel.validate_magento_channel()
 
-        self.validate_magento_channel()
+        return channel
+
+    def import_products(self):
+        """
+        Import products for this magento channel
+
+        Downstream implementation for channel.import_products
+        """
+        if self.source != 'magento':
+            return super(Channel, self).import_products()
+
+        self.import_category_tree()
 
         with Transaction().set_context({'current_channel': self.id}):
             with magento.Product(
@@ -288,13 +298,56 @@ class Channel:
 
                 products = []
                 for magento_product in magento_products:
-                    products.append(
-                        Product.find_or_create_using_magento_data(
-                            magento_product
-                        )
-                    )
+                    products.append(self.import_product(magento_product['sku']))
 
         return map(int, products)
+
+    def import_product(self, sku):
+        """
+        Import specific product for this magento channel
+
+        Downstream implementation for channel.import_product
+        """
+        Product = Pool().get('product.product')
+
+        if self.source != 'magento':
+            return super(Channel, self).import_product(sku)
+
+        product = Product.find_using_magento_sku(sku)
+
+        if not product:
+            # if product is not found get the info from magento and
+            # delegate to create_using_magento_data
+            with magento.Product(
+                self.magento_url, self.magento_api_user,
+                self.magento_api_key
+            ) as product_api:
+                product_data = product_api.info(sku)
+
+            product = Product.create_using_magento_data(product_data)
+
+        return product
+
+    def import_category_tree(self):
+        """
+        Imports the category tree and creates categories in a hierarchy same as
+        that on Magento
+
+        :param website: Active record of website
+        """
+        Category = Pool().get('product.category')
+
+        self.validate_magento_channel()
+
+        with Transaction().set_context({'current_channel': self.id}):
+            with magento.Category(
+                self.magento_url, self.magento_api_user,
+                self.magento_api_key
+            ) as category_api:
+                category_tree = category_api.tree(
+                    self.magento_root_category_id
+                )
+                Category.create_tree_using_magento_data(category_tree)
 
     def import_orders(self):
         """

@@ -145,23 +145,6 @@
             <field name="name">export_shipment_status_start_form</field>
         </record>
 
-        <!--Import Product Catalog wizard-->
-        <record model="ir.action.wizard" id="wizard_magento_import_catalog">
-            <field name="name">Import Magento Product Catalog</field>
-            <field name="wiz_name">magento.import_catalog</field>
-            <field name="model">sale.channel</field>
-        </record>
-        <record model="ir.action.keyword" id="wizard_magento_import_catalog_keyword">
-            <field name="keyword">form_action</field>
-            <field name="model">sale.channel,-1</field>
-            <field name="action" ref="wizard_magento_import_catalog"/>
-        </record>
-        <record model="ir.ui.view" id="magento_import_catalog_start_view_form">
-            <field name="model">magento.import_catalog.start</field>
-            <field name="type">form</field>
-            <field name="name">wizard_import_catalog_start_form</field>
-        </record>
-
         <!--Export Product Catalog Wizard-->
         <record model="ir.action.wizard" id="wizard_magento_export_catalog">
             <field name="name">Export Product Catalog to Magento</field>
