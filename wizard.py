@@ -93,26 +93,6 @@ class ExportMagentoOrderStatus(Wizard):
         return 'end'
 
 
-class ImportMagentoOrderStatesStart(ModelView):
-    "Import Order States Start"
-    __name__ = 'magento.wizard_import_order_states.start'
-
-
-class ImportMagentoOrderStates(Wizard):
-    """
-    Wizard to import order states for channel
-    """
-    __name__ = 'magento.wizard_import_order_states'
-
-    start = StateView(
-        'magento.wizard_import_order_states.start',
-        'magento.wizard_import_magento_order_states_start_view_form',
-        [
-            Button('Ok', 'end', 'tryton-ok'),
-        ]
-    )
-
-
 class ImportMagentoCarriersStart(ModelView):
     "Import Carriers Start"
     __name__ = 'magento.wizard_import_carriers.start'

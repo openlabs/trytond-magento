@@ -12,8 +12,7 @@ from wizard import (
     TestMagentoConnectionStart, ImportWebsitesStart,
     ExportMagentoInventoryStart, ExportMagentoInventory,
     ExportMagentoShipmentStatusStart,
-    ExportMagentoShipmentStatus, ImportMagentoOrderStatesStart,
-    ImportMagentoOrderStates, ImportMagentoCarriersStart,
+    ExportMagentoShipmentStatus, ImportMagentoCarriersStart,
     ImportMagentoCarriers, ConfigureMagento, ImportStoresStart, FailureStart,
     SuccessStart, ExportMagentoOrderStatusStart, ExportMagentoOrderStatus,
     UpdateMagentoCatalogStart, UpdateMagentoCatalog,
@@ -29,7 +28,7 @@ from country import Country, Subdivision
 from currency import Currency
 from carrier import MagentoInstanceCarrier
 from sale import (
-    MagentoOrderState, Sale, StockShipmentOut, SaleLine
+    Sale, StockShipmentOut, SaleLine
 )
 from bom import BOM
 from tax import MagentoTax, MagentoTaxRelation
@@ -59,13 +58,11 @@ def register():
         Product,
         ProductPriceTier,
         ExportMagentoCatalogStart,
-        MagentoOrderState,
         StockShipmentOut,
         Address,
         UpdateMagentoCatalogStart,
         Currency,
         Sale,
-        ImportMagentoOrderStatesStart,
         ImportMagentoCarriersStart,
         ExportMagentoOrderStatusStart,
         SaleLine,
@@ -76,7 +73,6 @@ def register():
         module='magento', type_='model'
     )
     Pool.register(
-        ImportMagentoOrderStates,
         ExportMagentoInventory,
         ExportMagentoShipmentStatus,
         UpdateMagentoCatalog,
