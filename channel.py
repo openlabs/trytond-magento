@@ -552,6 +552,8 @@ class Channel:
                         })
 
                         if self.magento_export_tracking_information and (
+                            hasattr(shipment, 'tracking_number') and
+                            hasattr(shipment, 'carrier') and
                             shipment.tracking_number and shipment.carrier
                         ):
                             shipment.export_tracking_info_to_magento()

@@ -642,9 +642,6 @@ class StockShipmentOut:
     """
     __name__ = 'stock.shipment.out'
 
-    tracking_number = fields.Char('Tracking Number')
-    carrier = fields.Many2One('carrier', 'Carrier')
-
     #: Indicates if the tracking information has been exported
     #: to magento. Tracking info means carrier and tracking number info
     #: which is different from exporting shipment status to magento
@@ -674,6 +671,9 @@ class StockShipmentOut:
         Shipment = Pool().get('stock.shipment.out')
 
         channel = Channel.get_current_magento_channel()
+
+        assert self.tracking_number
+        assert self.carrier
 
         carriers = MagentoCarrier.search([
             ('channel', '=', channel.id),

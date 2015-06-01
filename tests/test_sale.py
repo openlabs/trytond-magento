@@ -570,10 +570,6 @@ class TestSale(TestBase):
                     Sale.process([order])
                 shipment, = Shipment.search([])
 
-                Shipment.write([shipment], {
-                    'carrier': carrier.id,
-                    'tracking_number': '1234567890',
-                })
                 Shipment.assign([shipment])
                 Shipment.pack([shipment])
                 Shipment.done([shipment])
@@ -590,12 +586,6 @@ class TestSale(TestBase):
 
                     shipment = Shipment(shipment.id)
                     self.assertTrue(shipment.magento_increment_id)
-
-                    # Export Tracking info
-                    self.assertEqual(
-                        shipment.export_tracking_info_to_magento(),
-                        True
-                    )
 
     def test_0070_export_order_status_with_last_order_export_time_case2(self):
         """

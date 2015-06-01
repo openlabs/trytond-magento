@@ -36,13 +36,5 @@
             <field name="type">tree</field>
             <field name="name">order_state_tree</field>
         </record>
-
-        <!-- Shipment -->
-        <record model="ir.ui.view" id="shipment_view_form">
-            <field name="model">stock.shipment.out</field>
-            <field name="type">form</field>
-            <field name="inherit" ref="stock.shipment_out_view_form"/>
-            <field name="name">shipment_out_form</field>
-        </record>
     </data>
 </tryton>
