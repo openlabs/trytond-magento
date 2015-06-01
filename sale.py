@@ -447,7 +447,7 @@ class Sale:
                 'magento_id': int(item['item_id']),
                 'description': item['name'] or product.name,
                 'unit_price': Decimal(item['price']),
-                'unit': unit.id,
+                'unit': (product and product.sale_uom.id) or unit.id,
                 'quantity': Decimal(item['qty_ordered']),
                 'note': item.get('comments'),
                 'product': product,
