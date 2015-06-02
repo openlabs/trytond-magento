@@ -619,16 +619,17 @@ class Channel:
         channels = cls.search([('source', '=', 'magento')])
 
         for channel in channels:
-            channel.export_tier_prices_to_magento()
+            channel.export_product_prices()
 
-    def export_tier_prices_to_magento(self):
+    def export_product_prices(self):
         """
         Exports tier prices of products from tryton to magento for this channel
         :return: List of products
         """
-        ChannelListing = Pool().get('product.product.channel_listing')
+        if self.source != 'magento':
+            return super(Channel, self).export_product_prices()
 
-        self.validate_magento_channel()
+        ChannelListing = Pool().get('product.product.channel_listing')
 
         price_domain = [
             ('channel', '=', self.id),

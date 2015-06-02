@@ -11,8 +11,7 @@ from trytond.pool import Pool
 from wizard import (
     TestMagentoConnectionStart, ImportWebsitesStart,
     ExportMagentoInventoryStart, ExportMagentoInventory,
-    ExportMagentoTierPricesStart, ExportMagentoTierPrices,
-    ExportMagentoTierPricesStatus, ExportMagentoShipmentStatusStart,
+    ExportMagentoShipmentStatusStart,
     ExportMagentoShipmentStatus, ImportMagentoOrderStatesStart,
     ImportMagentoOrderStates, ImportMagentoCarriersStart,
     ImportMagentoCarriers, ConfigureMagento, ImportStoresStart, FailureStart,
@@ -50,8 +49,6 @@ def register():
         SuccessStart,
         ImportWebsitesStart,
         ExportMagentoInventoryStart,
-        ExportMagentoTierPricesStart,
-        ExportMagentoTierPricesStatus,
         ExportMagentoShipmentStatusStart,
         Country,
         Subdivision,
@@ -81,7 +78,6 @@ def register():
     Pool.register(
         ImportMagentoOrderStates,
         ExportMagentoInventory,
-        ExportMagentoTierPrices,
         ExportMagentoShipmentStatus,
         UpdateMagentoCatalog,
         ExportMagentoCatalog,
