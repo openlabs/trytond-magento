@@ -283,6 +283,54 @@ class TestSale(TestBase):
                     len(order.lines), len(order_data['items']) + 1
                 )
 
+    def test_0030_import_sale_order_with_invalid_subdivision(self):
+        """
+        Tests import of sale order using magento data with invalid subdivision
+        """
+        Sale = POOL.get('sale.sale')
+        Party = POOL.get('party.party')
+        Category = POOL.get('product.category')
+
+        with Transaction().start(DB_NAME, USER, CONTEXT):
+            self.setup_defaults()
+
+            with Transaction().set_context({
+                'current_channel': self.channel1.id,
+            }):
+
+                category_tree = load_json('categories', 'category_tree')
+                Category.create_tree_using_magento_data(category_tree)
+
+                orders = Sale.search([])
+                self.assertEqual(len(orders), 0)
+
+                order_data = load_json('orders', '100000001-invalid-state')
+
+                with patch(
+                        'magento.Customer', mock_customer_api(), create=True):
+                    Party.find_or_create_using_magento_id(
+                        order_data['customer_id']
+                    )
+
+                with Transaction().set_context(company=self.company):
+                    # Create sale order using magento data
+                    with patch(
+                            'magento.Product', mock_product_api(), create=True):
+                        order = Sale.find_or_create_using_magento_data(
+                            order_data
+                        )
+
+                self.assertEqual(order.state, 'confirmed')
+                self.assertFalse(order.has_channel_exception)
+
+                orders = Sale.search([])
+                self.assertEqual(len(orders), 1)
+
+                # Item lines + shipping line should be equal to lines on tryton
+                self.assertEqual(
+                    len(order.lines), len(order_data['items']) + 1
+                )
+
     def test_0035_import_sale_order_with_products_with_processing(self):
         """
         Tests import of sale order using magento data with magento state as

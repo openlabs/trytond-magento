@@ -15,7 +15,6 @@ import trytond.tests.test_tryton
 from trytond.tests.test_tryton import POOL, USER, DB_NAME, CONTEXT
 from test_base import TestBase, load_json
 from trytond.transaction import Transaction
-from trytond.exceptions import UserError
 
 DIR = os.path.abspath(os.path.normpath(
     os.path.join(
@@ -272,9 +271,8 @@ class TestParty(TestBase):
 
             # Similar with different country. This will raise user error because
             # India doesn't have that state American Samoa.
-            self.assertRaises(
-                UserError, address.match_with_magento_data,
-                load_json('addresses', '1b'),
+            self.assertFalse(
+                address.match_with_magento_data(load_json('addresses', '1b')),
             )
 
             # Similar with different state
