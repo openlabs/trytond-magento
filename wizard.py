@@ -19,8 +19,7 @@ from trytond.wizard import (
 
 __all__ = [
     'ExportMagentoInventoryStart', 'ExportMagentoInventory',
-    'ExportMagentoTierPricesStart', 'ExportMagentoTierPrices',
-    'ExportMagentoTierPricesStatus', 'ExportMagentoShipmentStatusStart',
+    'ExportMagentoShipmentStatusStart',
     'ExportMagentoShipmentStatus', 'ImportMagentoOrderStatesStart',
     'ImportMagentoOrderStates', 'ImportMagentoCarriersStart',
     'ImportMagentoCarriers', 'ConfigureMagento',
@@ -196,55 +195,6 @@ class ExportMagentoInventory(Wizard):
 
     def transition_export_(self):
         return 'end'
-
-
-class ExportMagentoTierPricesStart(ModelView):
-    "Export Tier Prices Start View"
-    __name__ = 'magento.wizard_export_tier_prices.start'
-
-
-class ExportMagentoTierPricesStatus(ModelView):
-    "Export Tier Prices Status View"
-    __name__ = 'magento.wizard_export_tier_prices.status'
-
-    products_count = fields.Integer('Products Count', readonly=True)
-
-
-class ExportMagentoTierPrices(Wizard):
-    """
-    Export Tier Prices Wizard
-
-    Export product tier prices to magento for the current store
-    """
-    __name__ = 'magento.wizard_export_tier_prices'
-
-    start = StateView(
-        'magento.wizard_export_tier_prices.start',
-        'magento.wizard_export_magento_tier_prices_view_start_form',
-        [
-            Button('Cancel', 'end', 'tryton-cancel'),
-            Button('Continue', 'export_', 'tryton-ok', default=True),
-        ]
-    )
-
-    export_ = StateView(
-        'magento.wizard_export_tier_prices.status',
-        'magento.wizard_export_magento_tier_prices_view_status_form',
-        [
-            Button('OK', 'end', 'tryton-cancel'),
-        ]
-    )
-
-    def default_export_(self, fields):
-        """Export price tiers and return count of products"""
-        Channel = Pool().get('sale.channel')
-
-        channel = Channel(Transaction().context.get('active_id'))
-        channel.validate_magento_channel()
-
-        return {
-            'products_count': channel.export_tier_prices_to_magento()
-        }
 
 
 class ExportMagentoShipmentStatusStart(ModelView):

@@ -897,7 +897,7 @@ class TestSale(TestBase):
                     create=True
                 ):
                     product_listings = \
-                        self.channel1.export_tier_prices_to_magento()
+                        self.channel1.export_product_prices()
 
                     self.assertEqual(product_listings, 2)
                 self.assertEqual(
@@ -960,7 +960,7 @@ class TestSale(TestBase):
                     create=True
                 ):
                     product_listings = \
-                        self.channel1.export_tier_prices_to_magento()
+                        self.channel1.export_product_prices()
 
                     self.assertEqual(product_listings, 2)
                 self.assertEqual(
@@ -1060,7 +1060,7 @@ class TestSale(TestBase):
                     create=True
                 ):
                     product_listings = \
-                        self.channel1.export_tier_prices_to_magento()
+                        self.channel1.export_product_prices()
 
                     self.assertEqual(product_listings, 1)
 
