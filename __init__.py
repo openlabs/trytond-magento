@@ -11,10 +11,8 @@ from trytond.pool import Pool
 from wizard import (
     TestMagentoConnectionStart, ImportWebsitesStart,
     ExportMagentoInventoryStart, ExportMagentoInventory,
-    ExportMagentoTierPricesStart, ExportMagentoTierPrices,
-    ExportMagentoTierPricesStatus, ExportMagentoShipmentStatusStart,
-    ExportMagentoShipmentStatus, ImportMagentoOrderStatesStart,
-    ImportMagentoOrderStates, ImportMagentoCarriersStart,
+    ExportMagentoShipmentStatusStart,
+    ExportMagentoShipmentStatus, ImportMagentoCarriersStart,
     ImportMagentoCarriers, ConfigureMagento, ImportStoresStart, FailureStart,
     SuccessStart, ExportMagentoOrderStatusStart, ExportMagentoOrderStatus,
     UpdateMagentoCatalogStart, UpdateMagentoCatalog,
@@ -30,7 +28,7 @@ from country import Country, Subdivision
 from currency import Currency
 from carrier import MagentoInstanceCarrier
 from sale import (
-    MagentoOrderState, Sale, StockShipmentOut, SaleLine
+    Sale, StockShipmentOut, SaleLine
 )
 from bom import BOM
 from tax import MagentoTax, MagentoTaxRelation
@@ -50,8 +48,6 @@ def register():
         SuccessStart,
         ImportWebsitesStart,
         ExportMagentoInventoryStart,
-        ExportMagentoTierPricesStart,
-        ExportMagentoTierPricesStatus,
         ExportMagentoShipmentStatusStart,
         Country,
         Subdivision,
@@ -62,13 +58,11 @@ def register():
         Product,
         ProductPriceTier,
         ExportMagentoCatalogStart,
-        MagentoOrderState,
         StockShipmentOut,
         Address,
         UpdateMagentoCatalogStart,
         Currency,
         Sale,
-        ImportMagentoOrderStatesStart,
         ImportMagentoCarriersStart,
         ExportMagentoOrderStatusStart,
         SaleLine,
@@ -79,9 +73,7 @@ def register():
         module='magento', type_='model'
     )
     Pool.register(
-        ImportMagentoOrderStates,
         ExportMagentoInventory,
-        ExportMagentoTierPrices,
         ExportMagentoShipmentStatus,
         UpdateMagentoCatalog,
         ExportMagentoCatalog,

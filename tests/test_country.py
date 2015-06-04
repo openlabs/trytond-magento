@@ -104,9 +104,9 @@ class TestCountry(TestBase):
                 ])
             )
 
-            self.assertRaises(
-                UserError,
-                self.Subdivision.search_using_magento_region, region, country
+            self.assertEqual(
+                self.Subdivision.search_using_magento_region(region, country),
+                None
             )
 
 

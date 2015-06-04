@@ -11,159 +11,21 @@ import magento
 from decimal import Decimal
 import xmlrpclib
 
-from trytond.model import ModelView, ModelSQL, fields
+from trytond.model import fields
 from trytond.transaction import Transaction
 from trytond.exceptions import UserError
 from trytond.pool import PoolMeta, Pool
-from trytond.pyson import Eval, Not, Bool
+from trytond.pyson import Eval
 
 
 __all__ = [
-    'MagentoOrderState', 'StockShipmentOut', 'Sale', 'SaleLine',
+    'StockShipmentOut', 'Sale', 'SaleLine',
 ]
 __metaclass__ = PoolMeta
 
 INVISIBLE_IF_NOT_MAGENTO = {
     'invisible': ~(Eval('channel_type') == 'magento'),
 }
-
-
-class MagentoOrderState(ModelSQL, ModelView):
-    """
-    Magento - Tryton Order State map
-
-    This model stores a map of order states between tryton and Magento.
-    This allows the user to configure the states mapping according to his/her
-    convenience. This map is used to process orders in tryton when they are
-    imported. This is also used to map the order status on magento when
-    sales are exported. This also allows the user to determine in which state
-    he/she wants the order to be imported in.
-    """
-    __name__ = 'magento.order_state'
-
-    name = fields.Char('Name', required=True, readonly=True)
-    code = fields.Char('Code', required=True, readonly=True)
-    tryton_state = fields.Selection([
-        ('sale.quotation', 'Sale - Quotation'),
-        ('sale.processing', 'Sale - Processing'),
-        ('sale.confirmed', 'Sale - Confirmed'),
-        ('sale.done', 'Sale - Done'),
-        ('sale.cancel', 'Sale - Canceled'),
-        ('invoice.waiting', 'Invoice - Waiting'),
-        ('invoice.paid', 'Invoice - Paid'),
-    ], 'Tryton State', states={
-        'invisible': Not(Bool(Eval('use_for_import'))),
-        'required': Bool(Eval('use_for_import'))
-    })
-    use_for_import = fields.Boolean('Import orders in this magento state')
-    invoice_method = fields.Selection([
-        ('manual', 'Manual'),
-        ('order', 'On Order Processed'),
-        ('shipment', 'On Shipment Sent'),
-    ], 'Invoice Method')
-    shipment_method = fields.Selection([
-        ('manual', 'Manual'),
-        ('order', 'On Order Processed'),
-        ('invoice', 'On Invoice Paid'),
-    ], 'Shipment Method')
-    channel = fields.Many2One(
-        'sale.channel', 'Sale Channel', required=True,
-        ondelete="CASCADE"
-    )
-
-    @staticmethod
-    def default_use_for_import():
-        """
-        Sets default for use for import
-        """
-        return True
-
-    @classmethod
-    def __setup__(cls):
-        """
-        Setup the class before adding to pool
-        """
-        super(MagentoOrderState, cls).__setup__()
-        cls._sql_constraints += [
-            (
-                'code_channel_unique', 'unique(code, channel)',
-                'Each magento state must be unique by code in an channel'
-            ),
-        ]
-
-    @classmethod
-    def get_tryton_state(cls, name):
-        """
-        Returns tryton order state for magento state
-
-        :param name: Name of the magento state
-        :return: A dictionary of tryton state and shipment and invoice methods
-        """
-        if name in ('new', 'holded'):
-            return {
-                'tryton_state': 'sale.quotation',
-                'invoice_method': 'order',
-                'shipment_method': 'order'
-            }
-        elif name in ('pending_payment', 'payment_review'):
-            return {
-                'tryton_state': 'invoice.waiting',
-                'invoice_method': 'order',
-                'shipment_method': 'invoice'
-            }
-
-        elif name in ('closed', 'complete'):
-            return {
-                'tryton_state': 'sale.done',
-                'invoice_method': 'order',
-                'shipment_method': 'order'
-            }
-
-        elif name == 'processing':
-            return {
-                'tryton_state': 'sale.processing',
-                'invoice_method': 'order',
-                'shipment_method': 'order'
-            }
-        else:
-            return {
-                'tryton_state': 'sale.cancel',
-                'invoice_method': 'manual',
-                'shipment_method': 'manual'
-            }
-
-    @classmethod
-    def create_all_using_magento_data(cls, magento_data):
-        """This method expects a dictionary in which the key is the state
-        code on magento and value is the state name on magento.
-        This method will create each of the item in the dict as a record in
-        this model.
-
-        :param magento_data: Magento data in form of dict
-        :return: List of active records of records created
-        """
-        Channel = Pool().get('sale.channel')
-
-        order_states_to_create = []
-
-        channel = Channel.get_current_magento_channel()
-
-        for code, name in magento_data.iteritems():
-            if cls.search([
-                ('code', '=', code),
-                ('channel', '=', channel.id)
-            ]):
-                continue
-
-            data_map = cls.get_tryton_state(code)
-            data_map.update({
-                'name': name,
-                'code': code,
-                'channel': channel.id,
-            })
-            order_states_to_create.append(data_map)
-
-        return cls.create(order_states_to_create)
 
 
 class Sale:
@@ -244,7 +106,6 @@ class Sale:
         Address = Pool().get('party.address')
         Currency = Pool().get('currency.currency')
         Uom = Pool().get('product.uom')
-        MagentoOrderState = Pool().get('magento.order_state')
         Channel = Pool().get('sale.channel')
 
         channel = Channel.get_current_magento_channel()
@@ -280,7 +141,7 @@ class Sale:
                 )
         unit, = Uom.search([('name', '=', 'Unit')])
 
-        tryton_state = MagentoOrderState.get_tryton_state(order_data['state'])
+        tryton_action = channel.get_tryton_action(order_data['state'])
 
         if not party_shipping_address:
             # if there is no shipment address, this could be a digital
@@ -289,7 +150,7 @@ class Sale:
             # manual
             shipment_method = 'manual'
         else:
-            shipment_method = tryton_state['shipment_method']
+            shipment_method = tryton_action['shipment_method']
 
         return Sale(**{
             'reference': channel.magento_order_prefix +
@@ -301,7 +162,7 @@ class Sale:
             'shipment_address': party_shipping_address or party_invoice_address,
             'magento_id': int(order_data['order_id']),
             'channel': channel.id,
-            'invoice_method': tryton_state['invoice_method'],
+            'invoice_method': tryton_action['invoice_method'],
             'shipment_method': shipment_method,
             'lines': [],
         })
@@ -317,7 +178,16 @@ class Sale:
         :return: Active record of record created
         """
         ChannelException = Pool().get('channel.exception')
-        MagentoOrderState = Pool().get('magento.order_state')
+
+        Channel = Pool().get('sale.channel')
+
+        channel = Channel.get_current_magento_channel()
+
+        state_data = channel.get_tryton_action(order_data['state'])
+
+        # Do not import if order is in cancelled or draft state
+        if state_data['action'] == 'do_not_import':
+            return
 
         sale = cls.get_sale_using_magento_data(order_data)
         sale.save()
@@ -327,7 +197,7 @@ class Sale:
         sale.save()
 
         # Process sale now
-        tryton_state = MagentoOrderState.get_tryton_state(order_data['state'])
+        tryton_action = channel.get_tryton_action(order_data['state'])
         try:
             sale.process_sale_using_magento_state(order_data['state'])
         except UserError, e:
@@ -338,7 +208,7 @@ class Sale:
             ChannelException.create([{
                 'origin': '%s,%s' % (sale.__name__, sale.id),
                 'log': "Error occurred on transitioning to state %s.\nError "
-                    "Message: %s" % (tryton_state['tryton_state'], e.message),
+                    "Message: %s" % (tryton_action['action'], e.message),
                 'channel': sale.channel.id,
             }])
 
@@ -571,19 +441,16 @@ class Sale:
         """
         Sale = Pool().get('sale.sale')
 
-        data = MagentoOrderState.get_tryton_state(magento_state)
+        data = self.channel.get_tryton_action(magento_state)
 
-        # If order is canceled, just cancel it
-        if data['tryton_state'] == 'sale.cancel':
-            Sale.cancel([self])
-            return
+        if data['action'] in ['process_manually', 'process_automatically']:
+            Sale.quote([self])
+            Sale.confirm([self])
 
-        # Order is not canceled, move it to quotation
-        Sale.quote([self])
-        Sale.confirm([self])
-
-        if data['tryton_state'] not in ['sale.quotation', 'sale.confirmed']:
+        if data['action'] == 'process_automatically':
             Sale.process([self])
+
+        # TODO: Handle import as past action for magento state
 
     def export_order_status_to_magento(self):
         """
@@ -642,9 +509,6 @@ class StockShipmentOut:
     """
     __name__ = 'stock.shipment.out'
 
-    tracking_number = fields.Char('Tracking Number')
-    carrier = fields.Many2One('carrier', 'Carrier')
-
     #: Indicates if the tracking information has been exported
     #: to magento. Tracking info means carrier and tracking number info
     #: which is different from exporting shipment status to magento
@@ -674,6 +538,9 @@ class StockShipmentOut:
         Shipment = Pool().get('stock.shipment.out')
 
         channel = Channel.get_current_magento_channel()
+
+        assert self.tracking_number
+        assert self.carrier
 
         carriers = MagentoCarrier.search([
             ('channel', '=', channel.id),

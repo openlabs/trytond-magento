@@ -51,16 +51,6 @@ class Subdivision:
     __name__ = 'country.subdivision'
 
     @classmethod
-    def __setup__(cls):
-        """
-        Setup the class before adding to pool
-        """
-        super(Subdivision, cls).__setup__()
-        cls._error_messages.update({
-            'state_not_found': 'State %s does not exist in country %s.',
-        })
-
-    @classmethod
     def search_using_magento_region(cls, region, country):
         """
         Searches for state with given magento region.
@@ -77,9 +67,6 @@ class Subdivision:
             ('country', '=', country.id),
         ])
 
-        if not subdivisions:
-            return cls.raise_user_error(
-                "state_not_found", error_args=(region, country.name)
-            )
+        # TODO: Exception need be created if subdivison does not exist.
 
-        return subdivisions[0]
+        return subdivisions and subdivisions[0] or None

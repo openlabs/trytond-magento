@@ -45,10 +45,6 @@ class Channel:
     magento_api_key = fields.Char(
         "API Key", states=MAGENTO_STATES, depends=['source']
     )
-    magento_order_states = fields.One2Many(
-        "magento.order_state", "channel", "Order States", readonly=True,
-        states=INVISIBLE_IF_NOT_MAGENTO, depends=['source']
-    )
     magento_carriers = fields.One2Many(
         "magento.instance.carrier", "channel", "Carriers / Shipping Methods",
         states=INVISIBLE_IF_NOT_MAGENTO, depends=['source']
@@ -145,7 +141,6 @@ class Channel:
                 'Current channel does not belongs to Magento !'
         })
         cls._buttons.update({
-            'import_magento_order_states': {},
             'import_magento_carriers': {},
             'configure_magento_connection': {}
         })
@@ -191,27 +186,24 @@ class Channel:
                 return list(mag_tax.taxes)
         return []
 
-    @classmethod
-    @ModelView.button_action('magento.wizard_import_magento_order_states')
-    def import_magento_order_states(cls, channels):
+    def import_order_states(self):
         """
         Import order states for magento channel
 
-        :param channels: List of active records of channels
+        Downstream implementation for channel.import_order_states
         """
-        OrderState = Pool().get('magento.order_state')
+        if self.source != 'magento':
+            return super(Channel, self).import_order_states()
 
-        for channel in channels:
-            channel.validate_magento_channel()
-            with Transaction().set_context({'current_channel': channel.id}):
-                # Import order states
-                with OrderConfig(
-                    channel.magento_url, channel.magento_api_user,
-                    channel.magento_api_key
-                ) as order_config_api:
-                    OrderState.create_all_using_magento_data(
-                        order_config_api.get_states()
-                    )
+        with Transaction().set_context({'current_channel': self.id}):
+            # Import order states
+            with OrderConfig(
+                self.magento_url, self.magento_api_user,
+                self.magento_api_key
+            ) as order_config_api:
+                order_states_data = order_config_api.get_states()
+                for code, name in order_states_data.iteritems():
+                    self.create_order_state(code, name)
 
     @classmethod
     @ModelView.button_action('magento.wizard_configure_magento')
@@ -358,13 +350,12 @@ class Channel:
         if self.source != 'magento':
             return super(Channel, self).import_orders()
 
-        MagentoOrderState = Pool().get('magento.order_state')
+        OrderState = Pool().get('sale.channel.order_state')
 
         new_sales = []
         with Transaction().set_context({'current_channel': self.id}):
-            order_states = MagentoOrderState.search([
+            order_states = OrderState.search([
                 ('channel', '=', self.id),
-                ('use_for_import', '=', True)
             ])
             order_states_to_import_in = map(
                 lambda state: state.code, order_states
@@ -552,6 +543,8 @@ class Channel:
                         })
 
                         if self.magento_export_tracking_information and (
+                            hasattr(shipment, 'tracking_number') and
+                            hasattr(shipment, 'carrier') and
                             shipment.tracking_number and shipment.carrier
                         ):
                             shipment.export_tracking_info_to_magento()
@@ -619,16 +612,17 @@ class Channel:
         channels = cls.search([('source', '=', 'magento')])
 
         for channel in channels:
-            channel.export_tier_prices_to_magento()
+            channel.export_product_prices()
 
-    def export_tier_prices_to_magento(self):
+    def export_product_prices(self):
         """
         Exports tier prices of products from tryton to magento for this channel
         :return: List of products
         """
-        ChannelListing = Pool().get('product.product.channel_listing')
+        if self.source != 'magento':
+            return super(Channel, self).export_product_prices()
 
-        self.validate_magento_channel()
+        ChannelListing = Pool().get('product.product.channel_listing')
 
         price_domain = [
             ('channel', '=', self.id),
@@ -687,6 +681,49 @@ class Channel:
                 )
 
         return len(product_listings)
+
+    def get_tryton_action(self, name):
+        """
+        Returns tryton order state for magento state
+
+        :param name: Name of the magento state
+        :return: A dictionary of tryton state and shipment and invoice methods
+        """
+        if self.source != 'magento':
+            return super(Channel, self).get_tryton_action(name)
+
+        if name in ('new', 'holded'):
+            return {
+                'action': 'process_manually',
+                'invoice_method': 'order',
+                'shipment_method': 'order'
+            }
+        elif name in ('pending_payment', 'payment_review'):
+            return {
+                'action': 'import_as_past',
+                'invoice_method': 'order',
+                'shipment_method': 'invoice'
+            }
+
+        elif name in ('closed', 'complete'):
+            return {
+                'action': 'import_as_past',
+                'invoice_method': 'order',
+                'shipment_method': 'order'
+            }
+
+        elif name == 'processing':
+            return {
+                'action': 'process_automatically',
+                'invoice_method': 'order',
+                'shipment_method': 'order'
+            }
+        else:
+            return {
+                'action': 'do_not_import',
+                'invoice_method': 'manual',
+                'shipment_method': 'manual'
+            }
 
 
 class MagentoTier(ModelSQL, ModelView):

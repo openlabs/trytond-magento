@@ -59,19 +59,6 @@
             <field name="name">wizard_import_carriers_start_form</field>
         </record>
 
-        <!--Import Order states wizard-->
-        <record model="ir.action.wizard" id="wizard_import_magento_order_states">
-            <field name="name">Import Magento Order States</field>
-            <field name="wiz_name">magento.wizard_import_order_states</field>
-            <field name="model">sale.channel</field>
-        </record>
-
-        <record model="ir.ui.view" id="wizard_import_magento_order_states_start_view_form">
-            <field name="model">magento.wizard_import_order_states.start</field>
-            <field name="type">form</field>
-            <field name="name">wizard_import_order_states_start_form</field>
-          </record>
-
         <!--Export Inventory Wizard-->
         <record model="ir.action.wizard" id="wizard_export_magento_inventory">
             <field name="name">Export Magento Inventory</field>
@@ -87,28 +74,6 @@
             <field name="model">magento.wizard_export_inventory.start</field>
             <field name="type">form</field>
             <field name="name">export_inventory_start_form</field>
-          </record>
-
-        <!--Export Tier Prices Wizard-->
-        <record model="ir.action.wizard" id="wizard_export_magento_tier_prices">
-            <field name="name">Export Tier Prices to Magento</field>
-            <field name="wiz_name">magento.wizard_export_tier_prices</field>
-            <field name="model">sale.channel</field>
-        </record>
-        <record model="ir.action.keyword" id="wizard_export_magento_tier_prices_keyword">
-            <field name="keyword">form_action</field>
-            <field name="model">sale.channel,-1</field>
-            <field name="action" ref="wizard_export_magento_tier_prices"/>
-        </record>
-        <record model="ir.ui.view" id="wizard_export_magento_tier_prices_view_start_form">
-            <field name="model">magento.wizard_export_tier_prices.start</field>
-            <field name="type">form</field>
-            <field name="name">export_tier_prices_start_form</field>
-        </record>
-        <record model="ir.ui.view" id="wizard_export_magento_tier_prices_view_status_form">
-            <field name="model">magento.wizard_export_tier_prices.status</field>
-            <field name="type">form</field>
-            <field name="name">export_tier_prices_status_form</field>
           </record>
 
         <!--Export Order Status-->

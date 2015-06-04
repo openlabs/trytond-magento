@@ -112,18 +112,26 @@ class TestSale(TestBase):
         """
         Test the import and creation of sale order states for an channel
         """
-        MagentoOrderState = POOL.get('magento.order_state')
+        OrderState = POOL.get('sale.channel.order_state')
 
         with Transaction().start(DB_NAME, USER, CONTEXT):
             self.setup_defaults()
 
-            states_before_import = MagentoOrderState.search([])
+            states = []
+
+            states_before_import = OrderState.search([])
+
             with Transaction().set_context({
-                    'current_channel': self.channel1.id}):
-                states = MagentoOrderState.create_all_using_magento_data(
-                    load_json('order-states', 'all')
-                )
-            states_after_import = MagentoOrderState.search([])
+                'current_channel': self.channel1.id
+            }):
+
+                order_states_list = load_json('order-states', 'all')
+                for code, name in order_states_list.iteritems():
+                    states.append(
+                        self.channel1.create_order_state(code, name)
+                    )
+
+            states_after_import = OrderState.search([])
 
             self.assertTrue(states_after_import > states_before_import)
 
@@ -132,83 +140,84 @@ class TestSale(TestBase):
                     state.channel.id, self.channel1.id
                 )
 
-    def test_0010_check_tryton_state(self):
+    def test_0010_check_tryton_action(self):
         """
-        Tests if correct tryton state is returned for each magento order state
+        Tests if correct tryton action is returned for each magento order state
         """
-        MagentoOrderState = POOL.get('magento.order_state')
+        with Transaction().start(DB_NAME, USER, CONTEXT):
+            self.setup_defaults()
 
-        self.assertEqual(
-            MagentoOrderState.get_tryton_state('new'),
-            {
-                'tryton_state': 'sale.quotation',
-                'invoice_method': 'order',
-                'shipment_method': 'order'
-            }
-        )
+            self.assertEqual(
+                self.channel1.get_tryton_action('new'),
+                {
+                     'action': 'process_manually',
+                     'invoice_method': 'order',
+                     'shipment_method': 'order'
+                }
+            )
 
-        self.assertEqual(
-            MagentoOrderState.get_tryton_state('holded'),
-            {
-                'tryton_state': 'sale.quotation',
-                'invoice_method': 'order',
-                'shipment_method': 'order'
-            }
-        )
+            self.assertEqual(
+                self.channel1.get_tryton_action('holded'),
+                {
+                     'action': 'process_manually',
+                     'invoice_method': 'order',
+                     'shipment_method': 'order'
+                }
+            )
 
-        self.assertEqual(
-            MagentoOrderState.get_tryton_state('pending_payment'),
-            {
-                'tryton_state': 'invoice.waiting',
-                'invoice_method': 'order',
-                'shipment_method': 'invoice'
-            }
-        )
+            self.assertEqual(
+                self.channel1.get_tryton_action('pending_payment'),
+                {
+                    'action': 'import_as_past',
+                    'invoice_method': 'order',
+                    'shipment_method': 'invoice'
+                }
+            )
 
-        self.assertEqual(
-            MagentoOrderState.get_tryton_state('payment_review'),
-            {
-                'tryton_state': 'invoice.waiting',
-                'invoice_method': 'order',
-                'shipment_method': 'invoice'
-            }
-        )
+            self.assertEqual(
+                self.channel1.get_tryton_action('payment_review'),
+                {
+                    'action': 'import_as_past',
+                    'invoice_method': 'order',
+                    'shipment_method': 'invoice'
+                }
+            )
 
-        self.assertEqual(
-            MagentoOrderState.get_tryton_state('closed'),
-            {
-                'tryton_state': 'sale.done',
-                'invoice_method': 'order',
-                'shipment_method': 'order'
-            }
-        )
+            self.assertEqual(
+                self.channel1.get_tryton_action('closed'),
+                {
+                    'action': 'import_as_past',
+                    'invoice_method': 'order',
+                    'shipment_method': 'order'
+                }
+            )
 
-        self.assertEqual(
-            MagentoOrderState.get_tryton_state('complete'),
-            {
-                'tryton_state': 'sale.done',
-                'invoice_method': 'order',
-                'shipment_method': 'order'
-            }
-        )
+            self.assertEqual(
+                self.channel1.get_tryton_action('complete'),
+                {
+                    'action': 'import_as_past',
+                    'invoice_method': 'order',
+                    'shipment_method': 'order'
+                }
+            )
 
-        self.assertEqual(
-            MagentoOrderState.get_tryton_state('processing'),
-            {
-                'tryton_state': 'sale.processing',
-                'invoice_method': 'order',
-                'shipment_method': 'order'
-            }
-        )
+            self.assertEqual(
+                self.channel1.get_tryton_action('processing'),
+                {
+                    'action': 'process_automatically',
+                    'invoice_method': 'order',
+                    'shipment_method': 'order'
+                }
+            )
 
-        self.assertEqual(
-            MagentoOrderState.get_tryton_state('cancelled'),
-            {
-                'tryton_state': 'sale.cancel',
-                'invoice_method': 'manual',
-                'shipment_method': 'manual'
-            }
-        )
+            self.assertEqual(
+                self.channel1.get_tryton_action('cancelled'),
+                {
+                    'action': 'do_not_import',
+                    'invoice_method': 'manual',
+                    'shipment_method': 'manual'
+                }
+            )
 
     def test_0020_import_carriers(self):
         """
@@ -257,6 +266,54 @@ class TestSale(TestBase):
                 self.assertEqual(len(orders), 0)
 
                 order_data = load_json('orders', '100000001')
+
+                with patch(
+                        'magento.Customer', mock_customer_api(), create=True):
+                    Party.find_or_create_using_magento_id(
+                        order_data['customer_id']
+                    )
+
+                with Transaction().set_context(company=self.company):
+                    # Create sale order using magento data
+                    with patch(
+                            'magento.Product', mock_product_api(), create=True):
+                        order = Sale.find_or_create_using_magento_data(
+                            order_data
+                        )
+
+                self.assertEqual(order.state, 'confirmed')
+                self.assertFalse(order.has_channel_exception)
+
+                orders = Sale.search([])
+                self.assertEqual(len(orders), 1)
+
+                # Item lines + shipping line should be equal to lines on tryton
+                self.assertEqual(
+                    len(order.lines), len(order_data['items']) + 1
+                )
+
+    def test_0030_import_sale_order_with_invalid_subdivision(self):
+        """
+        Tests import of sale order using magento data with invalid subdivision
+        """
+        Sale = POOL.get('sale.sale')
+        Party = POOL.get('party.party')
+        Category = POOL.get('product.category')
+
+        with Transaction().start(DB_NAME, USER, CONTEXT):
+            self.setup_defaults()
+
+            with Transaction().set_context({
+                'current_channel': self.channel1.id,
+            }):
+
+                category_tree = load_json('categories', 'category_tree')
+                Category.create_tree_using_magento_data(category_tree)
+
+                orders = Sale.search([])
+                self.assertEqual(len(orders), 0)
+
+                order_data = load_json('orders', '100000001-invalid-state')
 
                 with patch(
                         'magento.Customer', mock_customer_api(), create=True):
@@ -402,7 +459,7 @@ class TestSale(TestBase):
                 orders = Sale.search([])
                 self.assertEqual(len(orders), 0)
 
-                order_data = load_json('orders', '100000001-draft')
+                order_data = load_json('orders', '100000001')
 
                 with patch(
                         'magento.Customer', mock_customer_api(), create=True):
@@ -418,7 +475,7 @@ class TestSale(TestBase):
                             order_data
                         )
 
-                self.assertEqual(order.state, 'cancel')
+                self.assertEqual(order.state, 'confirmed')
 
                 self.assertEqual(len(Sale.search([])), 1)
 
@@ -450,7 +507,7 @@ class TestSale(TestBase):
                 orders = Sale.search([])
                 self.assertEqual(len(orders), 0)
 
-                order_data = load_json('orders', '100000001-draft')
+                order_data = load_json('orders', '100000001')
 
                 with patch(
                         'magento.Customer', mock_customer_api(), create=True):
@@ -466,7 +523,7 @@ class TestSale(TestBase):
                             order_data
                         )
 
-                self.assertEqual(order.state, 'cancel')
+                self.assertEqual(order.state, 'confirmed')
                 self.assertEqual(len(Sale.search([])), 1)
 
                 export_date = datetime.utcnow() + relativedelta(days=1)
@@ -492,7 +549,6 @@ class TestSale(TestBase):
         Sale = POOL.get('sale.sale')
         Party = POOL.get('party.party')
         Category = POOL.get('product.category')
-        MagentoOrderState = POOL.get('magento.order_state')
         Carrier = POOL.get('carrier')
         ProductTemplate = POOL.get('product.template')
         MagentoCarrier = POOL.get('magento.instance.carrier')
@@ -505,9 +561,9 @@ class TestSale(TestBase):
                 'current_channel': self.channel1.id,
             }):
 
-                MagentoOrderState.create_all_using_magento_data(
-                    load_json('order-states', 'all'),
-                )
+                order_states_list = load_json('order-states', 'all')
+                for code, name in order_states_list.iteritems():
+                    self.channel1.create_order_state(code, name)
 
                 category_tree = load_json('categories', 'category_tree')
                 Category.create_tree_using_magento_data(category_tree)
@@ -570,10 +626,6 @@ class TestSale(TestBase):
                     Sale.process([order])
                 shipment, = Shipment.search([])
 
-                Shipment.write([shipment], {
-                    'carrier': carrier.id,
-                    'tracking_number': '1234567890',
-                })
                 Shipment.assign([shipment])
                 Shipment.pack([shipment])
                 Shipment.done([shipment])
@@ -590,12 +642,6 @@ class TestSale(TestBase):
 
                     shipment = Shipment(shipment.id)
                     self.assertTrue(shipment.magento_increment_id)
-
-                    # Export Tracking info
-                    self.assertEqual(
-                        shipment.export_tracking_info_to_magento(),
-                        True
-                    )
 
     def test_0070_export_order_status_with_last_order_export_time_case2(self):
         """
@@ -618,7 +664,7 @@ class TestSale(TestBase):
                 orders = Sale.search([])
                 self.assertEqual(len(orders), 0)
 
-                order_data = load_json('orders', '100000001-draft')
+                order_data = load_json('orders', '100000001')
 
                 with patch(
                         'magento.Customer', mock_customer_api(), create=True):
@@ -634,7 +680,7 @@ class TestSale(TestBase):
                             order_data
                         )
 
-                self.assertEqual(order.state, 'cancel')
+                self.assertEqual(order.state, 'confirmed')
                 self.assertEqual(len(Sale.search([])), 1)
 
                 export_date = datetime.utcnow() - relativedelta(days=1)
@@ -660,7 +706,6 @@ class TestSale(TestBase):
         """
         Sale = POOL.get('sale.sale')
         Category = POOL.get('product.category')
-        MagentoOrderState = POOL.get('magento.order_state')
 
         with Transaction().start(DB_NAME, USER, CONTEXT):
             self.setup_defaults()
@@ -669,9 +714,9 @@ class TestSale(TestBase):
                 'current_channel': self.channel1.id,
             }):
 
-                MagentoOrderState.create_all_using_magento_data(
-                    load_json('order-states', 'all'),
-                )
+                order_states_list = load_json('order-states', 'all')
+                for code, name in order_states_list.iteritems():
+                    self.channel1.create_order_state(code, name)
 
                 category_tree = load_json('categories', 'category_tree')
                 Category.create_tree_using_magento_data(category_tree)
@@ -723,7 +768,6 @@ class TestSale(TestBase):
         """
         Sale = POOL.get('sale.sale')
         Category = POOL.get('product.category')
-        MagentoOrderState = POOL.get('magento.order_state')
 
         with Transaction().start(DB_NAME, USER, CONTEXT):
             self.setup_defaults()
@@ -731,9 +775,9 @@ class TestSale(TestBase):
                 'current_channel': self.channel1.id,
             }):
 
-                MagentoOrderState.create_all_using_magento_data(
-                    load_json('order-states', 'all'),
-                )
+                order_states_list = load_json('order-states', 'all')
+                for code, name in order_states_list.iteritems():
+                    self.channel1.create_order_state(code, name)
 
                 category_tree = load_json('categories', 'category_tree')
                 Category.create_tree_using_magento_data(category_tree)
@@ -781,7 +825,6 @@ class TestSale(TestBase):
         """
         Sale = POOL.get('sale.sale')
         Category = POOL.get('product.category')
-        MagentoOrderState = POOL.get('magento.order_state')
 
         with Transaction().start(DB_NAME, USER, CONTEXT):
             self.setup_defaults()
@@ -789,9 +832,9 @@ class TestSale(TestBase):
                 'current_channel': self.channel1.id,
             }):
 
-                MagentoOrderState.create_all_using_magento_data(
-                    load_json('order-states', 'all'),
-                )
+                order_states_list = load_json('order-states', 'all')
+                for code, name in order_states_list.iteritems():
+                    self.channel1.create_order_state(code, name)
 
                 category_tree = load_json('categories', 'category_tree')
                 Category.create_tree_using_magento_data(category_tree)
@@ -820,6 +863,50 @@ class TestSale(TestBase):
                 # Item lines + shipping line should be equal to lines on tryton
                 self.assertEqual(len(order.lines), 3)
 
+    def test_0105_import_order_in_draft_state(self):
+        """
+        Tests that orders can not be imported in draft state
+        """
+        Sale = POOL.get('sale.sale')
+        Party = POOL.get('party.party')
+        Category = POOL.get('product.category')
+
+        with Transaction().start(DB_NAME, USER, CONTEXT):
+            self.setup_defaults()
+            with Transaction().set_context({
+                'current_channel': self.channel1.id,
+            }):
+
+                order_states_list = load_json('order-states', 'all')
+                for code, name in order_states_list.iteritems():
+                    self.channel1.create_order_state(code, name)
+
+                category_tree = load_json('categories', 'category_tree')
+                Category.create_tree_using_magento_data(category_tree)
+
+                orders = Sale.search([])
+                self.assertEqual(len(orders), 0)
+
+                order_data = load_json('orders', '100000001-draft')
+
+                with patch(
+                        'magento.Customer', mock_customer_api(), create=True):
+                    Party.find_or_create_using_magento_id(
+                        order_data['customer_id']
+                    )
+
+                with Transaction().set_context(company=self.company):
+                    # Create sale order using magento data
+                    with patch(
+                            'magento.Product', mock_product_api(), create=True
+                    ):
+                        Sale.find_or_create_using_magento_data(
+                            order_data
+                        )
+
+                # Order has not been imported
+                self.assertFalse(Sale.search([]))
+
     def test_0110_export_product_tier_prices_to_magento(self):
         """
         Tests if tier prices from product listing is exported to magento
@@ -846,7 +933,7 @@ class TestSale(TestBase):
                 self.assertEqual(ChannelListing.search([], count=True), 0)
                 self.assertEqual(Product.search([], count=True), 0)
 
-                order_data = load_json('orders', '100000001-draft')
+                order_data = load_json('orders', '100000001')
 
                 with patch(
                         'magento.Customer', mock_customer_api(), create=True):
@@ -887,7 +974,7 @@ class TestSale(TestBase):
                     'quantity': 10,
                 }])
 
-                self.assertEqual(order.state, 'cancel')
+                self.assertEqual(order.state, 'confirmed')
 
                 self.assertEqual(len(Sale.search([])), 1)
 
@@ -897,7 +984,7 @@ class TestSale(TestBase):
                     create=True
                 ):
                     product_listings = \
-                        self.channel1.export_tier_prices_to_magento()
+                        self.channel1.export_product_prices()
 
                     self.assertEqual(product_listings, 2)
                 self.assertEqual(
@@ -926,7 +1013,7 @@ class TestSale(TestBase):
                 orders = Sale.search([])
                 self.assertEqual(len(orders), 0)
 
-                order_data = load_json('orders', '100000001-draft')
+                order_data = load_json('orders', '100000001')
 
                 with patch(
                         'magento.Customer', mock_customer_api(), create=True):
@@ -950,7 +1037,7 @@ class TestSale(TestBase):
                     'quantity': 10,
                 }])
 
-                self.assertEqual(order.state, 'cancel')
+                self.assertEqual(order.state, 'confirmed')
 
                 self.assertEqual(len(Sale.search([])), 1)
 
@@ -960,7 +1047,7 @@ class TestSale(TestBase):
                     create=True
                 ):
                     product_listings = \
-                        self.channel1.export_tier_prices_to_magento()
+                        self.channel1.export_product_prices()
 
                     self.assertEqual(product_listings, 2)
                 self.assertEqual(
@@ -995,7 +1082,7 @@ class TestSale(TestBase):
                 self.assertEqual(ChannelListing.search([], count=True), 0)
                 self.assertEqual(Product.search([], count=True), 0)
 
-                order_data = load_json('orders', '100000001-draft')
+                order_data = load_json('orders', '100000001')
 
                 with patch(
                         'magento.Customer', mock_customer_api(), create=True):
@@ -1011,7 +1098,7 @@ class TestSale(TestBase):
                             order_data
                         )
 
-                self.assertEqual(order.state, 'cancel')
+                self.assertEqual(order.state, 'confirmed')
 
                 self.assertEqual(len(Sale.search([])), 1)
 
@@ -1060,7 +1147,7 @@ class TestSale(TestBase):
                     create=True
                 ):
                     product_listings = \
-                        self.channel1.export_tier_prices_to_magento()
+                        self.channel1.export_product_prices()
 
                     self.assertEqual(product_listings, 1)
 
