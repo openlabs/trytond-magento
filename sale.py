@@ -106,7 +106,6 @@ class Sale:
         Address = Pool().get('party.address')
         Currency = Pool().get('currency.currency')
         Uom = Pool().get('product.uom')
-        OrderState = Pool().get('sale.channel.order_state')
         Channel = Pool().get('sale.channel')
 
         channel = Channel.get_current_magento_channel()
@@ -142,7 +141,7 @@ class Sale:
                 )
         unit, = Uom.search([('name', '=', 'Unit')])
 
-        tryton_state = OrderState.get_tryton_state(order_data['state'])
+        tryton_action = channel.get_tryton_action(order_data['state'])
 
         if not party_shipping_address:
             # if there is no shipment address, this could be a digital
@@ -151,7 +150,7 @@ class Sale:
             # manual
             shipment_method = 'manual'
         else:
-            shipment_method = tryton_state['shipment_method']
+            shipment_method = tryton_action['shipment_method']
 
         return Sale(**{
             'reference': channel.magento_order_prefix +
@@ -163,7 +162,7 @@ class Sale:
             'shipment_address': party_shipping_address or party_invoice_address,
             'magento_id': int(order_data['order_id']),
             'channel': channel.id,
-            'invoice_method': tryton_state['invoice_method'],
+            'invoice_method': tryton_action['invoice_method'],
             'shipment_method': shipment_method,
             'lines': [],
         })
@@ -179,7 +178,16 @@ class Sale:
         :return: Active record of record created
         """
         ChannelException = Pool().get('channel.exception')
-        MagentoOrderState = Pool().get('sale.channel.order_state')
+
+        Channel = Pool().get('sale.channel')
+
+        channel = Channel.get_current_magento_channel()
+
+        state_data = channel.get_tryton_action(order_data['state'])
+
+        # Do not import if order is in cancelled or draft state
+        if state_data['action'] == 'do_not_import':
+            return
 
         sale = cls.get_sale_using_magento_data(order_data)
         sale.save()
@@ -189,7 +197,7 @@ class Sale:
         sale.save()
 
         # Process sale now
-        tryton_state = MagentoOrderState.get_tryton_state(order_data['state'])
+        tryton_action = channel.get_tryton_action(order_data['state'])
         try:
             sale.process_sale_using_magento_state(order_data['state'])
         except UserError, e:
@@ -200,7 +208,7 @@ class Sale:
             ChannelException.create([{
                 'origin': '%s,%s' % (sale.__name__, sale.id),
                 'log': "Error occurred on transitioning to state %s.\nError "
-                    "Message: %s" % (tryton_state['tryton_state'], e.message),
+                    "Message: %s" % (tryton_action['action'], e.message),
                 'channel': sale.channel.id,
             }])
 
@@ -433,19 +441,16 @@ class Sale:
         """
         Sale = Pool().get('sale.sale')
 
-        data = MagentoOrderState.get_tryton_state(magento_state)
+        data = self.channel.get_tryton_action(magento_state)
 
-        # If order is canceled, just cancel it
-        if data['tryton_state'] == 'sale.cancel':
-            Sale.cancel([self])
-            return
+        if data['action'] in ['process_manually', 'process_automatically']:
+            Sale.quote([self])
+            Sale.confirm([self])
 
-        # Order is not canceled, move it to quotation
-        Sale.quote([self])
-        Sale.confirm([self])
-
-        if data['tryton_state'] not in ['sale.quotation', 'sale.confirmed']:
+        if data['action'] == 'process_automatically':
             Sale.process([self])
+
+        # TODO: Handle import as past action for magento state
 
     def export_order_status_to_magento(self):
         """

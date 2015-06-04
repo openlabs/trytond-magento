@@ -20,8 +20,7 @@ from trytond.wizard import (
 __all__ = [
     'ExportMagentoInventoryStart', 'ExportMagentoInventory',
     'ExportMagentoShipmentStatusStart',
-    'ExportMagentoShipmentStatus', 'ImportMagentoOrderStatesStart',
-    'ImportMagentoOrderStates', 'ImportMagentoCarriersStart',
+    'ExportMagentoShipmentStatus', 'ImportMagentoCarriersStart',
     'ImportMagentoCarriers', 'ConfigureMagento',
     'TestMagentoConnectionStart', 'ImportWebsitesStart',
     'ImportStoresStart', 'FailureStart', 'SuccessStart',
