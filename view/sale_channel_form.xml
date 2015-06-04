@@ -40,14 +40,11 @@
             <field name="magento_last_order_export_time"/>
             <label name="magento_last_shipment_export_time"/>
             <field name="magento_last_shipment_export_time"/>
+            <label name="magento_order_prefix"/>
+            <field name="magento_order_prefix"/>
         </group>
     </xpath>   
     <xpath expr="/form/notebook/page[@id='configuration']/notebook/page[@id='taxes']" position="after">
-        <page string="Order States" id="order_states" col="6" states="{'invisible': Not(Eval('source') == 'magento')}">
-            <label name="magento_order_prefix"/>
-            <field name="magento_order_prefix"/>
-            <field name="magento_order_states" colspan="8"/>
-        </page>
         <page string="Carrier / Shipping Methods" id="carriers" states="{'invisible': Not(Eval('source') == 'magento')}">
             <field name="magento_carriers" colspan="4"/>
         </page>
@@ -63,7 +60,6 @@
     <xpath expr="/form/notebook/page[@id='configuration']" position="inside">
         <group id="magento_buttons" col="3" colspan="6" states="{'invisible': Not(Eval('source') == 'magento')}">
             <button string="Configure Magento Connection" name="configure_magento_connection"/>
-            <button string="Import Magento Order States" name="import_magento_order_states"/>
             <button string="Import Magento Carriers" name="import_magento_carriers"/>
         </group>
     </xpath>

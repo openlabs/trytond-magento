@@ -20,8 +20,7 @@ from trytond.wizard import (
 __all__ = [
     'ExportMagentoInventoryStart', 'ExportMagentoInventory',
     'ExportMagentoShipmentStatusStart',
-    'ExportMagentoShipmentStatus', 'ImportMagentoOrderStatesStart',
-    'ImportMagentoOrderStates', 'ImportMagentoCarriersStart',
+    'ExportMagentoShipmentStatus', 'ImportMagentoCarriersStart',
     'ImportMagentoCarriers', 'ConfigureMagento',
     'TestMagentoConnectionStart', 'ImportWebsitesStart',
     'ImportStoresStart', 'FailureStart', 'SuccessStart',
@@ -91,26 +90,6 @@ class ExportMagentoOrderStatus(Wizard):
 
     def transition_export_(self):
         return 'end'
-
-
-class ImportMagentoOrderStatesStart(ModelView):
-    "Import Order States Start"
-    __name__ = 'magento.wizard_import_order_states.start'
-
-
-class ImportMagentoOrderStates(Wizard):
-    """
-    Wizard to import order states for channel
-    """
-    __name__ = 'magento.wizard_import_order_states'
-
-    start = StateView(
-        'magento.wizard_import_order_states.start',
-        'magento.wizard_import_magento_order_states_start_view_form',
-        [
-            Button('Ok', 'end', 'tryton-ok'),
-        ]
-    )
 
 
 class ImportMagentoCarriersStart(ModelView):
