@@ -64,6 +64,7 @@ requires = [
 ]
 MODULE2PREFIX = {
     'sale_channel': 'openlabs',
+    'product_variant': 'openlabs',
 }
 for dep in info.get('depends', []):
     if not re.match(r'(ir|res|webdav)(\W|$)', dep):
