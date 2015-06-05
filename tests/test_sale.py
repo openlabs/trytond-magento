@@ -645,8 +645,6 @@ class TestSale(TestBase):
                 product, = ProductTemplate.create([
                     {
                         'name': 'Shipping product',
-                        'list_price': Decimal('100'),
-                        'cost_price': Decimal('1'),
                         'type': 'service',
                         'account_expense': self.get_account_by_kind('expense'),
                         'account_revenue': self.get_account_by_kind('revenue'),
@@ -655,6 +653,8 @@ class TestSale(TestBase):
                         'products': [('create', [{
                             'code': 'code',
                             'description': 'This is a product description',
+                            'list_price': Decimal('100'),
+                            'cost_price': Decimal('1'),
                         }])]
                     }]
                 )
