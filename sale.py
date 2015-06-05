@@ -119,9 +119,17 @@ class Sale:
                 order_data['customer_id']
             )
         else:
+            firstname = order_data['customer_firstname'] or (
+                order_data['billing_address'] and
+                order_data['billing_address']['firstname']
+            )
+            lastname = order_data['customer_lastname'] or (
+                order_data['billing_address'] and
+                order_data['billing_address']['lastname']
+            )
             party = Party.create_using_magento_data({
-                'firstname': order_data['customer_firstname'],
-                'lastname': order_data['customer_lastname'],
+                'firstname': firstname,
+                'lastname': lastname,
                 'email': order_data['customer_email'],
                 'customer_id': 0
             })
