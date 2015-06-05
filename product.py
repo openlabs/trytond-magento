@@ -283,12 +283,6 @@ class Product:
         return {
             'name': product_data.get('name') or
                 ('SKU: ' + product_data.get('sku')),
-            'list_price': Decimal(
-                product_data.get('special_price') or
-                product_data.get('price') or
-                0.00
-            ),
-            'cost_price': Decimal(product_data.get('cost') or 0.00),
             'default_uom': channel.default_uom.id,
             'salable': True,
             'sale_uom': channel.default_uom.id,
@@ -331,6 +325,12 @@ class Product:
             'products': [('create', [{
                 'description': product_data.get('description'),
                 'code': product_data['sku'],
+                'list_price': Decimal(
+                    product_data.get('special_price') or
+                    product_data.get('price') or
+                    0.00
+                ),
+                'cost_price': Decimal(product_data.get('cost') or 0.00),
                 'channel_listings': [('create', [{
                     'product_identifier': product_data['product_id'],
                     'channel': channel.id,
@@ -381,9 +381,15 @@ class Product:
             product_data
         )
         product_template_values.update({
-            'products': [('write', map(int, self.products), {
+            'products': [('write', [self], {
                 'description': product_data.get('description'),
                 'code': product_data['sku'],
+                'list_price': Decimal(
+                    product_data.get('special_price') or
+                    product_data.get('price') or
+                    0.00
+                ),
+                'cost_price': Decimal(product_data.get('cost') or 0.00),
             })]
         })
         Template.write([self.template], product_template_values)
