@@ -604,16 +604,6 @@ class Channel:
 
         return products
 
-    @classmethod
-    def export_tier_prices_to_magento_using_cron(cls):
-        """
-        Export tier prices to magento using cron
-        """
-        channels = cls.search([('source', '=', 'magento')])
-
-        for channel in channels:
-            channel.export_product_prices()
-
     def export_product_prices(self):
         """
         Exports tier prices of products from tryton to magento for this channel
