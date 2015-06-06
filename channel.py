@@ -123,8 +123,12 @@ class Channel:
                 'Current channel does not belongs to Magento !'
         })
         cls._buttons.update({
-            'import_magento_carriers': {},
-            'configure_magento_connection': {}
+            'import_magento_carriers': {
+                'invisible': Eval('source') != 'magento'
+            },
+            'configure_magento_connection': {
+                'invisible': Eval('source') != 'magento'
+            }
         })
         cls._error_messages.update({
             "missing_magento_channel": 'Magento channel is not in context',

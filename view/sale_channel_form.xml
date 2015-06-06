@@ -1,14 +1,15 @@
 <?xml version="1.0"?>
 <data>
     <xpath expr="/form/notebook/page[@id='configuration']/notebook/page[@id='connection']" position="inside">
-        <group id="magento_settings" states="{'invisible': Not(Eval('source') == 'magento')}">    
+        <group id="magento_settings" states="{'invisible': Not(Eval('source') == 'magento')}" colspan="8">    
             <label name="magento_url"/>
             <field name="magento_url" colspan="3"/>
             <label name="magento_api_user"/>
             <field name="magento_api_user"/>
             <label name="magento_api_key"/>
-            <field name="magento_api_key" widget="password"/>             
+            <field name="magento_api_key" widget="password"/>
         </group>
+        <button string="Configure Magento Connection" name="configure_magento_connection"/> 
     </xpath>
     <xpath expr="/form/notebook/page[@id='configuration']/notebook/page[@id='general']" position="inside">
         <group id="general_settings" states="{'invisible': Not(Eval('source') == 'magento')}">
@@ -34,22 +35,17 @@
         </group>
     </xpath>
     <xpath expr="/form/notebook/page[@id='configuration']/notebook/page[@id='taxes']" position="after">
-        <page string="Carrier / Shipping Methods" id="carriers" states="{'invisible': Not(Eval('source') == 'magento')}">
+        <page string="Carrier / Shipping Methods" id="carriers">
             <field name="magento_carriers" colspan="4"/>
+            <group id="magento_buttons" col="3" colspan="6">
+                <button string="Import Magento Carriers" name="import_magento_carriers"/>
+            </group>
         </page>
         <page string="Price Tiers" id="price_tiers" states="{'invisible': Not(Eval('source') == 'magento')}">
             <field name="magento_price_tiers" colspan="8"/>
         </page>
     </xpath>
     <xpath expr="/form/notebook/page[@id='configuration']/notebook/page[@id='taxes']" position="inside">
-        <group id="taxes" states="{'invisible': Not(Eval('source') == 'magento')}">
-            <field name="magento_taxes" colspan="8"/>
-        </group>
-    </xpath>
-    <xpath expr="/form/notebook/page[@id='configuration']" position="inside">
-        <group id="magento_buttons" col="3" colspan="6" states="{'invisible': Not(Eval('source') == 'magento')}">
-            <button string="Configure Magento Connection" name="configure_magento_connection"/>
-            <button string="Import Magento Carriers" name="import_magento_carriers"/>
-        </group>
+        <field name="magento_taxes" colspan="8"/>
     </xpath>
 </data>
