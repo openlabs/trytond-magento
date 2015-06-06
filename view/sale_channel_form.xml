@@ -28,22 +28,11 @@
             <label name="magento_export_tracking_information"/>
             <field name="magento_export_tracking_information"/>
             <label name="magento_root_category_id"/>
-            <field name="magento_root_category_id"/> 
-        </group>
-    </xpath>
-    <xpath expr="/form/notebook/page[@id='configuration']/notebook/page[@id='import_export']/group[@id='channel_common_buttons']" position="before" >
-        <group id="magento_order" states="{'invisible': Not(Eval('source') == 'magento')}" >
-            <newline/>
-            <label name="magento_last_order_import_time"/>
-            <field name="magento_last_order_import_time"/>
-            <label name="magento_last_order_export_time"/>
-            <field name="magento_last_order_export_time"/>
-            <label name="magento_last_shipment_export_time"/>
-            <field name="magento_last_shipment_export_time"/>
+            <field name="magento_root_category_id"/>
             <label name="magento_order_prefix"/>
             <field name="magento_order_prefix"/>
         </group>
-    </xpath>   
+    </xpath>
     <xpath expr="/form/notebook/page[@id='configuration']/notebook/page[@id='taxes']" position="after">
         <page string="Carrier / Shipping Methods" id="carriers" states="{'invisible': Not(Eval('source') == 'magento')}">
             <field name="magento_carriers" colspan="4"/>
