@@ -79,24 +79,6 @@ class Channel:
         'Store ID', readonly=True, states=INVISIBLE_IF_NOT_MAGENTO,
         depends=['source']
     )
-    magento_last_order_import_time = fields.DateTime(
-        'Last Order Import Time', states=INVISIBLE_IF_NOT_MAGENTO,
-        depends=['source']
-    )
-    magento_last_order_export_time = fields.DateTime(
-        "Last Order Export Time", states=INVISIBLE_IF_NOT_MAGENTO,
-        depends=['source']
-    )
-
-    #: Last time at which the shipment status was exported to magento
-    magento_last_shipment_export_time = fields.DateTime(
-        'Last shipment export time', states=INVISIBLE_IF_NOT_MAGENTO,
-        depends=['source']
-    )
-    magento_last_tier_price_export_time = fields.DateTime(
-        'Last Tier Price Export Time', states=INVISIBLE_IF_NOT_MAGENTO,
-        depends=['source']
-    )
 
     #: Checking this will make sure that only the done shipments which have a
     #: carrier and tracking reference are exported.
@@ -374,9 +356,9 @@ class Channel:
                     'store_id': {'=': self.magento_store_id},
                     'state': {'in': order_states_to_import_in},
                 }
-                if self.magento_last_order_import_time:
+                if self.last_order_import_time:
                     last_order_import_time = \
-                        self.magento_last_order_import_time.replace(
+                        self.last_order_import_time.replace(
                             microsecond=0
                         )
                     filter.update({
@@ -385,7 +367,7 @@ class Channel:
                         },
                     })
                 self.write([self], {
-                    'magento_last_order_import_time': datetime.utcnow()
+                    'last_order_import_time': datetime.utcnow()
                 })
                 page = 1
                 has_next = True
@@ -449,14 +431,14 @@ class Channel:
         exported_sales = []
         domain = [('channel', '=', self.id)]
 
-        if self.magento_last_order_export_time:
+        if self.last_order_export_time:
             domain = [
-                ('write_date', '>=', self.magento_last_order_export_time)
+                ('write_date', '>=', self.last_order_export_time)
             ]
 
         sales = Sale.search(domain)
 
-        self.magento_last_order_export_time = datetime.utcnow()
+        self.last_order_export_time = datetime.utcnow()
         self.save()
 
         for sale in sales:
@@ -493,14 +475,14 @@ class Channel:
             ('shipments', '!=', None),
         ]
 
-        if self.magento_last_shipment_export_time:
+        if self.last_shipment_export_time:
             sale_domain.append(
-                ('write_date', '>=', self.magento_last_shipment_export_time)
+                ('write_date', '>=', self.last_shipment_export_time)
             )
 
         sales = Sale.search(sale_domain)
 
-        self.magento_last_shipment_export_time = datetime.utcnow()
+        self.last_shipment_export_time = datetime.utcnow()
         self.save()
 
         for sale in sales:
@@ -628,20 +610,20 @@ class Channel:
             ('channel', '=', self.id),
         ]
 
-        if self.magento_last_tier_price_export_time:
+        if self.last_product_price_export_time:
             price_domain.append([
                 'OR', [(
                     'product.write_date', '>=',
-                    self.magento_last_tier_price_export_time
+                    self.last_product_price_export_time
                 )], [(
                     'product.template.write_date', '>=',
-                    self.magento_last_tier_price_export_time
+                    self.last_product_price_export_time
                 )]
             ])
 
         product_listings = ChannelListing.search(price_domain)
 
-        self.magento_last_tier_price_export_time = datetime.utcnow()
+        self.last_product_price_export_time = datetime.utcnow()
         self.save()
 
         for listing in product_listings:

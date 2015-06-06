@@ -576,11 +576,11 @@ class TestSale(TestBase):
                 self.assertEqual(len(Sale.search([])), 1)
 
                 export_date = datetime.utcnow() + relativedelta(days=1)
-                self.channel1.magento_last_order_export_time = export_date
+                self.channel1.last_order_export_time = export_date
                 self.channel1.save()
 
                 self.assertTrue(
-                    self.channel1.magento_last_order_export_time
+                    self.channel1.last_order_export_time
                     > order.write_date
                 )
 
@@ -734,11 +734,11 @@ class TestSale(TestBase):
 
                 export_date = datetime.utcnow() - relativedelta(days=1)
                 self.Channel.write([self.channel1], {
-                    'magento_last_order_export_time': export_date
+                    'last_order_export_time': export_date
                 })
 
                 self.assertTrue(
-                    self.channel1.magento_last_order_export_time
+                    self.channel1.last_order_export_time
                     < order.write_date
                 )
 
@@ -1037,7 +1037,7 @@ class TestSale(TestBase):
 
                     self.assertEqual(product_listings, 2)
                 self.assertEqual(
-                    self.channel1.magento_last_tier_price_export_time.date(),
+                    self.channel1.last_product_price_export_time.date(),
                     datetime.utcnow().date()
                 )
 
@@ -1100,7 +1100,7 @@ class TestSale(TestBase):
 
                     self.assertEqual(product_listings, 2)
                 self.assertEqual(
-                    self.channel1.magento_last_tier_price_export_time.date(),
+                    self.channel1.last_product_price_export_time.date(),
                     datetime.utcnow().date()
                 )
 
@@ -1176,7 +1176,7 @@ class TestSale(TestBase):
                     'quantity': 10,
                 }])
 
-                self.channel1.magento_last_tier_price_export_time = \
+                self.channel1.last_product_price_export_time = \
                     datetime.utcnow()
                 self.channel1.save()
 
@@ -1187,7 +1187,7 @@ class TestSale(TestBase):
 
                 self.assertTrue(
                     product1.template.write_date >
-                    self.channel1.magento_last_tier_price_export_time
+                    self.channel1.last_product_price_export_time
                 )
 
                 # Export tier prices to magento
