@@ -697,7 +697,8 @@ class UpdateCatalog(Wizard):
         """
         product_templates = []
         with Transaction().set_context({'magento_website': website.id}):
-            for mag_product_template in website.magento_product_templates:
+            for mag_product_template in \
+                    website.instance.magento_product_templates:
                 product_templates.append(
                     mag_product_template.template.update_from_magento()
                 )

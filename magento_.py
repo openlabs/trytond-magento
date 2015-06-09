@@ -499,7 +499,7 @@ class WebsiteStore(ModelSQL, ModelView):
         """
         instance = self.website.instance
 
-        for mag_product_template in self.website.magento_product_templates:
+        for mag_product_template in self.instance.magento_product_templates:
             product_template = mag_product_template.template
             product = product_template.products[0]
 
@@ -535,7 +535,7 @@ class WebsiteStore(ModelSQL, ModelView):
                     mag_product_template.magento_id, price_data
                 )
 
-        return len(self.website.magento_product_templates)
+        return len(self.instance.magento_product_templates)
 
 
 class WebsiteStoreView(ModelSQL, ModelView):
