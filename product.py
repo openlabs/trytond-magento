@@ -6,13 +6,15 @@
     :license: BSD, see LICENSE for more details.
 '''
 import magento
+import xmlrpclib
+from decimal import Decimal
+
 from trytond.model import ModelSQL, ModelView, fields
 from trytond.transaction import Transaction
 from trytond.wizard import Wizard, StateView, StateAction, Button
 from trytond.pyson import PYSONEncoder
 from trytond.pool import PoolMeta, Pool
 from trytond import backend
-from decimal import Decimal
 
 
 __all__ = [
@@ -699,9 +701,15 @@ class UpdateCatalog(Wizard):
         with Transaction().set_context({'magento_website': website.id}):
             for mag_product_template in \
                     website.instance.magento_product_templates:
-                product_templates.append(
-                    mag_product_template.template.update_from_magento()
-                )
+                try:
+                    product_templates.append(
+                        mag_product_template.template.update_from_magento()
+                    )
+                except xmlrpclib.Fault, exception:
+                    if exception.faultCode != 101:
+                        # Raise except the case when product doesnot exist on
+                        # magento
+                        raise
 
         return map(int, product_templates)
 
