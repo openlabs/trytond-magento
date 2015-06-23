@@ -428,15 +428,18 @@ class Template:
         :param product_data: Product Data from magento
         :returns: Active record of product updated
         """
-        product_template_values = self.extract_product_values_from_data(
+        extracted_values = self.extract_product_values_from_data(
             product_data
         )
-        product_template_values.update({
+        product_template_values = {
+            'name': extracted_values['name'],
+            'list_price': extracted_values['list_price'],
+            'cost_price': extracted_values['cost_price'],
             'products': [('write', map(int, self.products), {
                 'description': product_data['description'],
                 'code': product_data['sku'],
             })]
-        })
+        }
         self.write([self], product_template_values)
 
         return self
